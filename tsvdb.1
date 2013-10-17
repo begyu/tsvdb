@@ -1,0 +1,43 @@
+.TH <tsvdb> 1 "<2011.07.21>" "" "Linux User's Manual"
+
+.SH NAME
+\fBtsvdb\fP \- Tab separated values database 
+
+.SH SYNOPSIS
+.B <tsvdb>
+.RI [-r|x|y|t|b|n<recno>|s<fstr>|d<[,|;]>|h|v] 
+.RI [tsvdatafile]
+.br
+
+.SH DESCRIPTION
+Simple textmode database program. Based on PDCurses TUIdemo sample.
+The first line of the file defines the data structure.
+Each tab-delimited word in the first line, defines a data field name and its length.
+The number of lines up to one million, and a maximum number of fields is 16.
+
+.SH OPTIONS
+.IP \fB\-r\fP
+Open in read-only.
+.IP \fB\-x\fP
+Readonly, but swiched back with Ctrl-X key.
+.IP \fB\-y\fP
+Locked mode.
+.IP \fB\-t\fP
+Go to first record.
+.IP \fB\-b\fP
+Go bottom.
+.IP \fB\-n	recno\fP
+Go to the nth row.
+.IP \fB\-s	fstr\fP
+Go to the first occurence of fstr.
+.IP \fB\-d	delim\fP
+Use delimiter (, or ;) char to CSV.
+.IP \fB\-h\fP
+Syntax help.
+.IP \fB\-v\fP
+Print version.
+
+.SH "SEE ALSO"
+.SM
+.IP http://tsvdb.sf.net/
+.IP http://en.wikipedia.org/wiki/Tab-separated_values 
