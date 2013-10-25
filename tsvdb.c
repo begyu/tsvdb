@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.6.0 2013/10/17 $
+ * $Id: tcsvdb.c,v 0.6.1 2013/10/25 $
  */
 
-#define VERSION "0.6.0"
+#define VERSION "0.6.1"
 
 #ifdef XCURSES
 #include <xcurses.h>
@@ -25,7 +25,7 @@
 #include <locale.h>
 #include <unistd.h>
 #include <wchar.h>
-#include <getopt.h>
+/*#include <getopt.h>*/
 #include <sys/stat.h>
 
 #ifndef MSDOS
@@ -2566,6 +2566,48 @@ void search(int y, int c)
     wrefresh(wstat);
 }
 
+void searchfield(int y, int x)
+{
+    int i, j, k;
+    char s[MAXSTRLEN+1];
+    char *p;
+    struct slre_cap cap = { NULL, 0 };
+
+    for (i=y+1; i<reccnt; i++)
+    {
+        strcpy(s, rows[i]);
+        p = s;
+        if (x == 0)
+        {
+            for (j=0; !(s[j]==csep || s[j]=='\0'); j++);
+            s[j] = '\0';
+        }
+        else
+        {
+            for (j=0; j<x; j++)
+            {
+                while (!(p[0]==csep || p[0]=='\0')) p++;
+                p++;
+            }
+            for (j=0; !(p[j]==csep || p[j]=='\0'); j++);
+            p[j] = '\0';
+        }
+        if ((k = slre_match(fstr, p, strlen(p), &cap, 1)) > 0)
+        {
+            curr = i;
+            break;
+        }
+    }
+    j = strlen(fstr);
+    setcolor(wstat, MAINMENUCOLOR);
+    mvwaddstr(wstat, 0, 20, (j!=0) ? "*" : " ");
+    setcolor(wstat, FSTRCOLOR);
+    mvwaddstr(wstat, 0, 21, fstr);
+    setcolor(wstat, STATUSCOLOR);
+    wclrtoeol(wstat);
+    wrefresh(wstat);
+}
+
 #define MAXSL 33
 
 void getfstr(void)
@@ -2942,6 +2984,7 @@ void edit(void)
             ctop = 0;
             fstr[0] = '\0';
             regex = FALSE;
+            memset(flags, 0, MAXROWS);
             wmove(wstat, 0, 20);
             wclrtoeol(wstat);
             wrefresh(wstat);
@@ -2985,6 +3028,14 @@ void edit(void)
             if (strlen(fstr))
             {
                search(curr, regex ? RXFORW : 0);
+               if ((curr-ctop) >= r)
+                  ctop = curr - (r-1);
+            }
+            break;
+        case CTL_TAB:
+            if (strlen(fstr))
+            {
+               searchfield(curr, field);
                if ((curr-ctop) >= r)
                   ctop = curr - (r-1);
             }
@@ -3072,6 +3123,13 @@ void edit(void)
 /*            if (!strlen(fstr))*/
                getfstr();
             search(curr, RXFORW);
+            if ((curr-ctop) >= r)
+               ctop = curr - (r-1);
+            break;
+        case ALT_F:
+/*            if (!strlen(fstr))*/
+               getfstr();
+            searchfield(curr, field);
             if ((curr-ctop) >= r)
                ctop = curr - (r-1);
             break;
@@ -3465,8 +3523,8 @@ void subfunc1(void)
         "  Ctrl-Del:\tdelete line",
         "     Enter:\tedit fields",
         "    Letter:\tsearch (? mask)",
-        "    Ctrl-F:\tregexp search",
-        "       Tab:\tfind next",
+        "Ctrl/Alt-F:\tregexp search",
+        " Tab/C-Tab:\tfind next",
         "  Shft-Tab:\tprevious",
         "      Bksp:\tdel fstr back",
         "  Del/Home:\tclear fstr",
