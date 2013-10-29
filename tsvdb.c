@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.6.1 2013/10/25 $
+ * $Id: tcsvdb.c,v 0.6.2 2013/10/29 $
  */
 
-#define VERSION "0.6.1"
+#define VERSION "0.6.2"
 
 #ifdef XCURSES
 #include <xcurses.h>
@@ -96,6 +96,8 @@ static char *slre_replace(const char *regex, const char *buf,
 
 void subfunc1(void);
 #define HELP subfunc1()
+void edithelp(void);
+#define EDITHLP edithelp()
 
 /****DAT****/
 
@@ -1233,12 +1235,12 @@ int weditstr(WINDOW *win, char *buf, int field)
         case ALT_L:
             capfstr(buf, FALSE, FALSE);
             break;
-/*
         case KEY_F(1):
-            HELP;
+            EDITHLP;
+            touchwin(win);
+            wrefresh(win);
             wrefresh(wedit);
             break;
-*/
 /*#ifdef DJGPP*/
         case CTRL_X:
             i = 0;
@@ -3454,6 +3456,7 @@ void bye(void)
 
 void sub0(void), sub1(void), sub2(void);
 void subfunc1(void), subfunc2(void);
+void reghelp(void), edithelp(void);
 
 /***************************** menus initialization ***********************/
 
@@ -3490,6 +3493,8 @@ menu SubMenu1[] =
 menu SubMenu2[] =
 {
     { "Keys", subfunc1, "Keys" },
+    { "Input keys", edithelp, "Keys in edit mode" },
+    { "Regexp", reghelp, "Regular expression help" },
     { "About", subfunc2, "Info" },
     { "", (FUNC)0, "" }
 };
@@ -3541,6 +3546,74 @@ void subfunc1(void)
     wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-33)/2, j+2, 33);
     for (i=0; i<j; i++)
         mvwaddstr(wmsg, i+1, 3, s[i]);
+    wrefresh(wmsg);
+    (void)toupper(waitforkey());
+    delwin(wmsg);
+    touchwin(wbody);
+    wrefresh(wbody);
+}
+
+void edithelp(void)
+{
+    WINDOW *wmsg;
+    char *s[] =
+    {
+        "      Home:\tgo to 1'st char",
+        "       End:\tgo to EOL",
+        "        Up:\tprevious field",
+        "      Down:\tnext field",
+        "       Del:\tdelete char",
+        "      Bksp:\tdelete back",
+        "  Ctrl-End:\tdelete from cursor",
+        "Ctl-arrows:\tskip word",
+        "    Ctrl-C:\tcopy",
+        "    Ctrl-V:\tpaste",
+        "Ctrl/Alt-U:\tuppercase",
+        "Ctrl/Alt-L:\tlowercase",
+        "       Esc:\tcancel",
+        "     Enter:\tmodify record"
+    };
+    int i;
+    int j=14;
+    
+    wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-36)/2, j+2, 36);
+    for (i=0; i<j; i++)
+        mvwaddstr(wmsg, i+1, 2, s[i]);
+    wrefresh(wmsg);
+    (void)toupper(waitforkey());
+    delwin(wmsg);
+    touchwin(wbody);
+    wrefresh(wbody);
+}
+
+void reghelp(void)
+{
+    WINDOW *wmsg;
+    char *s[] =
+    {
+        "^       Match beginning of a buffer",
+        "$       Match end of a buffer",
+        "()      Grouping and substring capturing",
+        "\\s      Match whitespace",
+        "\\S      non-whitespace",
+        "\\d      decimal digit",
+        "+       one or more times (greedy)",
+        "+?      one or more times (non-greedy)",
+        "*       zero or more times (greedy)",
+        "*?      zero or more times (non-greedy)",
+        "?       zero or once (non-greedy)",
+        "x|y     x or y (alternation operator)",
+        "\\meta   one of the meta character: ^$().[]*+?|\\",
+        "\\xHH    byte with hex value 0xHH, e.g. \\x4a",
+        "[...]   any character from set. Ranges like [a-z] supported",
+        "[^...]  any character but ones from set"
+    };
+    int i;
+    int j=16;
+    
+    wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-62)/2, j+2, 62);
+    for (i=0; i<j; i++)
+        mvwaddstr(wmsg, i+1, 2, s[i]);
     wrefresh(wmsg);
     (void)toupper(waitforkey());
     delwin(wmsg);
