@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.6.2 2013/10/29 $
+ * $Id: tcsvdb.c,v 0.6.3 2013/10/30 $
  */
 
-#define VERSION "0.6.2"
+#define VERSION "0.6.3"
 
 #ifdef XCURSES
 #include <xcurses.h>
@@ -98,6 +98,10 @@ void subfunc1(void);
 #define HELP subfunc1()
 void edithelp(void);
 #define EDITHLP edithelp()
+void reghelp(void);
+#define REGHLP reghelp()
+
+bool regexp = FALSE;
 
 /****DAT****/
 
@@ -144,6 +148,7 @@ bool filtered = FALSE;
 #define RXFORW 0xFF
 #define RXBACK 0xFE
 #define WSTR (" Wait! ")
+#define DISABLEDHOT ("CFNS")
 
 char csep = TABCSEP;
 char ssep[] = TABSSEP;
@@ -485,9 +490,19 @@ static void repaintmenu(WINDOW *wmenu, menu *mp)
 {
     int i;
     menu *p = mp;
+    char *c = NULL;
 
     for (i = 0; p->func; i++, p++)
+    {
+        if (ro)
+        {
+            if ((c = strchr(DISABLEDHOT, (char)(p->name[0]))) != NULL)
+                setcolor(wmenu, INPUTBOXCOLOR);
+            else
+                setcolor(wmenu, SUBMENUCOLOR);
+        }
         mvwaddstr(wmenu, i + 1, 2, p->name);
+    }
 
     touchwin(wmenu);
     wrefresh(wmenu);
@@ -791,6 +806,7 @@ void domenu(menu *mp)
     int y, x, nitems, barlen, mheight, mw, old = -1, cur = 0, cur0;
     bool stop = FALSE;
     WINDOW *wmenu;
+    char *c = NULL;
 
     curs_set(0);
     getmenupos(&y, &x);
@@ -808,8 +824,17 @@ void domenu(menu *mp)
         if (cur != old)
         {
             if (old != -1)
+            {
+                if (ro)
+                {
+                    if ((c = strchr(DISABLEDHOT, (char)(mp[old].name[0]))) != NULL)
+                        setcolor(wmenu, INPUTBOXCOLOR);
+                    else
+                        setcolor(wmenu, SUBMENUCOLOR);
+                }
                 mvwaddstr(wmenu, old + 1, 1, 
                           prepad(padstr(mp[old].name, barlen - 1), 1));
+            }
 
             setcolor(wmenu, SUBMENUREVCOLOR);
             mvwaddstr(wmenu, cur + 1, 1,
@@ -1236,7 +1261,10 @@ int weditstr(WINDOW *win, char *buf, int field)
             capfstr(buf, FALSE, FALSE);
             break;
         case KEY_F(1):
-            EDITHLP;
+            if (regexp == TRUE)
+               REGHLP;
+            else
+               EDITHLP;
             touchwin(win);
             wrefresh(win);
             wrefresh(wedit);
@@ -2622,7 +2650,9 @@ void getfstr(void)
     fieldbuf[0] = fstr;
     fieldbuf[1] = 0;
 
+    regexp = TRUE;
     getstrings(fieldname, fieldbuf, 0, MAXSL+1);
+    regexp = FALSE;
     touchwin(wbody);
     wrefresh(wbody);
     regex = TRUE;
@@ -3122,15 +3152,13 @@ void edit(void)
             break;
 #endif
         case CTRL_F:
-/*            if (!strlen(fstr))*/
-               getfstr();
+            getfstr();
             search(curr, RXFORW);
             if ((curr-ctop) >= r)
                ctop = curr - (r-1);
             break;
         case ALT_F:
-/*            if (!strlen(fstr))*/
-               getfstr();
+            getfstr();
             searchfield(curr, field);
             if ((curr-ctop) >= r)
                ctop = curr - (r-1);
@@ -3482,10 +3510,10 @@ menu SubMenu1[] =
     { "Edit", edit, "File edit" },
     { "View", brows, "Browse file" }, 
     { "Go", gorec, "Go to record" },
-    { "Replace", change, "Change string" },
+    { "Change", change, "Replace string" },
     { "Sort", dosort, "Sort file" },
     { "Field", dosortby, "Sort by other field" },
-    { "Sum", dosum, "Aggregate" },
+    { "sUm", dosum, "Aggregate" },
     { "Crypt", docrypt, "Code/decode" },
     { "", (FUNC)0, "" }
 };
