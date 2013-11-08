@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.6.3 2013/10/30 $
+ * $Id: tcsvdb.c,v 0.6.4 2013/11/08 $
  */
 
-#define VERSION "0.6.3"
+#define VERSION "0.6.4"
 
 #ifdef XCURSES
 #include <xcurses.h>
@@ -91,6 +91,7 @@ static char *slre_replace(const char *regex, const char *buf,
 #define CTRL_D 0x04
 /*
 //#define       ALT_U 0x1B5
+
 //#define       ALT_L 0x1aC
 */
 
@@ -112,6 +113,7 @@ bool regexp = FALSE;
 
 #define CTRL(x) ((x) & 0x1f)
 
+char progname[MAXSTRLEN] = "";
 char datfname[MAXSTRLEN] = "";
 char fstr[MAXSTRLEN] = "";
 char head[MAXSTRLEN] = "";
@@ -1701,6 +1703,7 @@ void displn(int y, int r)
         mvwaddstr(wbody, r, MIN(strlen(head), maxlen)-1, " ");
     }
     setcolor(wbody, BODYCOLOR);
+    wclrtoeol(wbody);
     wrefresh(wbody);
 }
 
@@ -2004,6 +2007,7 @@ void clean()
     int i;
 
     for (i=0; i<=reccnt; i++)
+
     {
         if (rows[i] != NULL)
            free(rows[i]);
@@ -2462,9 +2466,9 @@ int substr(char *str1, char *str2)
   for (i = 0; i < len1 - len2 + 1; i++) {
     for (j = 0; j < len2 && ((str2[j] == '?') || (str1[i+j] == str2[j])); j++);
     if (j == len2)
-       return (i);
+       return (i+1);
   }
-  return (-1);
+  return (0);
 }
 
 void search(int y, int c)
@@ -2922,7 +2926,6 @@ void edit(void)
     bool quit = FALSE;
     int ctop;
     int c;
-    char s[MAXSTRLEN+1];
 
     curr = (curr <= reccnt) ? curr : 0;
     ctop = curr;
@@ -3183,12 +3186,7 @@ void edit(void)
             if (strlen(fstr))
             {
                i = curr;
-               curr = 0;
-               strcpy(s, rows[0]);
-               casestr(s, TRUE, TRUE);
-               if (substr(s, fstr) > 0)
-                  flags[0] = 1;
-               curr = 1;
+               curr = -1;
                do
                {
                   j = curr;
@@ -3205,7 +3203,6 @@ void edit(void)
             if (filtered)
             {
                fltls();
-               filtered = FALSE;
                clsbody();
                wrefresh(wbody);
             }
@@ -3284,6 +3281,63 @@ void redraw()
            displn(i, j+1);
         j++;
     }
+}
+
+void selected(void)
+{
+    int i, j;
+    FILE *fp;
+    char *p;
+    char tmpfname[MAXSTRLEN];
+    char buf[MAXSTRLEN+1];
+
+    if (filtered == FALSE)
+    {
+        msg("Not filtered!");
+        waitforkey();
+        msg(NULL);
+        return;
+    }
+
+    strcpy(tmpfname, basename(datfname));
+    p = strchr(tmpfname, '.');
+    if (p != NULL)
+    {
+        p[0] = '\0';
+    }
+    strcat(tmpfname, ".$$$");
+    if ((fp = fopen(tmpfname, "w")) != NULL)
+    {
+        msg(WSTR);
+        fputs(head, fp);
+        for (i=0, j=0; i<reccnt; i++)
+        {
+            if (flags[i])
+            {
+                fputs(rows[i], fp);
+                j++;
+            }
+        }
+        fclose(fp);
+        msg(NULL);
+        if (j == 0)
+            return;
+/*        execlp("tsvdb", tmpfname, 0);*/
+        strcpy(buf, progname);
+        strcat(buf, " ");
+        strcat(buf, tmpfname);
+        system(buf);
+        colorbox(wtitl, TITLECOLOR, 0);
+        titlemsg(datfname);
+        redraw();
+        flagmsg();
+    }
+    else
+    {
+        sprintf(buf, "ERROR: Can't create file '%s'", tmpfname);
+        errormsg(buf);
+    }
+    return;
 }
 
 void dosort(void)
@@ -3515,6 +3569,7 @@ menu SubMenu1[] =
     { "Field", dosortby, "Sort by other field" },
     { "sUm", dosum, "Aggregate" },
     { "Crypt", docrypt, "Code/decode" },
+    { "eXport", selected, "Restricted set" },
     { "", (FUNC)0, "" }
 };
 
@@ -3679,6 +3734,7 @@ int main(int argc, char **argv)
     int i, j, c;
     char s[MAXSTRLEN] = "";
 
+    strcpy(progname, argv[0]);
     curr = 0;
     opterr = 0;
     while ((c=getopt(argc, argv, "HhRrVvXxYyTtBbN:n:D:d:S:s:?")) != -1)
@@ -3766,7 +3822,7 @@ int main(int argc, char **argv)
         case 'H':
           fprintf(stderr, 
              "Usage: %s [-r] [-t|b] [-n<row>] [-s<fstr>] [-d<delim>] [datafile]\n",
-             (char *)basename(argv[0]));
+             (char *)basename(progname));
           exit(c==':' ? -1 : 0);
         default:
           break;
