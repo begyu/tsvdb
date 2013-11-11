@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.6.4 2013/11/08 $
+ * $Id: tcsvdb.c,v 0.6.5 2013/11/11 $
  */
 
-#define VERSION "0.6.4"
+#define VERSION "0.6.5"
 
 #ifdef XCURSES
 #include <xcurses.h>
@@ -91,7 +91,6 @@ static char *slre_replace(const char *regex, const char *buf,
 #define CTRL_D 0x04
 /*
 //#define       ALT_U 0x1B5
-
 //#define       ALT_L 0x1aC
 */
 
@@ -503,6 +502,13 @@ static void repaintmenu(WINDOW *wmenu, menu *mp)
             else
                 setcolor(wmenu, SUBMENUCOLOR);
         }
+        else
+        {
+            if ((p->name[1] == 'X') && (datfname[strlen(datfname)-3] == '$'))
+                setcolor(wmenu, INPUTBOXCOLOR);
+            else
+                setcolor(wmenu, SUBMENUCOLOR);
+        }
         mvwaddstr(wmenu, i + 1, 2, p->name);
     }
 
@@ -830,6 +836,14 @@ void domenu(menu *mp)
                 if (ro)
                 {
                     if ((c = strchr(DISABLEDHOT, (char)(mp[old].name[0]))) != NULL)
+                        setcolor(wmenu, INPUTBOXCOLOR);
+                    else
+                        setcolor(wmenu, SUBMENUCOLOR);
+                }
+                else
+                {
+                    if ((mp[old].name[1] == 'X') 
+                    && (datfname[strlen(datfname)-3] == '$'))
                         setcolor(wmenu, INPUTBOXCOLOR);
                     else
                         setcolor(wmenu, SUBMENUCOLOR);
@@ -1616,8 +1630,16 @@ void sort_back(int n)
 
 void flagmsg(void)
 {
-    setcolor(wtitl, modified ? FSTRCOLOR : TITLECOLOR);
-    mvwaddstr(wtitl, 0, 0, (modified ? "*" : " "));
+    if (modified)
+    {
+        setcolor(wtitl, FSTRCOLOR);
+        mvwaddstr(wtitl, 0, 0, "*");
+    }
+    else
+    {
+        setcolor(wtitl, TITLECOLOR);
+        mvwaddstr(wtitl, 0, 0, "_");
+    }
     wrefresh(wtitl);
 }
 
@@ -2007,7 +2029,6 @@ void clean()
     int i;
 
     for (i=0; i<=reccnt; i++)
-
     {
         if (rows[i] != NULL)
            free(rows[i]);
@@ -3678,18 +3699,18 @@ void reghelp(void)
         "$       Match end of a buffer",
         "()      Grouping and substring capturing",
         "\\s      Match whitespace",
-        "\\S      non-whitespace",
-        "\\d      decimal digit",
-        "+       one or more times (greedy)",
-        "+?      one or more times (non-greedy)",
-        "*       zero or more times (greedy)",
-        "*?      zero or more times (non-greedy)",
-        "?       zero or once (non-greedy)",
+        "\\S      Non-whitespace",
+        "\\d      Decimal digit",
+        "+       One or more times (greedy)",
+        "+?      One or more times (non-greedy)",
+        "*       Zero or more times (greedy)",
+        "*?      Zero or more times (non-greedy)",
+        "?       Zero or once (non-greedy)",
         "x|y     x or y (alternation operator)",
-        "\\meta   one of the meta character: ^$().[]*+?|\\",
-        "\\xHH    byte with hex value 0xHH, e.g. \\x4a",
-        "[...]   any character from set. Ranges like [a-z] supported",
-        "[^...]  any character but ones from set"
+        "\\meta   One of the meta character: ^$().[]*+?|\\",
+        "\\xHH    Byte with hex value 0xHH, e.g. \\x4a",
+        "[...]   Any character from set. Ranges like [a-z] supported",
+        "[^...]  Any character but ones from set"
     };
     int i;
     int j=16;
