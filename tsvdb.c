@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.6.5 2013/11/11 $
+ * $Id: tcsvdb.c,v 0.6.6 2013/11/12 $
  */
 
-#define VERSION "0.6.5"
+#define VERSION "0.6.6"
 
 #ifdef XCURSES
 #include <xcurses.h>
@@ -2711,6 +2711,8 @@ void change()
     getstrings(fieldname, fieldbuf, 0, MAXSL+1);
 
     rlen = strlen(s1)-1;
+    if (rlen == -1)
+        return;
 
     for (i=0; i<reccnt; i++)
     {
@@ -3589,7 +3591,7 @@ menu SubMenu1[] =
     { "Sort", dosort, "Sort file" },
     { "Field", dosortby, "Sort by other field" },
     { "sUm", dosum, "Aggregate" },
-    { "Crypt", docrypt, "Code/decode" },
+    { "cRypt", docrypt, "Code/decode" },
     { "eXport", selected, "Restricted set" },
     { "", (FUNC)0, "" }
 };
