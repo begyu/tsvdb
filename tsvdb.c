@@ -149,7 +149,7 @@ bool filtered = FALSE;
 #define RXFORW 0xFF
 #define RXBACK 0xFE
 #define WSTR (" Wait! ")
-#define DISABLEDHOT ("CFNS")
+#define DISABLEDHOT ("CcFNS")
 
 char csep = TABCSEP;
 char ssep[] = TABSSEP;
@@ -2926,7 +2926,7 @@ void gorec()
     fieldbuf[0] = s;
     fieldbuf[1] = 0;
 
-    itoa(curr, s, 10);
+    itoa(curr+1, s, 10);
     getstrings(fieldname, fieldbuf, 0, 7);
     i = atoi(s);
     if ((i > 0) || (i <= reccnt))
@@ -3590,8 +3590,8 @@ menu SubMenu1[] =
     { "Change", change, "Replace string" },
     { "Sort", dosort, "Sort file" },
     { "Field", dosortby, "Sort by other field" },
-    { "sUm", dosum, "Aggregate" },
     { "cRypt", docrypt, "Code/decode" },
+    { "sUm", dosum, "Aggregate" },
     { "eXport", selected, "Restricted set" },
     { "", (FUNC)0, "" }
 };
