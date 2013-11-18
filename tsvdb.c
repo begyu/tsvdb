@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.6.6 2013/11/12 $
+ * $Id: tcsvdb.c,v 0.6.7 2013/11/18 $
  */
 
-#define VERSION "0.6.6"
+#define VERSION "0.6.7"
 
 #ifdef XCURSES
 #include <xcurses.h>
@@ -138,6 +138,7 @@ int unkeys[] = {KEY_RIGHT, '\n', '\n', '\t', KEY_END, KEY_UP, 0};
 int unkeypos = -1;
 int sortpos = 0;
 bool filtered = FALSE;
+bool headspac = FALSE;
 
 #define TABCSEP '\t'
 #define TABSSEP "\t"
@@ -1831,7 +1832,16 @@ int loadfile(char *fname)
     {
         buf[0] = '\0';
         fgets(buf, MAXSTRLEN, fp);
-        if (strstr(buf, ssep) == NULL)
+        if ((p = strchr(buf, csep)) == NULL)
+        {
+            for (i=0; buf[i]!=0; i++)
+                if (buf[i] == 0x20)
+                {
+                    buf[i] = csep;
+                    headspac = TRUE;
+                }
+        }
+        if ((p = strstr(buf, ssep)) == NULL)
         {
             sprintf(buf, "ERROR: Can't open file '%s'", fname);
             errormsg(buf);
@@ -2006,7 +2016,16 @@ int savefile(char *fname, int force)
         {
             crypt(reccnt);
         }
-        fputs(head, fp);
+        if (headspac)
+        {
+            strcpy(buf, head);
+            for (i=0; buf[i]!=0; i++)
+                if (buf[i] == csep)
+                    buf[i] = 0x20;
+            fputs(buf, fp);
+        }
+        else
+            fputs(head, fp);
         for (i=0; i<reccnt; i++)
             fputs(rows[i], fp);
         fclose(fp);
