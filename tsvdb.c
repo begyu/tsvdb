@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.6.7 2013/11/18 $
+ * $Id: tcsvdb.c,v 0.6.8 2014/01/16 $
  */
 
-#define VERSION "0.6.7"
+#define VERSION "0.6.8"
 
 #ifdef XCURSES
 #include <xcurses.h>
@@ -100,6 +100,7 @@ void edithelp(void);
 #define EDITHLP edithelp()
 void reghelp(void);
 #define REGHLP reghelp()
+void opthelp(void);
 
 bool regexp = FALSE;
 
@@ -3620,6 +3621,7 @@ menu SubMenu2[] =
     { "Keys", subfunc1, "Keys" },
     { "Input keys", edithelp, "Keys in edit mode" },
     { "Regexp", reghelp, "Regular expression help" },
+    { "Options", opthelp, "Command line options" },
     { "About", subfunc2, "Info" },
     { "", (FUNC)0, "" }
 };
@@ -3746,6 +3748,46 @@ void reghelp(void)
     wrefresh(wbody);
 }
 
+static char *hlpstrs[] =
+{
+    "-r        Read-only mode",
+    "-x        Mixed mode",
+    "-y        Locked mode",
+    "-t        Top",
+    "-b        Bottom",
+    "-n <num>  Go to num'th row",
+    "-s <str>  Search str",
+    "-d <,|;>  Set delimiter to ',' or ';'",
+    "-h        Help",
+    "-v        Version",
+    "",
+    NULL
+};
+
+void help(void)
+{
+    int i;
+
+    for (i=0; hlpstrs[i]; i++)
+        fprintf(stderr, "\n\t%s", hlpstrs[i]);
+}
+
+void opthelp(void)
+{
+    WINDOW *wmsg;
+    int i;
+    int j=10;
+    
+    wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-40)/2, j+2, 40);
+    for (i=0; i<j; i++)
+        mvwaddstr(wmsg, i+1, 2, hlpstrs[i]);
+    wrefresh(wmsg);
+    (void)toupper(waitforkey());
+    delwin(wmsg);
+    touchwin(wbody);
+    wrefresh(wbody);
+}
+
 void subfunc2(void)
 {
     WINDOW *wmsg;
@@ -3754,14 +3796,16 @@ void subfunc2(void)
         "TSVdb v."VERSION,
         "Simple tab separated text database",
         " Based on PDCurses TUIdemo sample",
-        "      (http://tsvdb.sf.net)"
+        " With SLRE lib http://cesanta.com",
+        "       http://tsvdb.sf.net"
     };
     
-    wmsg = mvwinputbox(wbody, (bodylen()-5)/3, (bodywidth()-40)/2, 6, 40);
+    wmsg = mvwinputbox(wbody, (bodylen()-5)/3, (bodywidth()-40)/2, 7, 40);
     mvwaddstr(wmsg, 1,13, s[0]);
     mvwaddstr(wmsg, 2, 3, s[1]);
     mvwaddstr(wmsg, 3, 3, s[2]);
     mvwaddstr(wmsg, 4, 3, s[3]);
+    mvwaddstr(wmsg, 5, 3, s[4]);
     wrefresh(wmsg);
     (void)toupper(waitforkey());
     delwin(wmsg);
@@ -3825,17 +3869,9 @@ int main(int argc, char **argv)
               casestr(fstr, TRUE, TRUE);
           pfind = TRUE;
           break;
-        case 'd':
-        case 'D':
-          if ((strcmp(optarg, COLSSEP) == 0)
-          ||  (strcmp(optarg, SCLSSEP) == 0))
-          {
-              csep = optarg[0];
-              ssep[0] = optarg[0];
-          }
-          break;
         case '?':
-          if ((toupper(optopt) == 'S')
+          if ((toupper(optopt) == 'N')
+          || (toupper(optopt) == 'S')
           || (toupper(optopt) == 'D'))
               fprintf (stderr, "Option -%c requires an argument.\n", optopt);
           else if (isprint (optopt))
@@ -3849,22 +3885,39 @@ int main(int argc, char **argv)
 */
         case 'n':
         case 'N':
-          curr = atoi(optarg);
-          if (curr > 0)
+          if (toupper(c) == 'N')
           {
-              curr--;
-              break;
+              if (isdigit(optarg[0]))
+              {
+                  curr = atoi(optarg);
+                  if (curr > 0)
+                      curr--;
+                  break;
+              }
+              else
+                  fprintf (stderr, "Expected record number.\n");
           }
-          else
+        case 'd':
+        case 'D':
+          if (toupper(c) == 'D')
           {
-              fprintf (stderr, "Expected record number.\n");
-              c = 'h';
+              if ((strcmp(optarg, COLSSEP) == 0)
+              ||  (strcmp(optarg, SCLSSEP) == 0))
+              {
+                  csep = optarg[0];
+                  ssep[0] = optarg[0];
+                  break;
+              }
+              else
+                  fprintf (stderr, "Expected ',' or ';' char.\n");
           }
         case 'h':
         case 'H':
           fprintf(stderr, 
-             "Usage: %s [-r] [-t|b] [-n<row>] [-s<fstr>] [-d<delim>] [datafile]\n",
-             (char *)basename(progname));
+            "\nUsage: %s [-r|x|y] [-t|b] [-n<row>] [-s<fstr>] [-d<delim>] [datafile]\n",
+            (char *)basename(progname));
+          if (toupper(c) == 'H')
+              help();
           exit(c==':' ? -1 : 0);
         default:
           break;
