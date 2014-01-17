@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.6.8 2014/01/16 $
+ * $Id: tcsvdb.c,v 0.6.9 2014/01/17 $
  */
 
-#define VERSION "0.6.8"
+#define VERSION "0.6.9"
 
 #ifdef XCURSES
 #include <xcurses.h>
@@ -3718,6 +3718,7 @@ void reghelp(void)
     WINDOW *wmsg;
     char *s[] =
     {
+        "(?i)    At the beginning of the regex, match case-insensitive",
         "^       Match beginning of a buffer",
         "$       Match end of a buffer",
         "()      Grouping and substring capturing",
@@ -3736,9 +3737,9 @@ void reghelp(void)
         "[^...]  Any character but ones from set"
     };
     int i;
-    int j=16;
+    int j=17;
     
-    wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-62)/2, j+2, 62);
+    wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-65)/2, j+2, 65);
     for (i=0; i<j; i++)
         mvwaddstr(wmsg, i+1, 2, s[i]);
     wrefresh(wmsg);
