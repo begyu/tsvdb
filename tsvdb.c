@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.6.9 2014/01/17 $
+ * $Id: tcsvdb.c,v 0.6.10 2014/01/20 $
  */
 
-#define VERSION "0.6.9"
+#define VERSION "0.6.10"
 
 #ifdef XCURSES
 #include <xcurses.h>
@@ -1454,14 +1454,30 @@ int getstrings(char *desc[], char *buf[], int field, int length)
     int c = 0;
     bool stop = FALSE;
 
-    for (n = 0; desc[n]; n++)
-        if ((l = strlen(desc[n])) > mmax)
-            mmax = l;
-
-    nlines = n + 2; ncols = mmax + length + 4;
     getyx(wbody, oldy, oldx);
     getmaxyx(wbody, maxy, maxx);
 
+    i = (maxx/2)-2;
+    for (n = 0; desc[n]; n++)
+    {
+        if ((l = strlen(desc[n])) > i)
+        {
+            l = i-2;
+            desc[n][l] = (char)0;
+            length = l;
+        }
+        if ((l = strlen(buf[n])) > mmax)
+            mmax = l;
+        if (l > i)
+        {
+            l = i-2;
+            mmax = l;
+            buf[n][l-1] = (char)0;
+            length = l;
+        }
+    }
+
+    nlines = n + 2; ncols = mmax + length + 4;
     winput = mvwinputbox(wbody, (maxy - nlines) / 2, (maxx - ncols) / 2, 
         nlines, ncols);
 
@@ -1473,6 +1489,8 @@ int getstrings(char *desc[], char *buf[], int field, int length)
     while (!stop)
     {
         l = (field == 0) ? length : len[i]+1;
+        if (l > length)
+            l = length;
         switch (c = mvweditstr(winput, i+1, mmax+3, buf[i], l))
         {
         case KEY_ESC:
