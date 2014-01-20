@@ -1460,20 +1460,28 @@ int getstrings(char *desc[], char *buf[], int field, int length)
     i = (maxx/2)-2;
     for (n = 0; desc[n]; n++)
     {
-        if ((l = strlen(desc[n])) > i)
+        if (field == 0)
         {
-            l = i-2;
-            desc[n][l] = (char)0;
-            length = l;
+            if ((l = strlen(desc[n])) > mmax)
+                mmax = l;
         }
-        if ((l = strlen(buf[n])) > mmax)
-            mmax = l;
-        if (l > i)
+        else
         {
-            l = i-2;
-            mmax = l;
-            buf[n][l-1] = (char)0;
-            length = l;
+            if ((l = strlen(desc[n])) > i)
+            {
+                l = i-2;
+                desc[n][l] = (char)0;
+                length = l;
+            }
+            if ((l = strlen(buf[n])) > mmax)
+                mmax = l;
+            if (l > i)
+            {
+                l = i-2;
+                mmax = l;
+                buf[n][l-1] = (char)0;
+                length = l;
+            }
         }
     }
 
