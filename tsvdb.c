@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.6.10 2014/01/20 $
+ * $Id: tcsvdb.c,v 0.7.0 2014/01/22 $
  */
 
-#define VERSION "0.6.10"
+#define VERSION "0.7.0"
 
 #ifdef XCURSES
 #include <xcurses.h>
@@ -113,33 +113,34 @@ bool regexp = FALSE;
 
 #define CTRL(x) ((x) & 0x1f)
 
-char progname[MAXSTRLEN] = "";
-char datfname[MAXSTRLEN] = "";
-char fstr[MAXSTRLEN] = "";
-char head[MAXSTRLEN] = "";
-char clp[MAXSTRLEN] = "";
-char *rows[MAXROWS+1];
-char flags[MAXROWS+1];
-char stru[MAXCOLS+1][MAXSTRLEN];
-int beg[MAXCOLS+1];
-int len[MAXCOLS+1];
-int cols, reccnt, curr, field, curcol;
-bool modified=FALSE;
-bool ro = FALSE;
-bool wr = FALSE;
-bool cry = FALSE;
-bool crypted = FALSE;
-bool locked = FALSE;
-int button;
-bool ontop = FALSE;
-bool bottom = FALSE;
-bool pfind = FALSE;
-bool regex = FALSE;
-int unkeys[] = {KEY_RIGHT, '\n', '\n', '\t', KEY_END, KEY_UP, 0};
-int unkeypos = -1;
-int sortpos = 0;
-bool filtered = FALSE;
-bool headspac = FALSE;
+static char progname[MAXSTRLEN] = "";
+static char datfname[MAXSTRLEN] = "";
+static char fstr[MAXSTRLEN] = "";
+static char fchr = '\0';
+static char head[MAXSTRLEN] = "";
+static char clp[MAXSTRLEN] = "";
+static char *rows[MAXROWS+1];
+static char flags[MAXROWS+1];
+static char stru[MAXCOLS+1][MAXSTRLEN];
+static int beg[MAXCOLS+1];
+static int len[MAXCOLS+1];
+static int cols, reccnt, curr, field, curcol;
+static bool modified=FALSE;
+static bool ro = FALSE;
+static bool wr = FALSE;
+static bool cry = FALSE;
+static bool crypted = FALSE;
+static bool locked = FALSE;
+static int button;
+static bool ontop = FALSE;
+static bool bottom = FALSE;
+static bool pfind = FALSE;
+static bool regex = FALSE;
+static int unkeys[] = {KEY_RIGHT, '\n', '\n', '\t', KEY_END, KEY_UP, 0};
+static int unkeypos = -1;
+static int sortpos = 0;
+static bool filtered = FALSE;
+static bool headspac = FALSE;
 
 #define TABCSEP '\t'
 #define TABSSEP "\t"
@@ -153,8 +154,8 @@ bool headspac = FALSE;
 #define WSTR (" Wait! ")
 #define DISABLEDHOT ("CcFNS")
 
-char csep = TABCSEP;
-char ssep[] = TABSSEP;
+static char csep = TABCSEP;
+static char ssep[] = TABSSEP;
 
 int casestr(char *, bool, bool);
 int capfstr(char *, bool, bool);
@@ -2721,6 +2722,8 @@ void getfstr(void)
     fieldbuf[0] = fstr;
     fieldbuf[1] = 0;
 
+    if (fstr[0] == '\0')
+        fstr[0] = fchr;
     regexp = TRUE;
     getstrings(fieldname, fieldbuf, 0, MAXSL+1);
     regexp = FALSE;
@@ -3086,6 +3089,7 @@ void edit(void)
         case KEY_HOME:
             curr = 0;
             ctop = 0;
+            fchr = fstr[0];
             fstr[0] = '\0';
             regex = FALSE;
             memset(flags, 0, MAXROWS);
@@ -3169,6 +3173,7 @@ void edit(void)
             }
             break;
         case KEY_DC:
+            fchr = fstr[0];
             fstr[0] = '\0';
             wmove(wstat, 0, 20);
             wclrtoeol(wstat);
@@ -3681,7 +3686,8 @@ void subfunc1(void)
         "  Ctrl-Del:\tdelete line",
         "     Enter:\tedit fields",
         "    Letter:\tsearch (? mask)",
-        "Ctrl/Alt-F:\tregexp search",
+        "    Ctrl-F:\tregexp search",
+        "     Alt-F:\tseek curr field",
         " Tab/C-Tab:\tfind next",
         "  Shft-Tab:\tprevious",
         "      Bksp:\tdel fstr back",
@@ -3694,7 +3700,7 @@ void subfunc1(void)
         "Ctrl/Alt-L:\tlowercase"
     };
     int i;
-    int j=16;
+    int j=17;
     
     wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-33)/2, j+2, 33);
     for (i=0; i<j; i++)
@@ -3718,6 +3724,7 @@ void edithelp(void)
         "       Del:\tdelete char",
         "      Bksp:\tdelete back",
         "  Ctrl-End:\tdelete from cursor",
+        "    Ctrl-W:\tdelete word back",
         "Ctl-arrows:\tskip word",
         "    Ctrl-C:\tcopy",
         "    Ctrl-V:\tpaste",
@@ -3727,7 +3734,7 @@ void edithelp(void)
         "     Enter:\tmodify record"
     };
     int i;
-    int j=14;
+    int j=15;
     
     wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-36)/2, j+2, 36);
     for (i=0; i<j; i++)
@@ -3746,7 +3753,7 @@ void reghelp(void)
     {
         "(?i)    At the beginning of the regex, match case-insensitive",
         "^       Match beginning of a buffer",
-        "$       Match end of a buffer",
+        "$       Match end of a buffer (or '\\0a' when CRLF)",
         "()      Grouping and substring capturing",
         "\\s      Match whitespace",
         "\\S      Non-whitespace",
