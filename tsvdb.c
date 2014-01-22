@@ -1493,7 +1493,7 @@ int getstrings(char *desc[], char *buf[], int field, int length)
     for (i = 0; i < n; i++)
         mvwprintw(winput, i + 1, 2, "%s", desc[i]);
 
-    i = 0;
+    i = field;
 
     while (!stop)
     {
@@ -1511,10 +1511,13 @@ int getstrings(char *desc[], char *buf[], int field, int length)
             break;
 
         case '\n':
+            if (++i == n)
+                stop = TRUE;    /* all passed? */
+            break;
         case '\t':
         case KEY_DOWN:
             if (++i == n)
-                stop = TRUE;    /* all passed? */
+                i = 0;
         }
     }
 
@@ -2425,7 +2428,7 @@ void modify(int y)
     flen += 2;
     fieldnam[cols+1] = (char *)0;
     fieldbuf[cols+1] = s[cols+1];
-    if (getstrings(fieldnam, fieldbuf, 1, flen) == KEY_ESC)
+    if (getstrings(fieldnam, fieldbuf, field, flen) == KEY_ESC)
         return;
     else
     {
