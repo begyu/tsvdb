@@ -2537,7 +2537,7 @@ int substr(char *str1, char *str2)
   for (i = 0; i < len1 - len2 + 1; i++) {
     for (j = 0; j < len2 && ((str2[j] == '?') || (str1[i+j] == str2[j])); j++);
     if (j == len2)
-       return (i+1);
+       return (i);
   }
   return (0);
 }
