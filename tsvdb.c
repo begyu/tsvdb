@@ -1,20 +1,15 @@
 /*
- * $Id: tcsvdb.c,v 0.7.0 2014/01/22 $
+ * $Id: tcsvdb.c,v 0.7.1 2014/01/23 $
  */
 
-#define VERSION "0.7.0"
+#define VERSION "0.7.1"
 
 #ifdef XCURSES
 #include <xcurses.h>
 # define FNAME  "./new.tsv"
 #else
 # define FNAME  ".\\new.tsv"
-#ifdef NCURSES
-#include <curses.h>
-#else
-/*#include <pdcurses.h>*/
-#include <curses.h>
-#endif
+# include <curses.h>
 #endif
 
 /*#include <ctype.h>*/
@@ -102,7 +97,6 @@ void reghelp(void);
 #define REGHLP reghelp()
 void opthelp(void);
 
-bool regexp = FALSE;
 
 /****DAT****/
 
@@ -136,6 +130,7 @@ static bool ontop = FALSE;
 static bool bottom = FALSE;
 static bool pfind = FALSE;
 static bool regex = FALSE;
+static bool getregexp = FALSE;
 static int unkeys[] = {KEY_RIGHT, '\n', '\n', '\t', KEY_END, KEY_UP, 0};
 static int unkeypos = -1;
 static int sortpos = 0;
@@ -1217,6 +1212,7 @@ int weditstr(WINDOW *win, char *buf, int field)
                 clp[i] = *tp++;
                 i++;
             }
+            clp[i] = '\0';
             break;
         case CTRL_V:
             j = strlen(clp);
@@ -1280,7 +1276,7 @@ int weditstr(WINDOW *win, char *buf, int field)
             capfstr(buf, FALSE, FALSE);
             break;
         case KEY_F(1):
-            if (regexp == TRUE)
+            if (getregexp == TRUE)
                REGHLP;
             else
                EDITHLP;
@@ -2727,9 +2723,9 @@ void getfstr(void)
 
     if (fstr[0] == '\0')
         fstr[0] = fchr;
-    regexp = TRUE;
+    getregexp = TRUE;
     getstrings(fieldname, fieldbuf, 0, MAXSL+1);
-    regexp = FALSE;
+    getregexp = FALSE;
     touchwin(wbody);
     wrefresh(wbody);
     regex = TRUE;
