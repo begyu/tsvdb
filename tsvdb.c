@@ -1391,7 +1391,7 @@ int weditstr(WINDOW *win, char *buf, int field)
             }
 /*            else if (isprint(c))*/
             else if (!iscntrl(c)
-                     || (c==0x81 || c==0x90))
+                     || (c==0x81 || c==0x90 || c==0xEB))
             {
                 if (defdisp)
                 {
@@ -3322,7 +3322,7 @@ void edit(void)
             HELP;
             break;
         default:
-            if ((c == 0x81) || (c == 0x1FB))
+            if ((c == 0x81) || (c == 0xEB) || (c == 0x1FB))
                c = 0x55; /* U */
             else if (c == 0x90)
                     c = 0x45; /* E */
