@@ -3752,7 +3752,7 @@ void reghelp(void)
     {
         "(?i)    At the beginning of the regex, match case-insensitive",
         "^       Match beginning of a buffer",
-        "$       Match end of a buffer (or '\\0a' when CRLF)",
+        "$       Match end of a buffer (or '\\x0a' when CRLF)",
         "()      Grouping and substring capturing",
         "\\s      Match whitespace",
         "\\S      Non-whitespace",
@@ -3790,6 +3790,7 @@ static char *hlpstrs[] =
     "-b        Bottom",
     "-n <num>  Go to num'th row",
     "-s <str>  Search str",
+    "          or \"-s <(regexp)>\"",
     "-d <,|;>  Set delimiter to ',' or ';'",
     "-h        Help",
     "-v        Version",
@@ -3809,7 +3810,7 @@ void opthelp(void)
 {
     WINDOW *wmsg;
     int i;
-    int j=10;
+    int j=11;
     
     wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-40)/2, j+2, 40);
     for (i=0; i<j; i++)
