@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.7.1 2014/01/23 $
+ * $Id: tcsvdb.c,v 0.7.2 2014/01/31 $
  */
 
-#define VERSION "0.7.1"
+#define VERSION "0.7.2"
 
 #ifdef XCURSES
 #include <xcurses.h>
@@ -104,6 +104,7 @@ void opthelp(void);
 #define MAXCOLS  16
 
 #define MIN(a, b)  (((a) < (b)) ? (a) : (b))
+#define MAX(a, b)  (((a) > (b)) ? (a) : (b))
 
 #define CTRL(x) ((x) & 0x1f)
 
@@ -1310,10 +1311,10 @@ int weditstr(WINDOW *win, char *buf, int field)
                 case '|':
                     tp[i] = 0x92;
                     break;
-                case 'ˇ': /*161*/
+                case 'Ą': /*161*/
                     tp[i] = 0xFB;
                     break;
-                case '’': /*146*/
+                case '': /*146*/
                     tp[i] = 0xEB;
                     break;
                 case 'ű': /*251*/
@@ -1337,7 +1338,7 @@ int weditstr(WINDOW *win, char *buf, int field)
                 case '0':
                     tp[i] = 0x94;
                     break;
-                case '”': /*148*/
+                case '': /*148*/
                     tp[i] = 0x30;
                     break;
                 case ')':
@@ -1493,10 +1494,7 @@ int getstrings(char *desc[], char *buf[], int field, int length)
 
     while (!stop)
     {
-        l = (field == 0) ? length : len[i]+1;
-        if (l > length)
-            l = length;
-        switch (c = mvweditstr(winput, i+1, mmax+3, buf[i], l))
+        switch (c = mvweditstr(winput, i+1, mmax+3, buf[i], length))
         {
         case KEY_ESC:
             stop = TRUE;
@@ -1547,12 +1545,12 @@ char *getfname(char *desc, char *fname, int length)
 int casestr(char *str, bool upper, bool ascii)
 {
 #define MAXCHS 9
-  char chr_lo[] = " ‚ˇ˘”‹Łű";
-  char chr_hi[] = "µÖŕ™Šéšë";
+  char chr_lo[] = " Ą˘Łű";
+  char chr_hi[] = "ľÖŕéë";
   char asc_lo[] = "aeiooouuu";
   char asc_hi[] = "AEIOOOUUU";
-/*  char chr_utflo[] = "ĂˇĂ©Ă­ĂłĂ¶Ĺ‘ĂşĂĽĹ±";*/
-/*  char chr_utfhi[] = "ĂĂ‰ĂŤĂ“Ă–ĹĂšĂśĹ°";*/
+/*  char chr_utflo[] = "ĂĄĂŠĂ­ĂłĂśĹĂşĂźĹą";*/
+/*  char chr_utfhi[] = "ĂĂĂĂĂĹĂĂĹ°";*/
   int i, j;
   int len=strlen(str);
   unsigned char c;
@@ -2379,16 +2377,19 @@ void fltls(void)
 
 void modify(int y)
 {
-    int i, j, k;
+    int i, j, k, l;
     char s[MAXCOLS][MAXSTRLEN+1];
     char buf[MAXSTRLEN+1];
     char *p=NULL;
     char *fieldnam[MAXCOLS+1];
     char *fieldbuf[MAXCOLS+1];
     int flen = 0;
+    int maxx;
 
     if (ro)
         return;
+    for (i=0; i<=cols; i++)
+        flen = MAX(len[i], flen);
     strcpy(buf, rows[y]);
     p = strtok(buf, ssep );
     for (i=0; i<=cols; i++)
@@ -2397,7 +2398,8 @@ void modify(int y)
         {
             strcpy(s[i], p);
             k = strlen(s[i]);
-            for (j=0; j<(len[i]); j++)
+            l = MAX(len[i], k);
+            for (j=0; j<flen; j++)
             {
                if ((s[i][j] == csep)
                ||  (s[i][j] == '\n'))
@@ -2405,25 +2407,27 @@ void modify(int y)
                if (j >= k)
                   s[i][j] = ' ';
             }
-            s[i][len[i]] = '\0';
+            for (; j<flen; j++)
+               s[i][j] = ' ';
+            s[i][flen] = '\0';
             p = strtok( 0, ssep );
-        }
-        else
-        {
-            strcpy(s[i], " ");
-            for (k=1; k<len[i]; k++)
-               strcat(s[i], " ");
         }
     }
     for (i = 0; i <= cols; i++)
     {
         fieldnam[i] = stru[i];
         fieldbuf[i] = s[i];
-        flen = (len[i] > flen) ? len[i] : flen;
+        l = MAX(len[i], strlen(fieldbuf[i]));
+        if (l > flen)
+            flen = l;
     }
     flen += 2;
+    getmaxyx(wbody, k, maxx);
+    l = (maxx/2)-2;
+    if (flen > l)
+        flen = l;
     fieldnam[cols+1] = (char *)0;
-    fieldbuf[cols+1] = s[cols+1];
+    fieldbuf[cols+1] = NULL;
     if (getstrings(fieldnam, fieldbuf, field, flen) == KEY_ESC)
         return;
     else
@@ -2433,7 +2437,15 @@ void modify(int y)
     }
     for (i = 0; i <= cols; i++)
     {
-        k = len[i];
+        l = len[i];
+        k = strlen(fieldbuf[i]);
+        while (k >= l)
+        {
+            if (fieldbuf[i][k-1] == ' ')
+                k--;
+            else
+                break;
+        }
         fieldbuf[i][k] = '\0';
         k--;
         for (j=k; j>0; j--)
