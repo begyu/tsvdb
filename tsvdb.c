@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.7.2 2014/01/31 $
+ * $Id: tcsvdb.c,v 0.7.3 2014/02/03 $
  */
 
-#define VERSION "0.7.2"
+#define VERSION "0.7.3"
 
 #ifdef XCURSES
 #include <xcurses.h>
@@ -1311,10 +1311,10 @@ int weditstr(WINDOW *win, char *buf, int field)
                 case '|':
                     tp[i] = 0x92;
                     break;
-                case 'Ą': /*161*/
+                case 'ˇ': /*161*/
                     tp[i] = 0xFB;
                     break;
-                case '': /*146*/
+                case '’': /*146*/
                     tp[i] = 0xEB;
                     break;
                 case 'ű': /*251*/
@@ -1338,7 +1338,7 @@ int weditstr(WINDOW *win, char *buf, int field)
                 case '0':
                     tp[i] = 0x94;
                     break;
-                case '': /*148*/
+                case '”': /*148*/
                     tp[i] = 0x30;
                     break;
                 case ')':
@@ -1545,13 +1545,13 @@ char *getfname(char *desc, char *fname, int length)
 int casestr(char *str, bool upper, bool ascii)
 {
 #define MAXCHS 9
-  char chr_lo[] = " Ą˘Łű";
-  char chr_hi[] = "ľÖŕéë";
+  char chr_lo[] = " ‚ˇ˘”‹Łű";
+  char chr_hi[] = "µÖŕ™Šéšë";
   char asc_lo[] = "aeiooouuu";
   char asc_hi[] = "AEIOOOUUU";
-/*  char chr_utflo[] = "ĂĄĂŠĂ­ĂłĂśĹĂşĂźĹą";*/
-/*  char chr_utfhi[] = "ĂĂĂĂĂĹĂĂĹ°";*/
-  int i, j;
+/*  char chr_utflo[] = "ĂˇĂ©Ă­ĂłĂ¶Ĺ‘ĂşĂĽĹ±";*/
+/*  char chr_utfhi[] = "ĂĂ‰ĂŤĂ“Ă–ĹĂšĂśĹ°";*/
+  register int i, j;
   int len=strlen(str);
   unsigned char c;
 
@@ -1597,7 +1597,7 @@ int casestr(char *str, bool upper, bool ascii)
 
 int capfstr(char *str, bool upper, bool ascii)
 {
-  int i, j;
+  register int i, j;
   bool change;
   char s[] = "?";
 
@@ -1683,7 +1683,7 @@ int bodywidth(void)
 
 void displn(int y, int r)
 {
-    int i, j, k;
+    register int i, j, k;
     int maxlen;
     char s[MAXCOLS][MAXSTRLEN+1];
     char buf[MAXSTRLEN+1];
@@ -1829,7 +1829,7 @@ void crypt(int n)
 
 int loadfile(char *fname)
 {
-    int i, j, k;
+    register int i, j, k;
     FILE *fp;
     char buf[MAXSTRLEN+1];
     bool ateof = FALSE;
@@ -2018,7 +2018,7 @@ int yesno(char *msg)
 
 int savefile(char *fname, int force)
 {
-    int i;
+    register int i;
     FILE *fp;
     char buf[MAXSTRLEN+1];
 
@@ -2070,7 +2070,7 @@ int savefile(char *fname, int force)
 
 void clean()
 {
-    int i;
+    register int i;
 
     for (i=0; i<=reccnt; i++)
     {
@@ -2388,9 +2388,21 @@ void modify(int y)
 
     if (ro)
         return;
-    for (i=0; i<=cols; i++)
-        flen = MAX(len[i], flen);
     strcpy(buf, rows[y]);
+    if (strlen(buf) == 1)
+    {
+        strcpy(buf, " ");
+        for (i=0; i<cols; i++)
+        {
+            strcat(buf, " ");
+            strcat(buf, ssep);
+        }
+        strcat(buf, " \n");
+    }
+    for (i=0; i<=cols; i++)
+    {
+        flen = MAX(len[i], flen);
+    }
     p = strtok(buf, ssep );
     for (i=0; i<=cols; i++)
     {
@@ -2476,7 +2488,7 @@ void modify(int y)
 
 void newrec(int y)
 {
-    int i;
+    register int i;
 
     if (ro)
         return;
@@ -2486,7 +2498,7 @@ void newrec(int y)
     {
         rows[i] = rows[i-1];
     }
-    rows[y] = (char *)malloc(2);
+    rows[y] = (char *)malloc(cols+2);
     strcpy(rows[y], "\n");
     modified = TRUE;
     flagmsg();
@@ -2494,7 +2506,7 @@ void newrec(int y)
 
 void dupl(int y)
 {
-    int i;
+    register int i;
 
     if (ro)
         return;
@@ -2513,7 +2525,7 @@ void dupl(int y)
 
 void purge(int y)
 {
-    int i;
+    register int i;
 
     if (ro)
         return;
@@ -2538,7 +2550,8 @@ void purge(int y)
 
 int substr(char *str1, char *str2)
 {
-  int i, j, len1, len2;
+  register int i, j;
+  int len1, len2;
 
   len1 = (int)strlen(str1);
   len2 = (int)strlen(str2);
@@ -2552,7 +2565,7 @@ int substr(char *str1, char *str2)
 
 void search(int y, int c)
 {
-    int i, j, k;
+    register int i, j, k;
     char cstr[] = "?";
     char s[MAXSTRLEN+1];
     bool masked;
@@ -2681,7 +2694,7 @@ void search(int y, int c)
 
 void searchfield(int y, int x)
 {
-    int i, j, k;
+    register int i, j, k;
     char s[MAXSTRLEN+1];
     char *p;
     struct slre_cap cap = { NULL, 0 };
@@ -2745,7 +2758,7 @@ void getfstr(void)
 
 void change()
 {
-    int i, j, k;
+    register int i, j, k;
     static char s1[MAXSL] = "";
     static char s2[MAXSL] = "";
     char *fieldname[3];
@@ -2810,7 +2823,7 @@ void change()
 
 void copy(int y)
 {
-    int i, j;
+    register int i, j;
     char c;
 
     if (ro)
@@ -2886,7 +2899,7 @@ void paste(int y)
 
 void reorder(int y, bool left)
 {
-    int i, j, k;
+    register int i, j, k;
     char buf[MAXSTRLEN+1];
     char tmpstr[MAXCOLS+1][MAXSTRLEN+1];
     char *p;
@@ -2946,7 +2959,7 @@ void reorder(int y, bool left)
 void fieldcase(bool up, bool whole)
 {
     char s[MAXSTRLEN+1];
-    int i, j;
+    register int i, j;
 
     if (ro)
         return;
@@ -3370,7 +3383,7 @@ void redraw()
 
 void selected(void)
 {
-    int i, j;
+    register int i, j;
     FILE *fp;
     char *p;
     char tmpfname[MAXSTRLEN];
@@ -3520,7 +3533,7 @@ void docrypt(void)
 
 void dosum(void)
 {
-    int i, j;
+    register int i, j;
     double n;
     double x[MAXCOLS];
     char s[MAXCOLS][MAXSTRLEN+1];
