@@ -2424,6 +2424,12 @@ void modify(int y)
             s[i][flen] = '\0';
             p = strtok( 0, ssep );
         }
+        else
+        {
+            strcpy(s[i], " ");
+            for (k=1; k<len[i]; k++)
+               strcat(s[i], " ");
+        }
     }
     for (i = 0; i <= cols; i++)
     {
@@ -2498,7 +2504,7 @@ void newrec(int y)
     {
         rows[i] = rows[i-1];
     }
-    rows[y] = (char *)malloc(cols+2);
+    rows[y] = (char *)malloc(cols);
     strcpy(rows[y], "\n");
     modified = TRUE;
     flagmsg();
