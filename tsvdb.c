@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.7.3 2014/02/03 $
+ * $Id: tcsvdb.c,v 0.7.4 2014/02/05 $
  */
 
-#define VERSION "0.7.3"
+#define VERSION "0.7.4"
 
 #ifdef XCURSES
 #include <xcurses.h>
@@ -77,6 +77,7 @@ static char *slre_replace(const char *regex, const char *buf,
 
 #define CTRL_C 0x03
 #define CTRL_F 0x06
+#define CTRL_G 0x07
 #define CTRL_V 0x16
 #define CTRL_X 0x18
 #define CTRL_U 0x15
@@ -240,14 +241,14 @@ void    DoExit(void);
 void    domenu(menu *mp);
 void    startmenu(menu *mp, char *title);
 
-int     weditstr(WINDOW *win, char *buf, int field);
+int     weditstr(WINDOW *win, char *buf, int field, int lim);
 WINDOW *winputbox(WINDOW *win, int nlines, int ncols);
-int     getstrings(char *desc[], char *buf[], int field, int length);
+int     getstrings(char *desc[], char *buf[], int field, int length, int lim[]);
 */
 
-#define editstr(s,f)           (weditstr(stdscr,s,f))
-#define mveditstr(y,x,s,f)     (move(y,x)==ERR?ERR:editstr(s,f))
-#define mvweditstr(w,y,x,s,f)  (wmove(w,y,x)==ERR?ERR:weditstr(w,s,f))
+#define editstr(s,f,l)           (weditstr(stdscr,s,f,l))
+#define mveditstr(y,x,s,f,l)     (move(y,x)==ERR?ERR:editstr(s,f,l))
+#define mvweditstr(w,y,x,s,f,l)  (wmove(w,y,x)==ERR?ERR:weditstr(w,s,f,l))
 
 #define inputbox(l,c)          (winputbox(stdscr,l,c))
 #define mvinputbox(y,x,l,c)    (move(y,x)==ERR?w:inputbox(l,c))
@@ -294,6 +295,7 @@ void rmerror(void);
 # define CURRREVCOLOR     (11 | A_BOLD)
 # define MARKCOLOR        (12 | A_BOLD)
 # define FSTRCOLOR        (13 | A_BOLD)
+# define EDITBOXTOOCOLOR  (14 | A_BOLD)
 #else
 # define TITLECOLOR       0       /* color pair indices */
 # define MAINMENUCOLOR    (A_BOLD)
@@ -308,6 +310,7 @@ void rmerror(void);
 # define CURRREVCOLOR     (A_BOLD)
 # define MARKCOLOR        (A_BOLD)
 # define FSTRCOLOR        (A_BOLD)
+# define EDITBOXTOOCOLOR  (A_BOLD)
 #endif
 
 
@@ -387,6 +390,7 @@ static void initcolor(void)
     init_pair(CURRREVCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);
     init_pair(MARKCOLOR        & ~A_ATTR, COLOR_GREEN, COLOR_BLUE);
     init_pair(FSTRCOLOR        & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
+    init_pair(EDITBOXTOOCOLOR  & ~A_ATTR, COLOR_WHITE, COLOR_CYAN);
 #endif
 }
 
@@ -1023,7 +1027,7 @@ void startmenu(menu *mp, char *mtitle)
     cleanup();
 }
 
-static void repainteditbox(WINDOW *win, int x, char *buf)
+static void repainteditbox(WINDOW *win, int x, char *buf, int lim)
 {
 #ifndef PDCURSES
     int maxy;
@@ -1037,6 +1041,13 @@ static void repainteditbox(WINDOW *win, int x, char *buf)
 #endif
     werase(win);
     mvwprintw(win, 0, 0, "%s", padstr(buf, maxx));
+    if (lim)
+    {
+        lim--;
+        setcolor(win, EDITBOXTOOCOLOR);
+        mvwprintw(win, 0, lim, "%s", padstr(buf+lim, maxx));
+        setcolor(win, EDITBOXCOLOR);
+    }
     wmove(win, 0, x);
     wrefresh(win); 
 }
@@ -1064,7 +1075,7 @@ static void repainteditbox(WINDOW *win, int x, char *buf)
 
 */
 
-int weditstr(WINDOW *win, char *buf, int field)
+int weditstr(WINDOW *win, char *buf, int field, int lim)
 {
     char org[MAXSTRLEN], *tp, *bp = buf;
     bool defdisp = TRUE, stop = FALSE, insert = FALSE;
@@ -1103,7 +1114,7 @@ int weditstr(WINDOW *win, char *buf, int field)
     while (!stop)
     {
         idle();
-        repainteditbox(wedit, bp - buf, buf);
+        repainteditbox(wedit, bp - buf, buf, lim);
 
         switch (c = wgetch(wedit))
         {
@@ -1425,7 +1436,7 @@ int weditstr(WINDOW *win, char *buf, int field)
     curs_set(0);
 
     wattrset(wedit, oldattr);
-    repainteditbox(wedit, bp - buf, buf);
+    repainteditbox(wedit, bp - buf, buf, 0);
     delwin(wedit);
 
     return c;
@@ -1445,7 +1456,7 @@ WINDOW *winputbox(WINDOW *win, int nlines, int ncols)
     return winp;
 }
 
-int getstrings(char *desc[], char *buf[], int field, int length)
+int getstrings(char *desc[], char *buf[], int field, int length, int lim[])
 {
     WINDOW *winput;
     int oldy, oldx, maxy, maxx, nlines, ncols, i, n, l, mmax = 0;
@@ -1494,7 +1505,8 @@ int getstrings(char *desc[], char *buf[], int field, int length)
 
     while (!stop)
     {
-        switch (c = mvweditstr(winput, i+1, mmax+3, buf[i], length))
+        l = (lim == NULL) ? 0 : lim[i];
+        switch (c = mvweditstr(winput, i+1, mmax+3, buf[i], length, l))
         {
         case KEY_ESC:
             stop = TRUE;
@@ -1536,7 +1548,8 @@ char *getfname(char *desc, char *fname, int length)
     fieldbuf[0] = fname;
     fieldbuf[1] = 0;
 
-    return (getstrings(fieldname, fieldbuf, 0, length) == KEY_ESC) ? NULL : fname;
+    return (getstrings(fieldname, fieldbuf, 0, length, NULL) == KEY_ESC) ? 
+           NULL : fname;
 }
 
 
@@ -1690,8 +1703,21 @@ void displn(int y, int r)
     char *p=NULL;
 
     maxlen = bodywidth()-2;
-    i = 0;
-    strcpy(buf, rows[y]+beg[curcol]);
+    j = strlen(rows[y]);
+    if (beg[curcol] < j)
+    {
+        i = 0; 
+        j = 0; 
+        while (j < curcol)
+        {
+            if (rows[y][i] == csep)
+                j++;
+            i++;
+        }
+        strcpy(buf, rows[y]+i);
+    }
+    else
+        buf[0] = '\0';
     p = strtok(buf, ssep );
     for (i=0; i<=cols; i++)
     {
@@ -1728,16 +1754,20 @@ void displn(int y, int r)
         if (beg[i+1] <= maxlen)
         {
            mvwaddstr(wbody, r, beg[i], s[i]);
-           mvwaddstr(wbody, 0, beg[i], stru[i]);
+           mvwaddstr(wbody, 0, beg[i], stru[i+curcol]);
         }
     }
-    if (beg[field+1] > maxlen)
+    j = beg[field+1];
+    if (j > maxlen || (j==0 && field<cols))
     {
         setcolor(wbody, MARKCOLOR);
         mvwaddstr(wbody, r, maxlen, ">");
     }
     else
-        mvwaddstr(wbody, r, beg[field], "");
+    {
+        setcolor(wbody, BODYCOLOR);
+        mvwaddstr(wbody, r, maxlen, " ");
+    }
     if (y == reccnt)
         wclrtoeol(wbody);
     if (flags[y] == 1)
@@ -1751,7 +1781,8 @@ void displn(int y, int r)
         mvwaddstr(wbody, r, MIN(strlen(head), maxlen)-1, " ");
     }
     setcolor(wbody, BODYCOLOR);
-    wclrtoeol(wbody);
+    wmove(wbody, r, beg[field]);
+/*    wclrtoeol(wbody);*/
     wrefresh(wbody);
 }
 
@@ -2383,6 +2414,7 @@ void modify(int y)
     char *p=NULL;
     char *fieldnam[MAXCOLS+1];
     char *fieldbuf[MAXCOLS+1];
+    int fieldlim[MAXCOLS+1];
     int flen = 0;
     int maxx;
 
@@ -2435,18 +2467,19 @@ void modify(int y)
     {
         fieldnam[i] = stru[i];
         fieldbuf[i] = s[i];
+        fieldlim[i] = len[i];
         l = MAX(len[i], strlen(fieldbuf[i]));
         if (l > flen)
             flen = l;
     }
-    flen += 2;
+    flen++;
     getmaxyx(wbody, k, maxx);
     l = (maxx/2)-2;
     if (flen > l)
         flen = l;
     fieldnam[cols+1] = (char *)0;
     fieldbuf[cols+1] = NULL;
-    if (getstrings(fieldnam, fieldbuf, field, flen) == KEY_ESC)
+    if (getstrings(fieldnam, fieldbuf, field, flen, fieldlim) == KEY_ESC)
         return;
     else
     {
@@ -2504,7 +2537,7 @@ void newrec(int y)
     {
         rows[i] = rows[i-1];
     }
-    rows[y] = (char *)malloc(cols);
+    rows[y] = (char *)malloc(2);
     strcpy(rows[y], "\n");
     modified = TRUE;
     flagmsg();
@@ -2755,7 +2788,7 @@ void getfstr(void)
     if (fstr[0] == '\0')
         fstr[0] = fchr;
     getregexp = TRUE;
-    getstrings(fieldname, fieldbuf, 0, MAXSL+1);
+    getstrings(fieldname, fieldbuf, 0, MAXSL+1, NULL);
     getregexp = FALSE;
     touchwin(wbody);
     wrefresh(wbody);
@@ -2787,7 +2820,7 @@ void change()
     fieldbuf[1] = s2;
     fieldbuf[2] = 0;
 
-    getstrings(fieldname, fieldbuf, 0, MAXSL+1);
+    getstrings(fieldname, fieldbuf, 0, MAXSL+1, NULL);
 
     rlen = strlen(s1)-1;
     if (rlen == -1)
@@ -3006,7 +3039,7 @@ void gorec()
     fieldbuf[1] = 0;
 
     itoa(curr+1, s, 10);
-    getstrings(fieldname, fieldbuf, 0, 7);
+    getstrings(fieldname, fieldbuf, 0, 7, NULL);
     i = atoi(s);
     if ((i > 0) || (i <= reccnt))
         curr = i-1;
@@ -3086,8 +3119,8 @@ void edit(void)
             {
                field++;
                i = bodywidth()-2;
-               if ((beg[field] > i)
-               && (beg[curcol+1] < i))
+               j = beg[field+1];
+               if (j>i)
                   curcol++;
             }
             else
@@ -3352,6 +3385,9 @@ void edit(void)
         case KEY_F(1):
             HELP;
             break;
+        case CTRL_G:
+            gorec();
+            break;
         default:
             if ((c == 0x81) || (c == 0xEB) || (c == 0x1FB))
                c = 0x55; /* U */
@@ -3578,7 +3614,7 @@ void dosum(void)
     }
     fieldnam[cols+1] = (char *)0;
     fieldbuf[cols+1] = s[cols+1];
-    j = getstrings(fieldnam, fieldbuf, 0, flen);
+    j = getstrings(fieldnam, fieldbuf, 0, flen, NULL);
 }
 
 void DoOpen(void)
@@ -3722,9 +3758,9 @@ void subfunc1(void)
         "  Shft-Tab:\tprevious",
         "      Bksp:\tdel fstr back",
         "  Del/Home:\tclear fstr",
+        "    Ctrl-G:\tgoto line",
         "Ctrl/Alt-A:\tmark/filter all",
-        "    Ctrl-C:\tcopy",
-        "    Ctrl-V:\tpaste",
+        "  Ctrl-C/V:\tcopy/paste",
         "C/A-arrows:\treorder fields",
         "Ctrl/Alt-U:\tuppercase",
         "Ctrl/Alt-L:\tlowercase"
