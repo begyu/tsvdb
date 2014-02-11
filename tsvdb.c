@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.7.4 2014/02/05 $
+ * $Id: tcsvdb.c,v 0.7.5 2014/02/11 $
  */
 
-#define VERSION "0.7.4"
+#define VERSION "0.7.5"
 
 #ifdef XCURSES
 #include <xcurses.h>
@@ -149,7 +149,7 @@ static bool headspac = FALSE;
 #define RXFORW 0xFF
 #define RXBACK 0xFE
 #define WSTR (" Wait! ")
-#define DISABLEDHOT ("CcFNS")
+#define DISABLEDHOT ("CcDFNST")
 
 static char csep = TABCSEP;
 static char ssep[] = TABSSEP;
@@ -3617,6 +3617,106 @@ void dosum(void)
     j = getstrings(fieldnam, fieldbuf, 0, flen, NULL);
 }
 
+void limit(bool set)
+{
+    register int i, j, k;
+    int l;
+    bool limited = FALSE;
+    char buf[MAXSTRLEN+1];
+
+    limited = (rows[0][0] == '"');
+    for (i=0; i<reccnt; i++)
+    {
+        if (rows[i] != NULL)
+        {
+            strcpy(buf, rows[i]);
+            l = strlen(buf);
+            if (buf[0] == '"')
+            {
+                for (k=0; k<=l; k++)
+                    buf[k] = buf[k+1];
+            }
+            for (j=1; j<l; j++)
+            {
+                if (buf[j] == '"')
+                {
+                    if ((buf[j-1] == csep)
+                    || (buf[j+1] == csep)
+                    || (buf[j+1] == '\n'))
+                        for (k=j; k<l; k++)
+                            buf[k] = buf[k+1];
+                    else
+                        limited = FALSE;
+                }
+            }
+            if (set)
+            {
+                l = strlen(buf);
+                if (buf[0] != '"')
+                {
+                    l++;
+                    for (k=l; k>0; k--)
+                        buf[k] = buf[k-1];
+                    buf[0] = '"';
+                }
+                for (j=2; j<=l; j++)
+                {
+                    if ((buf[j] == csep)
+                    || (buf[j] == '\n'))
+                    {
+                        l++;
+                        for (k=l; k>=j; k--)
+                            buf[k] = buf[k-1];
+                        buf[j] = '"';
+                        j++;
+                        if (buf[j] != '\n')
+                        {
+                            l++;
+                            j++;
+                            for (k=l; k>=j; k--)
+                                buf[k] = buf[k-1];
+                            buf[j] = '"';
+                        }
+                        else 
+                            buf[j+1] = '\0';
+                    }
+                }
+            }
+            l = strlen(buf);
+            free(rows[i]);
+            rows[i] = (char *)malloc(l+1);
+            strcpy(rows[i], buf);
+        }
+    }
+    if (set)
+        for (j=0; j<cols; j++)
+            len[j] += 2;
+    if (limited)
+        for (j=0; j<cols; j++)
+            len[j] -= 2;
+    modified = TRUE;
+    redraw();
+    flagmsg();
+}
+
+void delimit(void)
+{
+    if (ro || crypted)
+        return;
+    if (yesno("Set fields delimiter? (Y/N):") == 0)
+        return;
+    limit(TRUE);
+}
+
+void unlimit(void)
+{
+    if (ro || crypted)
+        return;
+    if (yesno("Purge all delimiters? (Y/N):") == 0)
+        return;
+    limit(FALSE);
+}
+
 void DoOpen(void)
 {
     char fname[MAXSTRLEN];
@@ -3705,6 +3805,8 @@ menu SubMenu1[] =
     { "View", brows, "Browse file" }, 
     { "Go", gorec, "Go to record" },
     { "Change", change, "Replace string" },
+    { "Delimit", unlimit, "Remove delimiters" },
+    { "Terminate", delimit, "Add delimiters" },
     { "Sort", dosort, "Sort file" },
     { "Field", dosortby, "Sort by other field" },
     { "cRypt", docrypt, "Code/decode" },
@@ -3870,7 +3972,7 @@ void help(void)
     int i;
 
     for (i=0; hlpstrs[i]; i++)
-        fprintf(stderr, "\n\t%s", hlpstrs[i]);
+        printf("\t%s\n", hlpstrs[i]);
 }
 
 void opthelp(void)
@@ -4014,8 +4116,8 @@ int main(int argc, char **argv)
           }
         case 'h':
         case 'H':
-          fprintf(stderr, 
-            "\nUsage: %s [-r|x|y] [-t|b] [-n<row>] [-s<fstr>] [-d<delim>] [datafile]\n",
+          printf("\nUsage: %s [-r|x|y] [-t|b] [-n<row>] [-s<fstr>] "
+            "[-d<delim>] [datafile]\n",
             (char *)basename(progname));
           if (toupper(c) == 'H')
               help();
