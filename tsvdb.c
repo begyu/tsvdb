@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.7.6 2014/02/11 $
+ * $Id: tcsvdb.c,v 0.7.7 2014/02/12 $
  */
 
-#define VERSION "0.7.6"
+#define VERSION "0.7.7"
 
 #ifdef XCURSES
 #include <xcurses.h>
@@ -1322,16 +1322,16 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
                 case '|':
                     tp[i] = 0x92;
                     break;
-                case 'ˇ': /*161*/
+                case 'í': /*161*/
                     tp[i] = 0xFB;
                     break;
-                case '’': /*146*/
+                case 'ĺ': /*146*/
                     tp[i] = 0xEB;
                     break;
                 case 'ű': /*251*/
                     tp[i] = 0xA1;
                     break;
-                case 'ë': /*235*/
+                case 'Ű': /*235*/
                     tp[i] = 0x92;
                     break;
                 case '=':
@@ -1349,7 +1349,7 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
                 case '0':
                     tp[i] = 0x94;
                     break;
-                case '”': /*148*/
+                case 'ö': /*148*/
                     tp[i] = 0x30;
                     break;
                 case ')':
@@ -1558,12 +1558,12 @@ char *getfname(char *desc, char *fname, int length)
 int casestr(char *str, bool upper, bool ascii)
 {
 #define MAXCHS 9
-  char chr_lo[] = " ‚ˇ˘”‹Łű";
-  char chr_hi[] = "µÖŕ™Šéšë";
+  char chr_lo[] = "áéíóöőúüű";
+  char chr_hi[] = "ÁÉÍÓÖŐÚÜŰ";
   char asc_lo[] = "aeiooouuu";
   char asc_hi[] = "AEIOOOUUU";
-/*  char chr_utflo[] = "ĂˇĂ©Ă­ĂłĂ¶Ĺ‘ĂşĂĽĹ±";*/
-/*  char chr_utfhi[] = "ĂĂ‰ĂŤĂ“Ă–ĹĂšĂśĹ°";*/
+/*  char chr_utflo[] = "├í├ę├ş├│├Â┼Ĺ├║├╝┼▒";*/
+/*  char chr_utfhi[] = "├ü├ë├Ź├ô├ľ┼É├Ü├ť┼░";*/
   register int i, j;
   int len=strlen(str);
   unsigned char c;
@@ -3041,7 +3041,7 @@ void gorec()
     itoa(curr+1, s, 10);
     getstrings(fieldname, fieldbuf, 0, 7, NULL);
     i = atoi(s);
-    if ((i > 0) || (i <= reccnt))
+    if ((i != 0) && (i <= reccnt))
         curr = i-1;
 }
 
