@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.7.5 2014/02/11 $
+ * $Id: tcsvdb.c,v 0.7.6 2014/02/11 $
  */
 
-#define VERSION "0.7.5"
+#define VERSION "0.7.6"
 
 #ifdef XCURSES
 #include <xcurses.h>
@@ -3659,7 +3659,7 @@ void limit(bool set)
                         buf[k] = buf[k-1];
                     buf[0] = '"';
                 }
-                for (j=2; j<=l; j++)
+                for (j=2; j<l; j++)
                 {
                     if ((buf[j] == csep)
                     || (buf[j] == '\n'))
@@ -3677,8 +3677,10 @@ void limit(bool set)
                                 buf[k] = buf[k-1];
                             buf[j] = '"';
                         }
-                        else 
+                        else
+                        {
                             buf[j+1] = '\0';
+                        }
                     }
                 }
             }
@@ -3689,10 +3691,10 @@ void limit(bool set)
         }
     }
     if (set)
-        for (j=0; j<cols; j++)
+        for (j=0; j<=cols; j++)
             len[j] += 2;
     if (limited)
-        for (j=0; j<cols; j++)
+        for (j=0; j<=cols; j++)
             len[j] -= 2;
     modified = TRUE;
     redraw();
