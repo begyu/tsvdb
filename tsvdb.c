@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.7.7 2014/02/12 $
+ * $Id: tcsvdb.c,v 0.7.8 2014/02/12 $
  */
 
-#define VERSION "0.7.7"
+#define VERSION "0.7.8"
 
 #ifdef XCURSES
 #include <xcurses.h>
@@ -14,7 +14,7 @@
 
 /*#include <ctype.h>*/
 /*#include <stdio.h>*/
-/*#include <stdlib.h>*/
+#include <stdlib.h>
 /*#include <string.h>*/
 #include <time.h>
 #include <locale.h>
@@ -3041,7 +3041,7 @@ void gorec()
     itoa(curr+1, s, 10);
     getstrings(fieldname, fieldbuf, 0, 7, NULL);
     i = atoi(s);
-    if ((i != 0) && (i <= reccnt))
+    if ((i > 0) && (i <= reccnt))
         curr = i-1;
 }
 
