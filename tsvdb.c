@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.7.8 2014/02/12 $
+ * $Id: tcsvdb.c,v 0.7.9 2014/02/20 $
  */
 
-#define VERSION "0.7.8"
+#define VERSION "0.7.9"
 
 #ifdef XCURSES
 #include <xcurses.h>
@@ -149,13 +149,15 @@ static bool headspac = FALSE;
 #define RXFORW 0xFF
 #define RXBACK 0xFE
 #define WSTR (" Wait! ")
-#define DISABLEDHOT ("CcDFNST")
+#define DISABLEDHOT ("CcDFNSsT")
 
 static char csep = TABCSEP;
 static char ssep[] = TABSSEP;
 
 int casestr(char *, bool, bool);
 int capfstr(char *, bool, bool);
+
+int putmsg(char *, char *, char *);
 
 #if 1
 #include <errno.h>
@@ -806,6 +808,14 @@ int waitforkey(void)
     do idle(); while (!keypressed());
     return getkey();
 }
+
+#ifndef DJGPP
+void pause(unsigned int secs)
+{
+    time_t rettime = time(0) + secs;
+    while (time(0) < rettime);
+}
+#endif
 
 void DoExit(void)   /* terminate program */
 {
@@ -2139,6 +2149,7 @@ int create(char *fn)
              buf[i] = ' ';
        new = FALSE;
     }
+    putmsg("", "To create a new database, enter the field names!", "");
     if (getfname("Head:", buf, 68))
     {
         strcat(buf, "\n");
@@ -2294,7 +2305,7 @@ void brows(void)
 #endif
         case 'Q':
         case 'q':
-        case 0x1b:
+        case KEY_ESC:
             quit = TRUE;
         }
     }
@@ -2400,7 +2411,7 @@ void fltls(void)
 #endif
         case 'Q':
         case 'q':
-        case 0x1b:
+        case KEY_ESC:
             quit = TRUE;
         }
     }
@@ -3494,11 +3505,16 @@ void dosort(void)
     redraw();
 }
 
-int putmsg(char *s)
+int putmsg(char *beg, char *str, char *end)
 {
     WINDOW *wmsg;
     int i;
-    
+    char s[MAXSTRLEN];
+
+    strcpy(s, beg);
+    strcat(s, str);
+    strcat(s, end);
+        
     i = strlen(s);
     wmsg = mvwinputbox(wbody, (bodylen()-5)/2, (bodywidth()-i)/2, 3, i+2);
     mvwaddstr(wmsg, 1,1, s);
@@ -3510,11 +3526,111 @@ int putmsg(char *s)
     return i;
 }
 
+int selectfield(int n)
+{
+    WINDOW *wmsg;
+    register int i, j;
+    int k =0;
+    int sx, sy;
+    bool exit=FALSE;
+    
+    for (i=0; i<=n; i++)
+    {
+        j = len[i];
+        if (j > k)
+            k = j;
+    }
+    sx = (bodywidth()-k)/6;
+    sy = (bodylen()-(n+2))/2;
+    wmsg = mvwinputbox(wbody, sy, sx, n+3, k+2);
+    sy += 2;
+
+    i = field;
+
+    while (!exit)
+    {
+        setcolor(wmsg, SUBMENUCOLOR);
+        for (j=0; j<=n; j++)
+            mvwaddstr(wmsg, j+1, 1, stru[j]);
+        setcolor(wmsg, SUBMENUREVCOLOR);
+        mvwaddstr(wmsg, i+1, 1, stru[i]);
+        wrefresh(wmsg);
+        j = i;
+        switch (waitforkey())
+        {
+        case KEY_HOME:
+        case KEY_PPAGE:
+            i = 0;
+            break;
+        case KEY_UP:
+            i = i>0 ? i-1 : n;
+            break;
+        case KEY_END:
+        case KEY_NPAGE:
+            i = n;
+            break;
+        case KEY_DOWN:
+            i = i<n ? i+1 : 0;
+            break;
+        case 'Q':
+        case 'q':
+        case KEY_ESC:
+            i = -1;
+/*        case KEY_ENTER:*/
+        case '\n':
+            exit = TRUE;
+            break;
+#ifdef PDCURSES
+        case KEY_MOUSE:
+            getmouse();
+                button = 0;
+            request_mouse_pos();
+            if (BUTTON_CHANGED(1))
+                button = 1;
+            else if (BUTTON_CHANGED(2))
+                button = 2;
+            else if (BUTTON_CHANGED(3))
+                button = 3;
+            if ((BUTTON_STATUS(button) &
+                BUTTON_ACTION_MASK) == BUTTON_PRESSED)
+            {
+                if (((MOUSE_Y_POS < sy) || (MOUSE_Y_POS > (sy+n+2)))
+                || ((MOUSE_X_POS < sx) || (MOUSE_X_POS >= (sx+k))))
+                {
+                    i = -1;
+                    exit = TRUE;
+                }
+                else
+                {
+                    if (MOUSE_Y_POS == sy)
+                        i = i>0 ? i-1 : 0;
+                    else if (MOUSE_Y_POS == (sy+n+2))
+                        i = i<n ? i+1 : n;
+                    else
+                    {
+                        i = MOUSE_Y_POS-(sy+1);
+                        if (i == j)
+                            exit = TRUE;
+                    }
+                }
+            }
+            break;
+#endif
+        }
+    }
+
+    delwin(wmsg);
+    touchwin(wbody);
+    wrefresh(wbody);
+    return i;
+}
+
 void dosortby(void)
 {
     register int i, j;
     int k, l;
     int sortidx[MAXCOLS];
+    char s[7] = "";
 
     if (ro)
         return;
@@ -3537,12 +3653,16 @@ void dosortby(void)
     }
     if (l > 0)
     {
-        i = putmsg("Sort by field 2, 3, ... ?");
-        i -= '0';
-        i--;
-        if ((i > 0) && (i <= l))
+        i = selectfield(l);
+        if (i != -1)
         {
-            sortpos = sortidx[i-1];
+            putmsg("Sorted by ", stru[i], " field.");
+#ifndef DJGPP
+            pause(1);
+#else
+            sleep(1);
+#endif
+            sortpos = sortidx[i];
             if (yesno("Reverse order? (Y/N):") == 0)
                 sort(reccnt);
             else
@@ -3559,6 +3679,11 @@ void dosortby(void)
             }
             redraw();
         }
+    }
+    else
+    {
+        itoa(j+1, s, 10);
+        i = putmsg("In line ",s,": can't sorting!");
     }
 }
 
@@ -3719,6 +3844,55 @@ void unlimit(void)
     limit(FALSE);
 }
 
+void dosep(void)
+{
+    register int i, j;
+    char c = csep;
+
+    if (ro || crypted)
+        return;
+    if (yesno("Set fields separator? (Y/N):") == 0)
+        return;
+    
+    switch (c)
+    {
+      case SCLCSEP:
+        csep = TABCSEP;
+        ssep[0] = TABCSEP;
+        break;
+      case TABCSEP:
+        csep = COLCSEP;
+        ssep[0] = COLCSEP;
+        break;
+      case COLCSEP:
+        csep = SCLCSEP;
+        ssep[0] = SCLCSEP;
+        break;
+      default:
+        break;
+    }
+
+    for (j=0; head[j]; j++)
+        if (head[j] == c)
+            head[j] = csep;
+
+    for (i=0; i<reccnt; i++)
+    {
+        if (rows[i] != NULL)
+        {
+            for (j=0; rows[i][j]; j++)
+                if (rows[i][j] == c)
+                    rows[i][j] = csep;
+        }
+    }
+
+    putmsg("Field separator is \"", (csep==TABCSEP) ? "\\t" : ssep, "\"");
+
+    modified = TRUE;
+    redraw();
+    flagmsg();
+}
+
 void DoOpen(void)
 {
     char fname[MAXSTRLEN];
@@ -3809,10 +3983,11 @@ menu SubMenu1[] =
     { "Change", change, "Replace string" },
     { "Delimit", unlimit, "Remove delimiters" },
     { "Terminate", delimit, "Add delimiters" },
+    { "seParate", dosep, "Set field separator" },
     { "Sort", dosort, "Sort file" },
     { "Field", dosortby, "Sort by other field" },
     { "cRypt", docrypt, "Code/decode" },
-    { "sUm", dosum, "Aggregate" },
+    { "tOtal", dosum, "Aggregate" },
     { "eXport", selected, "Restricted set" },
     { "", (FUNC)0, "" }
 };
@@ -3962,7 +4137,7 @@ static char *hlpstrs[] =
     "-n <num>  Go to num'th row",
     "-s <str>  Search str",
     "          or \"-s <(regexp)>\"",
-    "-d <,|;>  Set delimiter to ',' or ';'",
+    "-d <,|;>  Set separator to ',' or ';'",
     "-h        Help",
     "-v        Version",
     "",
@@ -4119,7 +4294,7 @@ int main(int argc, char **argv)
         case 'h':
         case 'H':
           printf("\nUsage: %s [-r|x|y] [-t|b] [-n<row>] [-s<fstr>] "
-            "[-d<delim>] [datafile]\n",
+            "[-d<sep>] [datafile]\n",
             (char *)basename(progname));
           if (toupper(c) == 'H')
               help();
