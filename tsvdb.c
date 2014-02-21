@@ -1,5 +1,5 @@
 /*
- * $Id: tcsvdb.c,v 0.7.9 2014/02/20 $
+ * $Id: tcsvdb.c,v 0.7.9 2014/02/21 $
  */
 
 #define VERSION "0.7.9"
@@ -809,7 +809,7 @@ int waitforkey(void)
     return getkey();
 }
 
-#ifndef DJGPP
+#ifdef __MINGW_VERSION
 void pause(unsigned int secs)
 {
     time_t rettime = time(0) + secs;
@@ -1928,7 +1928,7 @@ int loadfile(char *fname)
         }
         crypted = cry;
         j = strlen(buf);
-        while ((buf[j-1] == '\n') || (buf[j-1] == '\n'))
+        while (buf[j-1] == '\n')
         {
             j--;
             buf[j] = '\0';
@@ -1952,8 +1952,7 @@ int loadfile(char *fname)
                 p = strtok(NULL, ssep );
             }
             cols = i-1;
-            len[cols]--;
-            stru[cols][len[cols]] = '\0';
+            stru[cols][len[cols]-1] = ' ';
         }
         //fsetpos(fp, 0);
         i = 0;
@@ -2953,10 +2952,6 @@ void reorder(int y, bool left)
     char buf[MAXSTRLEN+1];
     char tmpstr[MAXCOLS+1][MAXSTRLEN+1];
     char *p;
-
-    if (ro)
-        return;
-
     j = left ? field-1 : field+1;
 
     for (i=0; i<=cols; i++)
@@ -3004,6 +2999,60 @@ void reorder(int y, bool left)
     strcpy(rows[y], buf);
     modified = TRUE;
     flagmsg();
+}
+
+void reordall(bool left)
+{
+    register int i, j, k;
+    char *p;
+    char buf[MAXSTRLEN+1];
+
+    if (ro)
+        return;
+
+    if (yesno("Reorder all fields? (Y/N):") == 0)
+        return;
+
+    msg(WSTR);
+    for (i=0; i<reccnt; i++)
+        reorder(i, left);
+
+    for (i=0; i<=cols; i++)
+    {
+        j = strlen(stru[i])-1;
+        if (stru[i][j] == ' ')
+            stru[i][j] = '\0';
+    }
+    j = (left) ? -1 : 1;
+    strcpy(buf, stru[field+j]);
+    strcpy(stru[field+j], stru[field]);
+    strcpy(stru[field], buf);
+    strcpy(head, stru[0]);
+    for (j=1; j<=cols; j++)
+    {
+        strcat(head, ssep);
+        strcat(head, stru[j]);
+    }
+    strcpy(buf, head);
+    strcat(head, "\n");
+    i = 0;
+    k = 0;
+    p = strtok(buf, ssep);
+    while(p != NULL )
+    {
+        strcpy(stru[i], p);
+        j = strlen(stru[i]);
+        strcat(stru[i], " ");
+        beg[i] = k;
+        len[i] = j+1;
+        k += j+1;
+        i++;
+        if (i >= MAXCOLS)
+           break;
+        p = strtok(NULL, ssep);
+    }
+    stru[cols][len[cols]-1] = '\0';
+    msg(NULL);
 }
 
 void fieldcase(bool up, bool whole)
@@ -3356,30 +3405,20 @@ void edit(void)
             }
             break;
         case CTL_LEFT:
-            if (field > 0)
+            if ((field > 0) && !ro)
                reorder(curr, TRUE);
             break;
         case CTL_RIGHT:
-            if (field < cols)
+            if ((field < cols) && !ro) 
                reorder(curr, FALSE);
             break;
         case ALT_LEFT:
             if (field > 0)
-            {
-               msg(WSTR);
-               for (i=0; i<reccnt; i++)
-                     reorder(i, TRUE);
-               msg(NULL);
-            }
+               reordall(TRUE);
             break;
         case ALT_RIGHT:
             if (field < cols)
-            {
-               msg(WSTR);
-               for (i=0; i<reccnt; i++)
-                     reorder(i, FALSE);
-               msg(NULL);
-            }
+               reordall(FALSE);
             break;
         case CTRL_U:
             fieldcase(TRUE, TRUE);
@@ -3657,12 +3696,12 @@ void dosortby(void)
         if (i != -1)
         {
             putmsg("Sorted by ", stru[i], " field.");
-#ifndef DJGPP
+#ifdef __MINGW_VERSION
             pause(1);
 #else
             sleep(1);
 #endif
-            sortpos = sortidx[i];
+            sortpos = (i==0) ? 0 : sortidx[i-1];
             if (yesno("Reverse order? (Y/N):") == 0)
                 sort(reccnt);
             else
