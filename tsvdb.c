@@ -2655,9 +2655,6 @@ void purge(int y)
        free(rows[y]);
     for (i=y; i<reccnt; i++)
     {
-if (rows[i+1] == NULL)
-printf("\n%d@@@",i+1);
-else
         rows[i] = rows[i+1];
     }
     rows[reccnt] = "\0";
