@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.7.10 2014/03/06 $
+ * $Id: tcsvdb.c,v 0.7.11 2014/03/07 $
  */
 
-#define VERSION "0.7.10"
+#define VERSION "0.7.11"
 
 #ifdef XCURSES
 #include <xcurses.h>
@@ -2016,11 +2016,23 @@ int loadfile(char *fname)
             j = strlen(buf);
             if (j)
             {
-                rows[i] = (char *)malloc(j+1);
+                p = (char *)malloc(j+1);
+                if (p == NULL)
+                {
+                    sprintf(buf, "ERROR: Memory full!");
+                    errormsg(buf);
+                    ateof = TRUE;
+                    break;
+                }
+                rows[i] = p;
                 strcpy(rows[i], buf);
                 i++;
-                if (i>MAXROWS)
+                if (i >= MAXROWS)
+                {
+                    sprintf(buf, "ERROR: File too big, truncated!");
+                    errormsg(buf);
                     ateof = TRUE;
+                }
             }
             else
                 ateof = TRUE;
@@ -2588,39 +2600,40 @@ void modify(int y)
     strcpy(rows[y], buf);
 }
 
-void newrec(int y)
+void newrec(int y, bool dupl)
 {
     register int i;
+    char *p=NULL;
 
     if (ro)
         return;
+    if (reccnt >= MAXROWS)
+    {
+        msg("Too many rows!");
+        waitforkey();
+        msg(NULL);
+        return;
+    }
+    i = dupl ? strlen(rows[y+1]) : 2;
+    p = (char *)malloc(i);
+    if (p == NULL)
+    {
+        msg("Memory full!");
+        waitforkey();
+        msg(NULL);
+        return;
+    }
     reccnt++;
     rows[reccnt+1] = NULL;
     for (i=reccnt; i>y; i--)
     {
         rows[i] = rows[i-1];
     }
-    rows[y] = (char *)malloc(2);
-    strcpy(rows[y], "\n");
-    modified = TRUE;
-    flagmsg();
-}
-
-void dupl(int y)
-{
-    register int i;
-
-    if (ro)
-        return;
-    reccnt++;
-    rows[reccnt+1] = NULL;
-    for (i=reccnt; i>y; i--)
-    {
-        rows[i] = rows[i-1];
-    }
-    i = strlen(rows[y+1]);
-    rows[y] = (char *)malloc(i+1);
-    strcpy(rows[y], rows[y+1]);
+    rows[y] = p;
+    if (dupl)
+        strcpy(rows[y], rows[y+1]);
+    else
+        strcpy(rows[y], "\n");
     modified = TRUE;
     flagmsg();
 }
@@ -2642,9 +2655,12 @@ void purge(int y)
        free(rows[y]);
     for (i=y; i<reccnt; i++)
     {
+if (rows[i+1] == NULL)
+printf("\n%d@@@",i+1);
+else
         rows[i] = rows[i+1];
     }
-    rows[reccnt] = NULL;
+    rows[reccnt] = "\0";
     reccnt--;
     modified = TRUE;
     flagmsg();
@@ -3195,6 +3211,12 @@ void edit(void)
         {
             if (i < reccnt)
                displn(i, j+1);
+            else
+            {
+               wmove(wbody, j+1, 0);
+               wclrtoeol(wbody);
+               wrefresh(wbody);
+            }
             j++;
         }
         statusln();
@@ -3292,11 +3314,11 @@ void edit(void)
             }
             break;
         case CTL_INS:
-            newrec(curr);
+            newrec(curr, FALSE);
             b = reccnt-bodylen();
             break;
         case ALT_INS:
-            dupl(curr);
+            newrec(curr, TRUE);
             b = reccnt-bodylen();
             break;
         case CTL_DEL:
@@ -3999,7 +4021,8 @@ void limit(bool set)
                 }
             }
             l = strlen(buf);
-            free(rows[i]);
+            if (rows[i] != NULL)
+                free(rows[i]);
             rows[i] = (char *)malloc(l+1);
             strcpy(rows[i], buf);
         }
