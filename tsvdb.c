@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.7.11 2014/03/07 $
+ * $Id: tcsvdb.c,v 0.7.12 2014/03/10 $
  */
 
-#define VERSION "0.7.11"
+#define VERSION "0.7.12"
 
 #ifdef XCURSES
 #include <xcurses.h>
@@ -153,6 +153,8 @@ static bool headspac = FALSE;
 
 static char csep = TABCSEP;
 static char ssep[] = TABSSEP;
+
+void msg(char *);
 
 int casestr(char *, bool, bool);
 int capfstr(char *, bool, bool);
@@ -1714,7 +1716,9 @@ int qsort_stringlist(const void *e1, const void *e2)
 
 void sort(int n)
 {
+    msg(WSTR);
     qsort(rows, n, sizeof(char *), qsort_stringlist);
+    msg(NULL);
 }
 
 int qs_stringlist_rev(const void *e1, const void *e2)
@@ -1727,7 +1731,9 @@ int qs_stringlist_rev(const void *e1, const void *e2)
 
 void sort_back(int n)
 {
+    msg(WSTR);
     qsort(rows, n, sizeof(char *), qs_stringlist_rev);
+    msg(NULL);
 }
 
 void flagmsg(void)
@@ -2158,6 +2164,7 @@ int savefile(char *fname, int force)
             fputs(head, fp);
         for (i=0; i<reccnt; i++)
             fputs(rows[i], fp);
+        fflush(fp);
         fclose(fp);
         msg(NULL);
     }
@@ -3012,6 +3019,115 @@ void paste(int y)
     flagmsg();
 }    
 
+
+void redraw()
+{
+    register int i, j;
+
+    clsbody();
+    wrefresh(wbody);
+    j = 0;
+    for (i=0; i<bodylen(); i++)
+    {
+        if (i < reccnt)
+           displn(i, j+1);
+        j++;
+    }
+}
+
+void selected(void)
+{
+    register int i, j;
+    FILE *fp;
+    char *p;
+    char tmpfname[MAXSTRLEN];
+    char buf[MAXSTRLEN+1];
+
+    if (filtered == FALSE)
+    {
+        msg("Not filtered!");
+        waitforkey();
+        msg(NULL);
+        return;
+    }
+
+    strcpy(tmpfname, basename(datfname));
+    p = strchr(tmpfname, '.');
+    if (p != NULL)
+    {
+        p[0] = '\0';
+    }
+    strcat(tmpfname, ".$$$");
+    if ((fp = fopen(tmpfname, "w")) != NULL)
+    {
+        msg(WSTR);
+        fputs(head, fp);
+        for (i=0, j=0; i<reccnt; i++)
+        {
+            if (flags[i])
+            {
+                fputs(rows[i], fp);
+                j++;
+            }
+        }
+        fclose(fp);
+        msg(NULL);
+        if (j == 0)
+            return;
+/*        execlp("tsvdb", tmpfname, 0);*/
+        strcpy(buf, progname);
+        strcat(buf, " ");
+        strcat(buf, tmpfname);
+        system(buf);
+        colorbox(wtitl, TITLECOLOR, 0);
+        titlemsg(datfname);
+        redraw();
+        flagmsg();
+    }
+    else
+    {
+        sprintf(buf, "ERROR: Can't create file '%s'", tmpfname);
+        errormsg(buf);
+    }
+    return;
+}
+
+void dosort(void)
+{
+    if (ro)
+        return;
+    if (yesno("Sort database? (Y/N):") == 0)
+        return;
+    if (yesno("Reverse order? (Y/N):") == 0)
+        sort(reccnt);
+    else
+        sort_back(reccnt);
+    modified = TRUE;
+    redraw();
+}
+
+int putmsg(char *beg, char *str, char *end)
+{
+    WINDOW *wmsg;
+    int i;
+    char s[MAXSTRLEN];
+
+    strcpy(s, beg);
+    strcat(s, str);
+    strcat(s, end);
+        
+    i = strlen(s);
+    wmsg = mvwinputbox(wbody, (bodylen()-5)/2, (bodywidth()-i)/2, 3, i+2);
+    mvwaddstr(wmsg, 1,1, s);
+    wrefresh(wmsg);
+    i = toupper(waitforkey());
+    delwin(wmsg);
+    touchwin(wbody);
+    wrefresh(wbody);
+    return i;
+}
+
+
 void reorder(int y, bool left)
 {
     register int i, j, k;
@@ -3169,6 +3285,501 @@ void gorec()
     i = atoi(s);
     if ((i > 0) && (i <= reccnt))
         curr = i-1;
+}
+int selectfield(int n)
+{
+    WINDOW *wmsg;
+    register int i, j;
+    int k =0;
+    int sx, sy;
+    bool exit=FALSE;
+    
+    for (i=0; i<=n; i++)
+    {
+        j = len[i];
+        if (j > k)
+            k = j;
+    }
+    sx = (bodywidth()-k)/6;
+    sy = (bodylen()-(n+2))/2;
+    wmsg = mvwinputbox(wbody, sy, sx, n+3, k+2);
+    sy += 2;
+
+    i = field;
+
+    while (!exit)
+    {
+        setcolor(wmsg, SUBMENUCOLOR);
+        for (j=0; j<=n; j++)
+            mvwaddstr(wmsg, j+1, 1, stru[j]);
+        setcolor(wmsg, SUBMENUREVCOLOR);
+        mvwaddstr(wmsg, i+1, 1, stru[i]);
+        wrefresh(wmsg);
+        j = i;
+        switch (waitforkey())
+        {
+        case KEY_HOME:
+        case KEY_PPAGE:
+            i = 0;
+            break;
+        case KEY_UP:
+            i = i>0 ? i-1 : n;
+            break;
+        case KEY_END:
+        case KEY_NPAGE:
+            i = n;
+            break;
+        case KEY_DOWN:
+            i = i<n ? i+1 : 0;
+            break;
+        case 'Q':
+        case 'q':
+        case KEY_ESC:
+            i = -1;
+/*        case KEY_ENTER:*/
+        case '\n':
+            exit = TRUE;
+            break;
+#ifdef PDCURSES
+        case KEY_MOUSE:
+            getmouse();
+                button = 0;
+            request_mouse_pos();
+            if (BUTTON_CHANGED(1))
+                button = 1;
+            else if (BUTTON_CHANGED(2))
+                button = 2;
+            else if (BUTTON_CHANGED(3))
+                button = 3;
+            if ((BUTTON_STATUS(button) &
+                BUTTON_ACTION_MASK) == BUTTON_PRESSED)
+            {
+                if (((MOUSE_Y_POS < sy) || (MOUSE_Y_POS > (sy+n+2)))
+                || ((MOUSE_X_POS < sx) || (MOUSE_X_POS >= (sx+k))))
+                {
+                    i = -1;
+                    exit = TRUE;
+                }
+                else
+                {
+                    if (MOUSE_Y_POS == sy)
+                        i = i>0 ? i-1 : 0;
+                    else if (MOUSE_Y_POS == (sy+n+2))
+                        i = i<n ? i+1 : n;
+                    else
+                    {
+                        i = MOUSE_Y_POS-(sy+1);
+                        if (i == j)
+                            exit = TRUE;
+                    }
+                }
+            }
+            break;
+#endif
+        }
+    }
+
+    delwin(wmsg);
+    touchwin(wbody);
+    wrefresh(wbody);
+    return i;
+}
+
+void dosortby(void)
+{
+    register int i, j;
+    int k, l;
+    int sortidx[MAXCOLS];
+    char s[7] = "";
+
+    if (ro)
+        return;
+
+    k = -1;
+    l = 0;
+    for (i=0; i<cols; i++)
+    {
+        k += len[i];
+        for (j=1; j<reccnt; j++)
+        {
+            if (rows[j][k] != csep)
+                break;
+        }
+        if (j == reccnt)
+        {
+            sortidx[i] = k;
+            l++;
+        }
+    }
+    if (l > 0)
+    {
+        i = selectfield(l);
+        if (i != -1)
+        {
+            putmsg("Sorted by ", stru[i], " field.");
+#ifdef __MINGW_VERSION
+            pause(1);
+#else
+            sleep(1);
+#endif
+            sortpos = (i==0) ? 0 : sortidx[i-1];
+            if (yesno("Reverse order? (Y/N):") == 0)
+                sort(reccnt);
+            else
+                sort_back(reccnt);
+            sortpos = 0;
+            modified = TRUE;
+            flagmsg();
+            j = 0;
+            for (i=0; i<bodylen(); i++)
+            {
+                if (i < reccnt)
+                   displn(i, j+1);
+                j++;
+            }
+            redraw();
+        }
+    }
+    else
+    {
+        itoa(j+1, s, 10);
+        i = putmsg("In line ",s,": can't sorting!");
+    }
+}
+
+void align(int n, int y, int m)
+{
+    register int i, j;
+    int k, l;
+    int beg, dis;
+    int from, to;
+    char buf[MAXSTRLEN+1];
+
+    if (y == 0)
+    {
+        from = 0;
+        to = reccnt;
+    }
+    else
+    {
+        from = y;
+        to = y+1;
+    }
+
+    for (i=from; i<to; i++)
+    {
+        strcpy(buf, rows[i]);
+        l = strlen(buf);
+        k = 0;
+        for (j=0; j<n; j++)
+        {
+            while (k < l)
+            {
+                if (buf[k] == csep)
+                    break;
+                k++;
+            }
+            k++;
+        }
+        beg = k;
+        if (buf[beg] == '"')
+            beg++;
+        dis = 0;
+        while (k < l)
+        {
+            dis++;
+            if (buf[k] == csep)
+                break;
+            k++;
+        }
+        dis = len[n]-dis;
+        switch (m)
+        {
+        case 1:
+            dis = 0;
+            while (buf[beg+dis] == ' ')
+                dis++;
+            if (dis == 0)
+                continue;
+            for (j=beg; j<=(l-dis); j++)
+            {
+                buf[j] = buf[j+dis];
+            }
+            break;
+        case 3:
+            if (dis <= 0)
+                continue;
+            for (j=l+dis; j>=beg; j--)
+            {
+                if (j >= (beg+dis))
+                    buf[j] = buf[j-dis];
+                else
+                    buf[j] = ' ';
+            }
+            break;
+        case 2:
+            if (dis <= 0)
+                continue;
+            dis = (int)(dis/2);
+            for (j=l+dis; j>=beg; j--)
+            {
+                if (j >= (beg+dis))
+                    buf[j] = buf[j-dis];
+                else
+                    buf[j] = ' ';
+            }
+            break;
+        }
+        j = strlen(buf);
+        if (rows[i] != NULL)
+           free(rows[i]);
+        rows[i] = (char *)malloc(j+1);
+        strcpy(rows[i], buf);
+    }
+}
+
+void doindent(void)
+{
+    int i, j;
+
+    if (ro)
+        return;
+
+    i = selectfield(cols);
+    if (i != -1)
+    {
+#ifdef __MINGW_VERSION
+        pause(1);
+#else
+        sleep(1);
+#endif
+        do {
+            j = putmsg("", "Align left, center or right? (1/2/3):", "");
+            j -= '0';
+        } while (j<1 || j>3);
+        if (j == 2)
+            align(i, 0, 1);
+        align(i, 0, j);
+        putmsg("Adjusted ", stru[i],
+               (j==1) ? "left" : (j==3) ? "right" : "center");
+        modified = TRUE;
+        flagmsg();
+        j = 0;
+        for (i=0; i<bodylen(); i++)
+        {
+            if (i < reccnt)
+               displn(i, j+1);
+            j++;
+        }
+        redraw();
+    }
+}
+
+void docrypt(void)
+{
+    if (locked || (ro && !crypted))
+        return;
+    if (yesno("Encrypt database? (Y/N):") == 0)
+        return;
+    crypt(reccnt);
+    modified = TRUE;
+    flagmsg();
+}
+
+void dosum(void)
+{
+    register int i, j;
+    double n;
+    double x[MAXCOLS];
+    char s[MAXCOLS][MAXSTRLEN+1];
+    char buf[MAXSTRLEN+1];
+    char *p=NULL;
+    char *bp;
+    char *fieldnam[MAXCOLS+1];
+    char *fieldbuf[MAXCOLS+1];
+    int flen = 40;
+
+    for (j=0; j<MAXCOLS; j++)
+        x[j] = 0.0;
+    for (i=0; i<reccnt; i++)
+    {
+        strcpy(buf, rows[i]);
+        p = strtok(buf, ssep );
+        for (j=0; j<=cols; j++)
+        {
+            if (p != NULL)
+            {
+                strcpy(s[j], p);
+                s[j][len[j]] = '\0';
+                p = strtok( 0, ssep );
+            }
+            else
+                strcpy(s[j], " ");
+            n = strtod(s[j], &bp);
+            x[j] += n;
+        }
+    }
+    for (i = 0; i <= cols; i++)
+    {
+        sprintf(s[i], "%f", x[i]);
+        fieldnam[i] = stru[i];
+        fieldbuf[i] = s[i];
+    }
+    fieldnam[cols+1] = (char *)0;
+    fieldbuf[cols+1] = s[cols+1];
+    j = getstrings(fieldnam, fieldbuf, 0, flen, NULL);
+}
+
+void limit(bool set)
+{
+    register int i, j, k;
+    int l;
+    bool limited = FALSE;
+    char buf[MAXSTRLEN+1];
+
+    limited = (rows[0][0] == '"');
+    for (i=0; i<reccnt; i++)
+    {
+        if (rows[i] != NULL)
+        {
+            strcpy(buf, rows[i]);
+            l = strlen(buf);
+            if (buf[0] == '"')
+            {
+                for (k=0; k<=l; k++)
+                    buf[k] = buf[k+1];
+            }
+            for (j=1; j<l; j++)
+            {
+                if (buf[j] == '"')
+                {
+                    if ((buf[j-1] == csep)
+                    || (buf[j+1] == csep)
+                    || (buf[j+1] == '\n'))
+                        for (k=j; k<l; k++)
+                            buf[k] = buf[k+1];
+                    else
+                        limited = FALSE;
+                }
+            }
+            if (set)
+            {
+                l = strlen(buf);
+                if (buf[0] != '"')
+                {
+                    l++;
+                    for (k=l; k>0; k--)
+                        buf[k] = buf[k-1];
+                    buf[0] = '"';
+                }
+                for (j=2; j<l; j++)
+                {
+                    if ((buf[j] == csep)
+                    || (buf[j] == '\n'))
+                    {
+                        l++;
+                        for (k=l; k>=j; k--)
+                            buf[k] = buf[k-1];
+                        buf[j] = '"';
+                        j++;
+                        if (buf[j] != '\n')
+                        {
+                            l++;
+                            j++;
+                            for (k=l; k>=j; k--)
+                                buf[k] = buf[k-1];
+                            buf[j] = '"';
+                        }
+                        else
+                        {
+                            buf[j+1] = '\0';
+                        }
+                    }
+                }
+            }
+            l = strlen(buf);
+            if (rows[i] != NULL)
+                free(rows[i]);
+            rows[i] = (char *)malloc(l+1);
+            strcpy(rows[i], buf);
+        }
+    }
+    if (set)
+        for (j=0; j<=cols; j++)
+            len[j] += 2;
+    if (limited)
+        for (j=0; j<=cols; j++)
+            len[j] -= 2;
+    modified = TRUE;
+    redraw();
+    flagmsg();
+}
+
+void delimit(void)
+{
+    if (ro || crypted)
+        return;
+    if (yesno("Set fields delimiter? (Y/N):") == 0)
+        return;
+    limit(TRUE);
+}
+
+void unlimit(void)
+{
+    if (ro || crypted)
+        return;
+    if (yesno("Purge all delimiters? (Y/N):") == 0)
+        return;
+    limit(FALSE);
+}
+
+void dosep(void)
+{
+    register int i, j;
+    char c = csep;
+
+    if (ro || crypted)
+        return;
+    if (yesno("Set fields separator? (Y/N):") == 0)
+        return;
+    
+    switch (c)
+    {
+      case SCLCSEP:
+        csep = TABCSEP;
+        ssep[0] = TABCSEP;
+        break;
+      case TABCSEP:
+        csep = COLCSEP;
+        ssep[0] = COLCSEP;
+        break;
+      case COLCSEP:
+        csep = SCLCSEP;
+        ssep[0] = SCLCSEP;
+        break;
+      default:
+        break;
+    }
+
+    for (j=0; head[j]; j++)
+        if (head[j] == c)
+            head[j] = csep;
+
+    for (i=0; i<reccnt; i++)
+    {
+        if (rows[i] != NULL)
+        {
+            for (j=0; rows[i][j]; j++)
+                if (rows[i][j] == c)
+                    rows[i][j] = csep;
+        }
+    }
+
+    putmsg("Field separator is \"", (csep==TABCSEP) ? "\\t" : ssep, "\"");
+
+    modified = TRUE;
+    redraw();
+    flagmsg();
 }
 
 
@@ -3510,6 +4121,16 @@ void edit(void)
         case CTRL_G:
             gorec();
             break;
+        case KEY_SLEFT:
+            align(field, curr, 1);
+            break;
+        case KEY_SRIGHT:
+            align(field, curr, 3);
+            break;
+        case CTL_DOWN:
+            align(field, curr, 1);
+            align(field, curr, 2);
+            break;
         default:
             if ((c == 0x81) || (c == 0xEB) || (c == 0x1FB))
                c = 0x55; /* U */
@@ -3529,579 +4150,6 @@ void edit(void)
     wrefresh(wbody);
     werase(wstat);
 }
-
-void redraw()
-{
-    register int i, j;
-
-    clsbody();
-    wrefresh(wbody);
-    j = 0;
-    for (i=0; i<bodylen(); i++)
-    {
-        if (i < reccnt)
-           displn(i, j+1);
-        j++;
-    }
-}
-
-void selected(void)
-{
-    register int i, j;
-    FILE *fp;
-    char *p;
-    char tmpfname[MAXSTRLEN];
-    char buf[MAXSTRLEN+1];
-
-    if (filtered == FALSE)
-    {
-        msg("Not filtered!");
-        waitforkey();
-        msg(NULL);
-        return;
-    }
-
-    strcpy(tmpfname, basename(datfname));
-    p = strchr(tmpfname, '.');
-    if (p != NULL)
-    {
-        p[0] = '\0';
-    }
-    strcat(tmpfname, ".$$$");
-    if ((fp = fopen(tmpfname, "w")) != NULL)
-    {
-        msg(WSTR);
-        fputs(head, fp);
-        for (i=0, j=0; i<reccnt; i++)
-        {
-            if (flags[i])
-            {
-                fputs(rows[i], fp);
-                j++;
-            }
-        }
-        fclose(fp);
-        msg(NULL);
-        if (j == 0)
-            return;
-/*        execlp("tsvdb", tmpfname, 0);*/
-        strcpy(buf, progname);
-        strcat(buf, " ");
-        strcat(buf, tmpfname);
-        system(buf);
-        colorbox(wtitl, TITLECOLOR, 0);
-        titlemsg(datfname);
-        redraw();
-        flagmsg();
-    }
-    else
-    {
-        sprintf(buf, "ERROR: Can't create file '%s'", tmpfname);
-        errormsg(buf);
-    }
-    return;
-}
-
-void dosort(void)
-{
-    if (ro)
-        return;
-    if (yesno("Sort database? (Y/N):") == 0)
-        return;
-    if (yesno("Reverse order? (Y/N):") == 0)
-        sort(reccnt);
-    else
-        sort_back(reccnt);
-    modified = TRUE;
-    redraw();
-}
-
-int putmsg(char *beg, char *str, char *end)
-{
-    WINDOW *wmsg;
-    int i;
-    char s[MAXSTRLEN];
-
-    strcpy(s, beg);
-    strcat(s, str);
-    strcat(s, end);
-        
-    i = strlen(s);
-    wmsg = mvwinputbox(wbody, (bodylen()-5)/2, (bodywidth()-i)/2, 3, i+2);
-    mvwaddstr(wmsg, 1,1, s);
-    wrefresh(wmsg);
-    i = toupper(waitforkey());
-    delwin(wmsg);
-    touchwin(wbody);
-    wrefresh(wbody);
-    return i;
-}
-
-int selectfield(int n)
-{
-    WINDOW *wmsg;
-    register int i, j;
-    int k =0;
-    int sx, sy;
-    bool exit=FALSE;
-    
-    for (i=0; i<=n; i++)
-    {
-        j = len[i];
-        if (j > k)
-            k = j;
-    }
-    sx = (bodywidth()-k)/6;
-    sy = (bodylen()-(n+2))/2;
-    wmsg = mvwinputbox(wbody, sy, sx, n+3, k+2);
-    sy += 2;
-
-    i = field;
-
-    while (!exit)
-    {
-        setcolor(wmsg, SUBMENUCOLOR);
-        for (j=0; j<=n; j++)
-            mvwaddstr(wmsg, j+1, 1, stru[j]);
-        setcolor(wmsg, SUBMENUREVCOLOR);
-        mvwaddstr(wmsg, i+1, 1, stru[i]);
-        wrefresh(wmsg);
-        j = i;
-        switch (waitforkey())
-        {
-        case KEY_HOME:
-        case KEY_PPAGE:
-            i = 0;
-            break;
-        case KEY_UP:
-            i = i>0 ? i-1 : n;
-            break;
-        case KEY_END:
-        case KEY_NPAGE:
-            i = n;
-            break;
-        case KEY_DOWN:
-            i = i<n ? i+1 : 0;
-            break;
-        case 'Q':
-        case 'q':
-        case KEY_ESC:
-            i = -1;
-/*        case KEY_ENTER:*/
-        case '\n':
-            exit = TRUE;
-            break;
-#ifdef PDCURSES
-        case KEY_MOUSE:
-            getmouse();
-                button = 0;
-            request_mouse_pos();
-            if (BUTTON_CHANGED(1))
-                button = 1;
-            else if (BUTTON_CHANGED(2))
-                button = 2;
-            else if (BUTTON_CHANGED(3))
-                button = 3;
-            if ((BUTTON_STATUS(button) &
-                BUTTON_ACTION_MASK) == BUTTON_PRESSED)
-            {
-                if (((MOUSE_Y_POS < sy) || (MOUSE_Y_POS > (sy+n+2)))
-                || ((MOUSE_X_POS < sx) || (MOUSE_X_POS >= (sx+k))))
-                {
-                    i = -1;
-                    exit = TRUE;
-                }
-                else
-                {
-                    if (MOUSE_Y_POS == sy)
-                        i = i>0 ? i-1 : 0;
-                    else if (MOUSE_Y_POS == (sy+n+2))
-                        i = i<n ? i+1 : n;
-                    else
-                    {
-                        i = MOUSE_Y_POS-(sy+1);
-                        if (i == j)
-                            exit = TRUE;
-                    }
-                }
-            }
-            break;
-#endif
-        }
-    }
-
-    delwin(wmsg);
-    touchwin(wbody);
-    wrefresh(wbody);
-    return i;
-}
-
-void dosortby(void)
-{
-    register int i, j;
-    int k, l;
-    int sortidx[MAXCOLS];
-    char s[7] = "";
-
-    if (ro)
-        return;
-
-    k = -1;
-    l = 0;
-    for (i=0; i<cols; i++)
-    {
-        k += len[i];
-        for (j=1; j<reccnt; j++)
-        {
-            if (rows[j][k] != csep)
-                break;
-        }
-        if (j == reccnt)
-        {
-            sortidx[i] = k;
-            l++;
-        }
-    }
-    if (l > 0)
-    {
-        i = selectfield(l);
-        if (i != -1)
-        {
-            putmsg("Sorted by ", stru[i], " field.");
-#ifdef __MINGW_VERSION
-            pause(1);
-#else
-            sleep(1);
-#endif
-            sortpos = (i==0) ? 0 : sortidx[i-1];
-            if (yesno("Reverse order? (Y/N):") == 0)
-                sort(reccnt);
-            else
-                sort_back(reccnt);
-            sortpos = 0;
-            modified = TRUE;
-            flagmsg();
-            j = 0;
-            for (i=0; i<bodylen(); i++)
-            {
-                if (i < reccnt)
-                   displn(i, j+1);
-                j++;
-            }
-            redraw();
-        }
-    }
-    else
-    {
-        itoa(j+1, s, 10);
-        i = putmsg("In line ",s,": can't sorting!");
-    }
-}
-
-void align(int n, bool left)
-{
-    register int i, j;
-    int k, l;
-    int beg, dis;
-    char buf[MAXSTRLEN+1];
-
-    for (i=0; i<reccnt; i++)
-    {
-        strcpy(buf, rows[i]);
-        l = strlen(buf);
-        k = 0;
-        for (j=0; j<n; j++)
-        {
-            while (k < l)
-            {
-                if (buf[k] == csep)
-                    break;
-                k++;
-            }
-            k++;
-        }
-        beg = k;
-        if (buf[beg] == '"')
-            beg++;
-        dis = 0;
-        while (k < l)
-        {
-            dis++;
-            if (buf[k] == csep)
-                break;
-            k++;
-        }
-        dis = len[n]-dis;
-        if (!left)
-        {
-            if (dis <= 0)
-                continue;
-            for (j=l+dis; j>=beg; j--)
-            {
-                if (j >= (beg+dis))
-                    buf[j] = buf[j-dis];
-                else
-                    buf[j] = ' ';
-            }
-        }
-        else
-        {
-            dis = 0;
-            while (buf[beg+dis] == ' ')
-                dis++;
-            if (dis == 0)
-                continue;
-            for (j=beg; j<=(l-dis); j++)
-            {
-                buf[j] = buf[j+dis];
-            }
-        }
-        j = strlen(buf);
-        if (rows[i] != NULL)
-           free(rows[i]);
-        rows[i] = (char *)malloc(j+1);
-        strcpy(rows[i], buf);
-    }
-}
-
-void doindent(void)
-{
-    int i, j;
-
-    if (ro)
-        return;
-
-    i = selectfield(cols);
-    if (i != -1)
-    {
-#ifdef __MINGW_VERSION
-        pause(1);
-#else
-        sleep(1);
-#endif
-        j = yesno("Align right? (Y/N):");
-        align(i, (j==0));
-        putmsg("Adjusted ", stru[i], (j==0) ? "left" : "right");
-        modified = TRUE;
-        flagmsg();
-        j = 0;
-        for (i=0; i<bodylen(); i++)
-        {
-            if (i < reccnt)
-               displn(i, j+1);
-            j++;
-        }
-        redraw();
-    }
-}
-
-void docrypt(void)
-{
-    if (locked || (ro && !crypted))
-        return;
-    if (yesno("Encrypt database? (Y/N):") == 0)
-        return;
-    crypt(reccnt);
-    modified = TRUE;
-    flagmsg();
-}
-
-void dosum(void)
-{
-    register int i, j;
-    double n;
-    double x[MAXCOLS];
-    char s[MAXCOLS][MAXSTRLEN+1];
-    char buf[MAXSTRLEN+1];
-    char *p=NULL;
-    char *bp;
-    char *fieldnam[MAXCOLS+1];
-    char *fieldbuf[MAXCOLS+1];
-    int flen = 40;
-
-    for (j=0; j<MAXCOLS; j++)
-        x[j] = 0.0;
-    for (i=0; i<reccnt; i++)
-    {
-        strcpy(buf, rows[i]);
-        p = strtok(buf, ssep );
-        for (j=0; j<=cols; j++)
-        {
-            if (p != NULL)
-            {
-                strcpy(s[j], p);
-                s[j][len[j]] = '\0';
-                p = strtok( 0, ssep );
-            }
-            else
-                strcpy(s[j], " ");
-            n = strtod(s[j], &bp);
-            x[j] += n;
-        }
-    }
-    for (i = 0; i <= cols; i++)
-    {
-        sprintf(s[i], "%f", x[i]);
-        fieldnam[i] = stru[i];
-        fieldbuf[i] = s[i];
-    }
-    fieldnam[cols+1] = (char *)0;
-    fieldbuf[cols+1] = s[cols+1];
-    j = getstrings(fieldnam, fieldbuf, 0, flen, NULL);
-}
-
-void limit(bool set)
-{
-    register int i, j, k;
-    int l;
-    bool limited = FALSE;
-    char buf[MAXSTRLEN+1];
-
-    limited = (rows[0][0] == '"');
-    for (i=0; i<reccnt; i++)
-    {
-        if (rows[i] != NULL)
-        {
-            strcpy(buf, rows[i]);
-            l = strlen(buf);
-            if (buf[0] == '"')
-            {
-                for (k=0; k<=l; k++)
-                    buf[k] = buf[k+1];
-            }
-            for (j=1; j<l; j++)
-            {
-                if (buf[j] == '"')
-                {
-                    if ((buf[j-1] == csep)
-                    || (buf[j+1] == csep)
-                    || (buf[j+1] == '\n'))
-                        for (k=j; k<l; k++)
-                            buf[k] = buf[k+1];
-                    else
-                        limited = FALSE;
-                }
-            }
-            if (set)
-            {
-                l = strlen(buf);
-                if (buf[0] != '"')
-                {
-                    l++;
-                    for (k=l; k>0; k--)
-                        buf[k] = buf[k-1];
-                    buf[0] = '"';
-                }
-                for (j=2; j<l; j++)
-                {
-                    if ((buf[j] == csep)
-                    || (buf[j] == '\n'))
-                    {
-                        l++;
-                        for (k=l; k>=j; k--)
-                            buf[k] = buf[k-1];
-                        buf[j] = '"';
-                        j++;
-                        if (buf[j] != '\n')
-                        {
-                            l++;
-                            j++;
-                            for (k=l; k>=j; k--)
-                                buf[k] = buf[k-1];
-                            buf[j] = '"';
-                        }
-                        else
-                        {
-                            buf[j+1] = '\0';
-                        }
-                    }
-                }
-            }
-            l = strlen(buf);
-            if (rows[i] != NULL)
-                free(rows[i]);
-            rows[i] = (char *)malloc(l+1);
-            strcpy(rows[i], buf);
-        }
-    }
-    if (set)
-        for (j=0; j<=cols; j++)
-            len[j] += 2;
-    if (limited)
-        for (j=0; j<=cols; j++)
-            len[j] -= 2;
-    modified = TRUE;
-    redraw();
-    flagmsg();
-}
-
-void delimit(void)
-{
-    if (ro || crypted)
-        return;
-    if (yesno("Set fields delimiter? (Y/N):") == 0)
-        return;
-    limit(TRUE);
-}
-
-void unlimit(void)
-{
-    if (ro || crypted)
-        return;
-    if (yesno("Purge all delimiters? (Y/N):") == 0)
-        return;
-    limit(FALSE);
-}
-
-void dosep(void)
-{
-    register int i, j;
-    char c = csep;
-
-    if (ro || crypted)
-        return;
-    if (yesno("Set fields separator? (Y/N):") == 0)
-        return;
-    
-    switch (c)
-    {
-      case SCLCSEP:
-        csep = TABCSEP;
-        ssep[0] = TABCSEP;
-        break;
-      case TABCSEP:
-        csep = COLCSEP;
-        ssep[0] = COLCSEP;
-        break;
-      case COLCSEP:
-        csep = SCLCSEP;
-        ssep[0] = SCLCSEP;
-        break;
-      default:
-        break;
-    }
-
-    for (j=0; head[j]; j++)
-        if (head[j] == c)
-            head[j] = csep;
-
-    for (i=0; i<reccnt; i++)
-    {
-        if (rows[i] != NULL)
-        {
-            for (j=0; rows[i][j]; j++)
-                if (rows[i][j] == c)
-                    rows[i][j] = csep;
-        }
-    }
-
-    putmsg("Field separator is \"", (csep==TABCSEP) ? "\\t" : ssep, "\"");
-
-    modified = TRUE;
-    redraw();
-    flagmsg();
-}
-
 void DoOpen(void)
 {
     char fname[MAXSTRLEN];
@@ -4236,30 +4284,24 @@ void subfunc1(void)
     WINDOW *wmsg;
     char *s[] =
     {
-        "  Ctrl-Ins:\tinsert line",
-        "   Alt-Ins:\tduplicate",
-        "  Ctrl-Del:\tdelete line",
-        "     Enter:\tedit fields",
-        "    Letter:\tsearch (? mask)",
-        "    Ctrl-F:\tregexp search",
-        "     Alt-F:\tseek curr field",
-        " Tab/C-Tab:\tfind next",
-        "  Shft-Tab:\tprevious",
-        "      Bksp:\tdel fstr back",
-        "  Del/Home:\tclear fstr",
-        "    Ctrl-G:\tgoto line",
-        "Ctrl/Alt-A:\tmark/filter all",
-        "  Ctrl-C/V:\tcopy/paste",
-        "C/A-arrows:\treorder fields",
-        "Ctrl/Alt-U:\tuppercase",
-        "Ctrl/Alt-L:\tlowercase"
+        " Ctrl-Ins:  insert line    \t\t    Ctrl-G:  goto line",
+        "  Alt-Ins:  duplicate      \t\t    Ctrl-A:  mark all",
+        " Ctrl-Del:  delete line    \t\t     Alt-A:  filter all",
+        "    Enter:  edit fields    \t\t    Ctrl-C:  copy",
+        "   Letter:  search (? mask)\t\t    Ctrl-V:  paste",
+        "   Ctrl-F:  regexp search  \t\tCtrl/Alt-U:  uppercase",
+        "    Alt-F:  seek curr field\t\tCtrl/Alt-L:  lowercase",
+        "Tab/C-Tab:  find next      \t\tC/A-arrows:  reorder fields",
+        " Shft-Tab:  previous       \t\t Shft-left:  align left",
+        "     Bksp:  del fstr back  \t\tShft-right:  align right",
+        " Del/Home:  clear fstr     \t\t Ctrl-down:  center"
     };
     int i;
-    int j=17;
+    int j=11;
     
-    wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-33)/2, j+2, 33);
+    wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-70)/2, j+2, 70);
     for (i=0; i<j; i++)
-        mvwaddstr(wmsg, i+1, 3, s[i]);
+        mvwaddstr(wmsg, i+1, 2, s[i]);
     wrefresh(wmsg);
     (void)toupper(waitforkey());
     delwin(wmsg);
