@@ -3455,7 +3455,7 @@ void align(int n, int y, int m)
     int from, to;
     char buf[MAXSTRLEN+1];
 
-    if (y == 0)
+    if (y == -1)
     {
         from = 0;
         to = reccnt;
@@ -3558,8 +3558,8 @@ void doindent(void)
             j -= '0';
         } while (j<1 || j>3);
         if (j == 2)
-            align(i, 0, 1);
-        align(i, 0, j);
+            align(i, -1, 1);
+        align(i, -1, j);
         putmsg("Adjusted ", stru[i],
                (j==1) ? "left" : (j==3) ? "right" : "center");
         modified = TRUE;
@@ -4122,14 +4122,19 @@ void edit(void)
             gorec();
             break;
         case KEY_SLEFT:
-            align(field, curr, 1);
+            if (!ro)
+                align(field, curr, 1);
             break;
         case KEY_SRIGHT:
-            align(field, curr, 3);
+            if (!ro)
+                align(field, curr, 3);
             break;
         case CTL_DOWN:
-            align(field, curr, 1);
-            align(field, curr, 2);
+            if (!ro)
+            {
+                align(field, curr, 1);
+                align(field, curr, 2);
+            }
             break;
         default:
             if ((c == 0x81) || (c == 0xEB) || (c == 0x1FB))
@@ -4299,7 +4304,7 @@ void subfunc1(void)
     int i;
     int j=11;
     
-    wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-70)/2, j+2, 70);
+    wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-68)/2, j+2, 68);
     for (i=0; i<j; i++)
         mvwaddstr(wmsg, i+1, 2, s[i]);
     wrefresh(wmsg);
