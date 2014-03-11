@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.7.12 2014/03/10 $
+ * $Id: tcsvdb.c,v 0.7.13 2014/03/11 $
  */
 
-#define VERSION "0.7.12"
+#define VERSION "0.7.13"
 
 #ifdef XCURSES
 #include <xcurses.h>
@@ -3464,6 +3464,8 @@ void align(int n, int y, int m)
     {
         from = y;
         to = y+1;
+        modified = TRUE;
+        flagmsg();
     }
 
     for (i=from; i<to; i++)
