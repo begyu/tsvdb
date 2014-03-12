@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.7.14 2014/03/12 $
+ * $Id: tcsvdb.c,v 0.8.0 2014/03/12 $
  */
 
-#define VERSION "0.7.14"
+#define VERSION "0.8.0"
 
 #ifdef XCURSES
 #include <xcurses.h>
@@ -136,6 +136,7 @@ static bool getregexp = FALSE;
 static int unkeys[] = {KEY_RIGHT, '\n', '\n', '\t', KEY_END, KEY_UP, 0};
 static int unkeypos = -1;
 static int sortpos = 0;
+static bool numsort = FALSE;
 static bool filtered = FALSE;
 static bool headspac = FALSE;
 
@@ -149,7 +150,7 @@ static bool headspac = FALSE;
 #define RXFORW 0xFF
 #define RXBACK 0xFE
 #define WSTR (" Wait! ")
-#define DISABLEDHOT ("aCcDFNSsT")
+#define DISABLEDHOT ("aCcDFNnSsT")
 
 static char csep = TABCSEP;
 static char ssep[] = TABSSEP;
@@ -1713,6 +1714,7 @@ int qsort_stringlist(const void *e1, const void *e2)
     int k;
     char *p1 = *(char **)(e1);
     char *p2 = *(char **)(e2);
+    double n1, n2;
 
     if (sortpos == 0)
         return hstrcmp(*(char **)e1, *(char **)e2);
@@ -1734,6 +1736,12 @@ int qsort_stringlist(const void *e1, const void *e2)
             else if (p2[j] == '\0')
                      return (+1);
         }
+        if (numsort)
+        {
+            n1 = atof(p1+i);
+            n2 = atof(p2+j);
+            return (n1 < n2) ? -1 : 1;
+        }
         return hstrcmp(*(char **)(e1)+i, *(char **)(e2)+j);
     }
 }
@@ -1751,6 +1759,7 @@ int qs_stringlist_rev(const void *e1, const void *e2)
     int k;
     char *p1 = *(char **)(e1);
     char *p2 = *(char **)(e2);
+    double n1, n2;
 
     if (sortpos == 0)
         return hstrcmp(*(char **)e2, *(char **)e1);
@@ -1771,6 +1780,12 @@ int qs_stringlist_rev(const void *e1, const void *e2)
                 k++;
             else if (p1[j] == '\0')
                      return (+1);
+        }
+        if (numsort)
+        {
+            n2 = atof(p2+i);
+            n1 = atof(p1+j);
+            return (n2 < n1) ? -1 : 1;
         }
         return hstrcmp(*(char **)(e2)+i, *(char **)(e1)+j);
     }
@@ -3467,6 +3482,14 @@ void dosortby(void)
     }
 }
 
+void dosortnum(void)
+{
+    numsort = TRUE;
+    dosortby();
+    numsort = FALSE;
+}
+
+
 void align(int n, int y, int m)
 {
     register int i, j;
@@ -4271,6 +4294,7 @@ menu SubMenu1[] =
     { "adJust", doindent, "Align left/right" },
     { "Sort", dosort, "Sort file" },
     { "Field", dosortby, "Sort by other field" },
+    { "nUm", dosortnum, "Sort numerical order" },
     { "cRypt", docrypt, "Code/decode" },
     { "tOtal", dosum, "Aggregate" },
     { "eXport", selected, "Restricted set" },
