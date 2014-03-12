@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.7.13 2014/03/11 $
+ * $Id: tcsvdb.c,v 0.7.14 2014/03/12 $
  */
 
-#define VERSION "0.7.13"
+#define VERSION "0.7.14"
 
 #ifdef XCURSES
 #include <xcurses.h>
@@ -1706,12 +1706,36 @@ int hstrcmp(const char *s1, const char *s2)
     return strcmp(e1, e2);
 }
 
+
 int qsort_stringlist(const void *e1, const void *e2)
 {
+    register int i, j;
+    int k;
+    char *p1 = *(char **)(e1);
+    char *p2 = *(char **)(e2);
+
     if (sortpos == 0)
         return hstrcmp(*(char **)e1, *(char **)e2);
     else
-        return hstrcmp(*(char **)(e1)+sortpos, *(char **)(e2)+sortpos);
+    {
+        k =0;
+        for (i=0; k<sortpos; i++)
+        {
+            if (p1[i] == csep)
+                k++;
+            else if (p1[i] == '\0')
+                     return (-1);
+        }
+        k =0;
+        for (j=0; k<sortpos; j++)
+        {
+            if (p2[j] == csep)
+                k++;
+            else if (p2[j] == '\0')
+                     return (+1);
+        }
+        return hstrcmp(*(char **)(e1)+i, *(char **)(e2)+j);
+    }
 }
 
 void sort(int n)
@@ -1723,10 +1747,33 @@ void sort(int n)
 
 int qs_stringlist_rev(const void *e1, const void *e2)
 {
+    register int i, j;
+    int k;
+    char *p1 = *(char **)(e1);
+    char *p2 = *(char **)(e2);
+
     if (sortpos == 0)
         return hstrcmp(*(char **)e2, *(char **)e1);
     else
-        return hstrcmp(*(char **)(e2)+sortpos, *(char **)(e1)+sortpos);
+    {
+        k =0;
+        for (i=0; k<sortpos; i++)
+        {
+            if (p2[i] == csep)
+                k++;
+            else if (p2[i] == '\0')
+                     return (-1);
+        }
+        k =0;
+        for (j=0; k<sortpos; j++)
+        {
+            if (p1[j] == csep)
+                k++;
+            else if (p1[j] == '\0')
+                     return (+1);
+        }
+        return hstrcmp(*(char **)(e2)+i, *(char **)(e1)+j);
+    }
 }
 
 void sort_back(int n)
@@ -3388,62 +3435,35 @@ int selectfield(int n)
 void dosortby(void)
 {
     register int i, j;
-    int k, l;
-    int sortidx[MAXCOLS];
-    char s[7] = "";
 
     if (ro)
         return;
 
-    k = -1;
-    l = 0;
-    for (i=0; i<cols; i++)
+    i = selectfield(cols);
+    if (i != -1)
     {
-        k += len[i];
-        for (j=1; j<reccnt; j++)
-        {
-            if (rows[j][k] != csep)
-                break;
-        }
-        if (j == reccnt)
-        {
-            sortidx[i] = k;
-            l++;
-        }
-    }
-    if (l > 0)
-    {
-        i = selectfield(l);
-        if (i != -1)
-        {
-            putmsg("Sorted by ", stru[i], " field.");
+        putmsg("Sorted by ", stru[i], " field.");
 #ifdef __MINGW_VERSION
-            pause(1);
+        pause(1);
 #else
-            sleep(1);
+        sleep(1);
 #endif
-            sortpos = (i==0) ? 0 : sortidx[i-1];
-            if (yesno("Reverse order? (Y/N):") == 0)
-                sort(reccnt);
-            else
-                sort_back(reccnt);
-            sortpos = 0;
-            modified = TRUE;
-            flagmsg();
-            j = 0;
-            for (i=0; i<bodylen(); i++)
-            {
-                if (i < reccnt)
-                   displn(i, j+1);
-                j++;
-            }
-            redraw();
+        sortpos = i;
+        if (yesno("Reverse order? (Y/N):") == 0)
+            sort(reccnt);
+        else
+            sort_back(reccnt);
+        sortpos = 0;
+        modified = TRUE;
+        flagmsg();
+        j = 0;
+        for (i=0; i<bodylen(); i++)
+        {
+            if (i < reccnt)
+               displn(i, j+1);
+            j++;
         }
-    }
-    else
-    {
-        itoa(j+1, s, 10);
-        i = putmsg("In line ",s,": can't sorting!");
+        redraw();
     }
 }
 
