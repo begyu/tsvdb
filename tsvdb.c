@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.8.0 2014/03/12 $
+ * $Id: tcsvdb.c,v 0.8.1 2014/03/13 $
  */
 
-#define VERSION "0.8.0"
+#define VERSION "0.8.1"
 
 #ifdef XCURSES
 #include <xcurses.h>
@@ -1710,10 +1710,11 @@ int hstrcmp(const char *s1, const char *s2)
 
 int qsort_stringlist(const void *e1, const void *e2)
 {
-    register int i, j;
-    int k;
+    register int i, j, k;
     char *p1 = *(char **)(e1);
     char *p2 = *(char **)(e2);
+    char *c1 = NULL;
+    char *c2 = NULL;
     double n1, n2;
 
     if (sortpos == 0)
@@ -1738,8 +1739,18 @@ int qsort_stringlist(const void *e1, const void *e2)
         }
         if (numsort)
         {
+            c1 = strchr(p1+i, ',');
+            c2 = strchr(p2+j, ',');
+            if (c1 != NULL)
+                c1[0] = '.';
+            if (c2 != NULL)
+                c2[0] = '.';
             n1 = atof(p1+i);
             n2 = atof(p2+j);
+            if (c1 != NULL)
+                c1[0] = ',';
+            if (c2 != NULL)
+                c2[0] = ',';
             return (n1 < n2) ? -1 : 1;
         }
         return hstrcmp(*(char **)(e1)+i, *(char **)(e2)+j);
@@ -1755,10 +1766,11 @@ void sort(int n)
 
 int qs_stringlist_rev(const void *e1, const void *e2)
 {
-    register int i, j;
-    int k;
+    register int i, j, k;
     char *p1 = *(char **)(e1);
     char *p2 = *(char **)(e2);
+    char *c1 = NULL;
+    char *c2 = NULL;
     double n1, n2;
 
     if (sortpos == 0)
@@ -1783,8 +1795,18 @@ int qs_stringlist_rev(const void *e1, const void *e2)
         }
         if (numsort)
         {
+            c2 = strchr(p2+i, ',');
+            c1 = strchr(p1+j, ',');
+            if (c1 != NULL)
+                c1[0] = '.';
+            if (c2 != NULL)
+                c2[0] = '.';
             n2 = atof(p2+i);
             n1 = atof(p1+j);
+            if (c1 != NULL)
+                c1[0] = ',';
+            if (c2 != NULL)
+                c2[0] = ',';
             return (n2 < n1) ? -1 : 1;
         }
         return hstrcmp(*(char **)(e2)+i, *(char **)(e1)+j);
@@ -1831,6 +1853,7 @@ void displn(int y, int r)
     int maxlen;
     char s[MAXCOLS][MAXSTRLEN+1];
     char buf[MAXSTRLEN+1];
+    char delim[] = "?\n";
     char *p=NULL;
 
     maxlen = bodywidth()-2;
@@ -1846,26 +1869,36 @@ void displn(int y, int r)
             i++;
         }
         strcpy(buf, rows[y]+i);
+        k = strlen(buf);
+        for (i=0; i<k; i++)
+        {
+            if ((buf[i] == csep) && (buf[i+1] == csep))
+            {
+                k++;
+                for (j=k; j>i; j--)
+                    buf[j] = buf[j-1];
+                i++;
+                buf[i] = ' ';
+            }
+        }
     }
     else
         buf[0] = '\0';
-    p = strtok(buf, ssep );
+    delim[0] = csep;
+    p = strtok(buf, delim);
     for (i=0; i<=cols; i++)
     {
         if (p != NULL)
         {
             strcpy(s[i], p);
             k = strlen(s[i]);
-            for (j=0; j<(len[i]); j++)
+            if (k >= len[i])
+                s[i][len[i]] = '\0';
+            for (j=len[i]; j>k; j--)
             {
-               if ((s[i][j] == csep)
-               || (s[i][j] == '\n'))
-                  k = j;
-               if (j >= k)
-                  s[i][j] = ' ';
+                  strcat(s[i], " ");
             }
-            s[i][len[i]] = '\0';
-            p = strtok( 0, ssep );
+            p = strtok( 0, delim);
         }
         else
         {
@@ -2575,6 +2608,21 @@ void modify(int y)
         }
         strcat(buf, " \n");
     }
+    else
+    {
+        k = strlen(buf);
+        for (i=0; i<k; i++)
+        {
+            if ((buf[i] == csep) && (buf[i+1] == csep))
+            {
+                k++;
+                for (j=k; j>i; j--)
+                    buf[j] = buf[j-1];
+                i++;
+                buf[i] = ' ';
+            }
+        }
+    }
     for (i=0; i<=cols; i++)
     {
         flen = MAX(len[i], flen);
@@ -3200,8 +3248,21 @@ void reorder(int y, bool left)
 
     for (i=0; i<=cols; i++)
         tmpstr[i][0] = '\0';
+    strcpy(buf, rows[y]);
+    k = strlen(buf);
+    for (i=0; i<k; i++)
+    {
+        if ((buf[i] == csep) && (buf[i+1] == csep))
+        {
+            k++;
+            for (j=k; j>i; j--)
+                buf[j] = buf[j-1];
+            i++;
+            buf[i] = ' ';
+        }
+    }
     i = 0;
-    p = strtok(rows[y], ssep );
+    p = strtok(buf, ssep);
     while(p != NULL )
     {
         strcpy(tmpstr[i], p);
@@ -3633,7 +3694,8 @@ void docrypt(void)
 
 void dosum(void)
 {
-    register int i, j;
+    register int i, j, k;
+    int l;
     double n;
     double x[MAXCOLS];
     char s[MAXCOLS][MAXSTRLEN+1];
@@ -3649,6 +3711,18 @@ void dosum(void)
     for (i=0; i<reccnt; i++)
     {
         strcpy(buf, rows[i]);
+        l = strlen(buf);
+        for (j=0; j<l; j++)
+        {
+            if ((buf[j] == csep) && (buf[j+1] == csep))
+            {
+                l++;
+                for (k=l; k>j; k--)
+                    buf[k] = buf[k-1];
+                j++;
+                buf[j] = ' ';
+            }
+        }
         p = strtok(buf, ssep );
         for (j=0; j<=cols; j++)
         {
