@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.8.1 2014/03/13 $
+ * $Id: tcsvdb.c,v 0.8.2 2014/03/17 $
  */
 
-#define VERSION "0.8.1"
+#define VERSION "0.8.2"
 
 #ifdef XCURSES
 #include <xcurses.h>
@@ -103,6 +103,7 @@ void opthelp(void);
 
 #define MAXROWS  1000000
 #define MAXCOLS  16
+#define MAXNLEN  19
 
 #define MIN(a, b)  (((a) < (b)) ? (a) : (b))
 #define MAX(a, b)  (((a) > (b)) ? (a) : (b))
@@ -135,7 +136,7 @@ static bool regex = FALSE;
 static bool getregexp = FALSE;
 static int unkeys[] = {KEY_RIGHT, '\n', '\n', '\t', KEY_END, KEY_UP, 0};
 static int unkeypos = -1;
-static int sortpos = 0;
+static int sortpos = -1;
 static bool numsort = FALSE;
 static bool filtered = FALSE;
 static bool headspac = FALSE;
@@ -1713,11 +1714,11 @@ int qsort_stringlist(const void *e1, const void *e2)
     register int i, j, k;
     char *p1 = *(char **)(e1);
     char *p2 = *(char **)(e2);
-    char *c1 = NULL;
-    char *c2 = NULL;
+    char s1[MAXNLEN+1] = "";
+    char s2[MAXNLEN+1] = "";
     double n1, n2;
 
-    if (sortpos == 0)
+    if (sortpos == -1)
         return hstrcmp(*(char **)e1, *(char **)e2);
     else
     {
@@ -1739,18 +1740,34 @@ int qsort_stringlist(const void *e1, const void *e2)
         }
         if (numsort)
         {
-            c1 = strchr(p1+i, ',');
-            c2 = strchr(p2+j, ',');
-            if (c1 != NULL)
-                c1[0] = '.';
-            if (c2 != NULL)
-                c2[0] = '.';
-            n1 = atof(p1+i);
-            n2 = atof(p2+j);
-            if (c1 != NULL)
-                c1[0] = ',';
-            if (c2 != NULL)
-                c2[0] = ',';
+            for (k=0; k<MAXNLEN; k++)
+            {
+                s1[k] = p1[i+k];
+                if ((s1[k] == csep) || (s1[k] == '\0'))
+                {
+                    s1[k] = '\0';
+                    break;
+                }
+                if (s1[k] == ',')
+                    s1[k] = '.';
+            }
+            if (k == MAXNLEN)
+                s2[MAXNLEN] = '\0';
+            for (k=0; k<MAXNLEN; k++)
+            {
+                s2[k] = p2[j+k];
+                if ((s2[k] == csep) || (s2[k] == '\0'))
+                {
+                    s2[k] = '\0';
+                    break;
+                }
+                if (s2[k] == ',')
+                    s2[k] = '.';
+            }
+            if (k == MAXNLEN)
+                s2[MAXNLEN] = '\0';
+            n1 = atof(s1);
+            n2 = atof(s2);
             return (n1 < n2) ? -1 : 1;
         }
         return hstrcmp(*(char **)(e1)+i, *(char **)(e2)+j);
@@ -1769,11 +1786,11 @@ int qs_stringlist_rev(const void *e1, const void *e2)
     register int i, j, k;
     char *p1 = *(char **)(e1);
     char *p2 = *(char **)(e2);
-    char *c1 = NULL;
-    char *c2 = NULL;
+    char s1[MAXNLEN+1] = "";
+    char s2[MAXNLEN+1] = "";
     double n1, n2;
 
-    if (sortpos == 0)
+    if (sortpos == -1)
         return hstrcmp(*(char **)e2, *(char **)e1);
     else
     {
@@ -1795,19 +1812,35 @@ int qs_stringlist_rev(const void *e1, const void *e2)
         }
         if (numsort)
         {
-            c2 = strchr(p2+i, ',');
-            c1 = strchr(p1+j, ',');
-            if (c1 != NULL)
-                c1[0] = '.';
-            if (c2 != NULL)
-                c2[0] = '.';
-            n2 = atof(p2+i);
-            n1 = atof(p1+j);
-            if (c1 != NULL)
-                c1[0] = ',';
-            if (c2 != NULL)
-                c2[0] = ',';
-            return (n2 < n1) ? -1 : 1;
+            for (k=0; k<MAXNLEN; k++)
+            {
+                s1[k] = p2[i+k];
+                if ((s1[k] == csep) || (s1[k] == '\0'))
+                {
+                    s1[k] = '\0';
+                    break;
+                }
+                if (s1[k] == ',')
+                    s1[k] = '.';
+            }
+            if (k == MAXNLEN)
+                s2[MAXNLEN] = '\0';
+            for (k=0; k<MAXNLEN; k++)
+            {
+                s2[k] = p1[j+k];
+                if ((s2[k] == csep) || (s2[k] == '\0'))
+                {
+                    s2[k] = '\0';
+                    break;
+                }
+                if (s2[k] == ',')
+                    s2[k] = '.';
+            }
+            if (k == MAXNLEN)
+                s2[MAXNLEN] = '\0';
+            n1 = atof(s1);
+            n2 = atof(s2);
+            return (n1 < n2) ? -1 : 1;
         }
         return hstrcmp(*(char **)(e2)+i, *(char **)(e1)+j);
     }
@@ -3529,7 +3562,7 @@ void dosortby(void)
             sort(reccnt);
         else
             sort_back(reccnt);
-        sortpos = 0;
+        sortpos = -1;
         modified = TRUE;
         flagmsg();
         j = 0;
