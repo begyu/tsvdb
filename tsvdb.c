@@ -1751,8 +1751,7 @@ int qsort_stringlist(const void *e1, const void *e2)
                 if (s1[k] == ',')
                     s1[k] = '.';
             }
-            if (k == MAXNLEN)
-                s2[MAXNLEN] = '\0';
+            s1[MAXNLEN] = '\0';
             for (k=0; k<MAXNLEN; k++)
             {
                 s2[k] = p2[j+k];
@@ -1764,8 +1763,7 @@ int qsort_stringlist(const void *e1, const void *e2)
                 if (s2[k] == ',')
                     s2[k] = '.';
             }
-            if (k == MAXNLEN)
-                s2[MAXNLEN] = '\0';
+            s2[MAXNLEN] = '\0';
             n1 = atof(s1);
             n2 = atof(s2);
             return (n1 < n2) ? -1 : 1;
@@ -1823,8 +1821,7 @@ int qs_stringlist_rev(const void *e1, const void *e2)
                 if (s1[k] == ',')
                     s1[k] = '.';
             }
-            if (k == MAXNLEN)
-                s2[MAXNLEN] = '\0';
+            s1[MAXNLEN] = '\0';
             for (k=0; k<MAXNLEN; k++)
             {
                 s2[k] = p1[j+k];
@@ -1836,8 +1833,7 @@ int qs_stringlist_rev(const void *e1, const void *e2)
                 if (s2[k] == ',')
                     s2[k] = '.';
             }
-            if (k == MAXNLEN)
-                s2[MAXNLEN] = '\0';
+            s2[MAXNLEN] = '\0';
             n1 = atof(s1);
             n2 = atof(s2);
             return (n1 < n2) ? -1 : 1;
