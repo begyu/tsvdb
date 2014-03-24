@@ -1,8 +1,9 @@
 /*
- * $Id: tcsvdb.c,v 0.8.2 2014/03/17 $
+ * $Id: tcsvdb.c,v 0.8.3 2014/03/24 $
  */
 
-#define VERSION "0.8.2"
+#define VERSION "0.8.3"
+/*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
 #include <xcurses.h>
@@ -2821,7 +2822,7 @@ int substr(char *str1, char *str2)
     if (j == len2)
        return (i);
   }
-  return (0);
+  return (-1);
 }
 
 void search(int y, int c)
@@ -2842,7 +2843,7 @@ void search(int y, int c)
             casestr(s, TRUE, TRUE);
             if (masked)
             {
-                if (substr(s, fstr) > 0)
+                if (substr(s, fstr) != -1)
                 {
                     curr = i;
                     break;
@@ -2874,7 +2875,7 @@ void search(int y, int c)
                 casestr(s, TRUE, TRUE);
                 if (masked)
                 {
-                    if (substr(s, fstr) > 0)
+                    if (substr(s, fstr) != -1)
                     {
                         curr = i;
                         break;
@@ -2928,7 +2929,7 @@ void search(int y, int c)
             casestr(s, TRUE, TRUE);
             if (masked)
             {
-                if (substr(s, fstr) > 0)
+                if (substr(s, fstr) != -1)
                 {
                     curr = i;
                     break;
@@ -3057,7 +3058,7 @@ void change()
             changes++;
         }
         else
-        while ((k = substr(rows[i], s1)) > 0)
+        while ((k = substr(rows[i], s1)) != -1)
         {
             for (j=0; j<k; j++)
                s[j] = rows[i][j];
@@ -3070,6 +3071,118 @@ void change()
     }
     if (changes)
     {
+        c = (changes == 1) ? ' ' : 's';
+        sprintf(s, "%d occurence%c changed.", changes, c);
+        msg(s);
+        modified = TRUE;
+        flagmsg();
+        do idle(); while (!keypressed());
+        touchwin(wbody);
+        wrefresh(wbody);
+    }
+}
+
+void schange()
+{
+    register int i, j, k;
+    static char s1[MAXSL] = "";
+    static char s2[MAXSL] = "";
+    char *fieldname[3];
+    char *fieldbuf[3];
+    char s[MAXSTRLEN+1];
+    int changes=0;
+    int rlen;
+    char c;
+    char *p;
+    struct slre_cap cap = { NULL, 0 };
+    int last=0;
+
+    if (ro)
+        return;
+
+    fieldname[0] = "From:";
+    fieldname[1] = "  To:";
+    fieldname[2] = 0;
+    if (strlen(fstr) <= MAXSL)
+        strcpy(s1, fstr);
+    fieldbuf[0] = s1;
+    fieldbuf[1] = s2;
+    fieldbuf[2] = 0;
+
+    getstrings(fieldname, fieldbuf, 0, MAXSL+1, NULL);
+
+    rlen = strlen(s1)-1;
+    if (rlen == -1)
+        return;
+
+    for (i=0; i<reccnt; i++)
+    {
+        if (s1[0] == '(' && s1[rlen] == ')')
+        {
+            if ((k = slre_match(s1, rows[i], strlen(rows[i]), &cap, 1)) > 0)
+            {
+                displn(i, 1);
+                last = i;
+                for (j=i; j<(reccnt-i); j++)
+                {
+                    if (j < reccnt)
+                       displn(j, 1+j-i);
+                    else
+                    {
+                       wmove(wbody, j+1, 0);
+                       wclrtoeol(wbody);
+                       wrefresh(wbody);
+                    }
+                }
+                wmove(wbody, i, 0);
+                msg("Change/Next/Quit? (C/N/Q):");
+                c = toupper(waitforkey());
+                msg(NULL);
+                if (c == 'N')
+                    continue;
+                else if (c == 'Q')
+                    break;
+                p = slre_replace(s1, rows[i], s2);
+                strcpy(rows[i], p);
+                changes++;
+            }
+        }
+        else
+        while ((k = substr(rows[i], s1)) != -1)
+        {
+            displn(i, 1);
+            last = i;
+            for (j=i; j<(reccnt-i); j++)
+            {
+                if (j < reccnt)
+                   displn(j, 1+j-i);
+                else
+                {
+                   wmove(wbody, j+1, 0);
+                   wclrtoeol(wbody);
+                   wrefresh(wbody);
+                }
+            }
+            wmove(wbody, i, k);
+            msg("Change/Next/Quit? (C/N/Q):");
+            c = toupper(waitforkey());
+            msg(NULL);
+            if ((c == 'N') || (c == 'Q'))
+                break;
+            for (j=0; j<k; j++)
+               s[j] = rows[i][j];
+            s[k] = '\0';
+            strcat(s, s2);
+            strcat(s, rows[i]+k+strlen(s1));
+            strcpy(rows[i], s);
+            changes++;
+        }
+        if (c == 'Q')
+            break;
+    }
+    if (changes)
+    {
+        displn(last, 1);
         c = (changes == 1) ? ' ' : 's';
         sprintf(s, "%d occurence%c changed.", changes, c);
         msg(s);
@@ -4391,6 +4504,7 @@ menu SubMenu1[] =
     { "View", brows, "Browse file" }, 
     { "Go", gorec, "Go to record" },
     { "Change", change, "Replace string" },
+    { "scHange", schange, "selectively change" },
     { "Delimit", unlimit, "Remove delimiters" },
     { "Terminate", delimit, "Add delimiters" },
     { "seParate", dosep, "Set field separator" },
@@ -4713,6 +4827,7 @@ int main(int argc, char **argv)
         strcpy(s, argv[optind++]);
     else
         strcpy(s, FNAME);
+    setlocale(LC_ALL, "");
     init();
     if (loadfile(s) == 0)
        strcpy(datfname, s);
@@ -4721,7 +4836,6 @@ int main(int argc, char **argv)
        if (create(s) != 0)
                 return -1;
     }
-    setlocale(LC_ALL, "");
     signal(SIGINT, siginthandler);
     startmenu(MainMenu, datfname);
     return 0;
