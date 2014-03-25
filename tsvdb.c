@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.8.3 2014/03/24 $
+ * $Id: tcsvdb.c,v 0.8.4 2014/03/25 $
  */
 
-#define VERSION "0.8.3"
+#define VERSION "0.8.4"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -3084,7 +3084,8 @@ void change()
 
 void schange()
 {
-    register int i, j, k;
+    register int i, j;
+    int k, l;
     static char s1[MAXSL] = "";
     static char s2[MAXSL] = "";
     char *fieldname[3];
@@ -3129,27 +3130,38 @@ void schange()
                        displn(j, 1+j-i);
                     else
                     {
-                       wmove(wbody, j+1, 0);
+                       wmove(wbody, (j-i)+1, 0);
                        wclrtoeol(wbody);
                        wrefresh(wbody);
                     }
                 }
-                wmove(wbody, i, 0);
-                msg("Change/Next/Quit? (C/N/Q):");
+                wmove(wbody, 1, 1);
+                msg("Change/Next/Prev/Quit? (C/N/P/Q):");
                 c = toupper(waitforkey());
                 msg(NULL);
                 if (c == 'N')
-                    continue;
+                     continue;
                 else if (c == 'Q')
-                    break;
+                     break;
+                else if (c == 'P')
+                     {
+                         for (i=last-1; i>0; i--)
+                             if ((j = slre_match(s1, rows[i], strlen(rows[i]), &cap, 1)) > 0)
+                                 break;
+                         continue;
+                     }
                 p = slre_replace(s1, rows[i], s2);
                 strcpy(rows[i], p);
                 changes++;
             }
         }
         else
-        while ((k = substr(rows[i], s1)) != -1)
+        while (TRUE)
         {
+            k = substr(rows[i], s1);
+            l = substr(rows[i], s2);
+            if ((k+l) == -2)
+                break;
             displn(i, 1);
             last = i;
             for (j=i; j<(reccnt-i); j++)
@@ -3158,24 +3170,61 @@ void schange()
                    displn(j, 1+j-i);
                 else
                 {
-                   wmove(wbody, j+1, 0);
+                   wmove(wbody, (j-i)+1, 0);
                    wclrtoeol(wbody);
                    wrefresh(wbody);
                 }
             }
-            wmove(wbody, i, k);
-            msg("Change/Next/Quit? (C/N/Q):");
+            setcolor(wbody, MARKCOLOR);
+            if (l == -1)
+            {
+                strcpy(s, rows[i]+k);
+                s[strlen(s1)] = '\0';
+                mvwaddstr(wbody, 1, k, s);
+            }
+            else
+            {
+                strcpy(s, rows[i]+l);
+                s[strlen(s2)] = '\0';
+                mvwaddstr(wbody, 1, l, s);
+            }
+            setcolor(wbody, BODYCOLOR);
+            wrefresh(wbody);
+            msg("Change/Next/Prev/Quit? (C/N/P/Q):");
             c = toupper(waitforkey());
             msg(NULL);
             if ((c == 'N') || (c == 'Q'))
                 break;
-            for (j=0; j<k; j++)
-               s[j] = rows[i][j];
-            s[k] = '\0';
-            strcat(s, s2);
-            strcat(s, rows[i]+k+strlen(s1));
+            else if (c == 'P')
+                 {
+                     for (i=last-1; i>0; i--)
+                         if (((j = substr(rows[i], s1)) != -1)
+                         ||  ((j = substr(rows[i], s2)) != -1))
+                             break;
+                     continue;
+                 }
+            if (l == -1)
+            {
+                for (j=0; j<k; j++)
+                   s[j] = rows[i][j];
+                s[k] = '\0';
+                strcat(s, s2);
+                strcat(s, rows[i]+k+strlen(s1));
+                changes++;
+            }
+            else
+            {
+                for (j=0; j<l; j++)
+                   s[j] = rows[i][j];
+                s[l] = '\0';
+                strcat(s, s1);
+                strcat(s, rows[i]+l+strlen(s2));
+                if (changes > 0)
+                    changes--;
+                l = -1;
+            }
             strcpy(rows[i], s);
-            changes++;
+            i--;
         }
         if (c == 'Q')
             break;
@@ -4504,7 +4553,7 @@ menu SubMenu1[] =
     { "View", brows, "Browse file" }, 
     { "Go", gorec, "Go to record" },
     { "Change", change, "Replace string" },
-    { "scHange", schange, "selectively change" },
+    { "scHange", schange, "Selectively change" },
     { "Delimit", unlimit, "Remove delimiters" },
     { "Terminate", delimit, "Add delimiters" },
     { "seParate", dosep, "Set field separator" },
