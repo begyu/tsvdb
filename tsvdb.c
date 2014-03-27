@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.8.4 2014/03/25 $
+ * $Id: tcsvdb.c,v 0.8.5 2014/03/27 $
  */
 
-#define VERSION "0.8.4"
+#define VERSION "0.8.5"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -153,6 +153,8 @@ static bool headspac = FALSE;
 #define RXBACK 0xFE
 #define WSTR (" Wait! ")
 #define DISABLEDHOT ("aCcDFNnSsT")
+#define FROMSTR ("From:")
+#define TOSTR   ("  To:")
 
 static char csep = TABCSEP;
 static char ssep[] = TABSSEP;
@@ -1574,6 +1576,10 @@ int getstrings(char *desc[], char *buf[], int field, int length, int lim[])
     while (!stop)
     {
         l = (lim == NULL) ? 0 : lim[i];
+        if (strcmp(desc[i], FROMSTR) == 0)
+            getregexp = TRUE;
+        else if (strcmp(desc[i], TOSTR) == 0)
+                 getregexp = FALSE;
         switch (c = mvweditstr(winput, i+1, mmax+3, buf[i], length, l))
         {
         case KEY_ESC:
@@ -3034,8 +3040,8 @@ void change()
     if (ro)
         return;
 
-    fieldname[0] = "From:";
-    fieldname[1] = "  To:";
+    fieldname[0] = FROMSTR;
+    fieldname[1] = TOSTR;
     fieldname[2] = 0;
     if (strlen(fstr) <= MAXSL)
         strcpy(s1, fstr);
@@ -3045,13 +3051,13 @@ void change()
 
     getstrings(fieldname, fieldbuf, 0, MAXSL+1, NULL);
 
-    rlen = strlen(s1)-1;
-    if (rlen == -1)
+    rlen = strlen(s1);
+    if (rlen == 0)
         return;
 
     for (i=0; i<reccnt; i++)
     {
-        if (s1[0] == '(' && s1[rlen] == ')')
+        if (s1[0] == '(' && s1[rlen-1] == ')')
         {
             p = slre_replace(s1, rows[i], s2);
             strcpy(rows[i], p);
@@ -3064,7 +3070,7 @@ void change()
                s[j] = rows[i][j];
             s[k] = '\0';
             strcat(s, s2);
-            strcat(s, rows[i]+k+strlen(s1));
+            strcat(s, rows[i]+k+rlen);
             strcpy(rows[i], s);
             changes++;
         }
@@ -3101,8 +3107,8 @@ void schange()
     if (ro)
         return;
 
-    fieldname[0] = "From:";
-    fieldname[1] = "  To:";
+    fieldname[0] = FROMSTR;
+    fieldname[1] = TOSTR;
     fieldname[2] = 0;
     if (strlen(fstr) <= MAXSL)
         strcpy(s1, fstr);
@@ -3112,18 +3118,18 @@ void schange()
 
     getstrings(fieldname, fieldbuf, 0, MAXSL+1, NULL);
 
-    rlen = strlen(s1)-1;
-    if (rlen == -1)
+    rlen = strlen(s1);
+    if (rlen == 0)
         return;
 
-    for (i=0; i<reccnt; i++)
+    if (s1[0] == '(' && s1[rlen-1] == ')')
     {
-        if (s1[0] == '(' && s1[rlen] == ')')
+        for (i=0; i<reccnt; i++)
         {
             if ((k = slre_match(s1, rows[i], strlen(rows[i]), &cap, 1)) > 0)
             {
+                last = (i==0) ? 1 : i;
                 displn(i, 1);
-                last = i;
                 for (j=i; j<(reccnt-i); j++)
                 {
                     if (j < reccnt)
@@ -3135,19 +3141,29 @@ void schange()
                        wrefresh(wbody);
                     }
                 }
-                wmove(wbody, 1, 1);
+                setcolor(wbody, MARKCOLOR);
+                l = rlen-2;
+                strcpy(s, rows[i]+(k-l));
+                s[l] = '\0';
+                mvwaddstr(wbody, 1, k-l, s);
+                setcolor(wbody, BODYCOLOR);
+                wrefresh(wbody);
                 msg("Change/Next/Prev/Quit? (C/N/P/Q):");
-                c = toupper(waitforkey());
+                do {
+                    c = toupper(waitforkey());
+                } while ((p = strchr("CNPQ", c)) == NULL);
                 msg(NULL);
                 if (c == 'N')
-                     continue;
+                    continue;
                 else if (c == 'Q')
-                     break;
+                    break;
                 else if (c == 'P')
                      {
                          for (i=last-1; i>0; i--)
-                             if ((j = slre_match(s1, rows[i], strlen(rows[i]), &cap, 1)) > 0)
+                             if ((j = slre_match(s1, rows[i], 
+                                  strlen(rows[i]), &cap, 1)) > 0)
                                  break;
+                         i--;
                          continue;
                      }
                 p = slre_replace(s1, rows[i], s2);
@@ -3155,79 +3171,86 @@ void schange()
                 changes++;
             }
         }
-        else
-        while (TRUE)
+    }
+    else
+    {
+        for (i=0; i<reccnt; i++)
         {
-            k = substr(rows[i], s1);
-            l = substr(rows[i], s2);
-            if ((k+l) == -2)
-                break;
-            displn(i, 1);
-            last = i;
-            for (j=i; j<(reccnt-i); j++)
+            while (TRUE)
             {
-                if (j < reccnt)
-                   displn(j, 1+j-i);
+                k = substr(rows[i], s1);
+                l = substr(rows[i], s2);
+                if ((k+l) == -2)
+                    break;
+                last = (i==0) ? 1 : i;
+                displn(i, 1);
+                for (j=i; j<(reccnt-i); j++)
+                {
+                    if (j < reccnt)
+                       displn(j, 1+j-i);
+                    else
+                    {
+                       wmove(wbody, (j-i)+1, 0);
+                       wclrtoeol(wbody);
+                       wrefresh(wbody);
+                    }
+                }
+                setcolor(wbody, MARKCOLOR);
+                if (l == -1)
+                {
+                    strcpy(s, rows[i]+k);
+                    s[rlen] = '\0';
+                    mvwaddstr(wbody, 1, k, s);
+                }
                 else
                 {
-                   wmove(wbody, (j-i)+1, 0);
-                   wclrtoeol(wbody);
-                   wrefresh(wbody);
+                    strcpy(s, rows[i]+l);
+                    s[strlen(s2)] = '\0';
+                    mvwaddstr(wbody, 1, l, s);
                 }
+                setcolor(wbody, BODYCOLOR);
+                wrefresh(wbody);
+                msg("Change/Next/Prev/Quit? (C/N/P/Q):");
+                do {
+                    c = toupper(waitforkey());
+                } while ((p = strchr("CNPQ", c)) == NULL);
+                msg(NULL);
+                if ((c == 'N') || (c == 'Q'))
+                    break;
+                else if (c == 'P')
+                     {
+                         for (i=last-1; i>0; i--)
+                             if (((j = substr(rows[i], s1)) != -1)
+                             ||  ((j = substr(rows[i], s2)) != -1))
+                                 break;
+                         continue;
+                     }
+                if (l == -1)
+                {
+                    for (j=0; j<k; j++)
+                       s[j] = rows[i][j];
+                    s[k] = '\0';
+                    strcat(s, s2);
+                    strcat(s, rows[i]+k+strlen(s1));
+                    changes++;
+                }
+                else
+                {
+                    for (j=0; j<l; j++)
+                       s[j] = rows[i][j];
+                    s[l] = '\0';
+                    strcat(s, s1);
+                    strcat(s, rows[i]+l+strlen(s2));
+                    if (changes > 0)
+                        changes--;
+                    l = -1;
+                }
+                strcpy(rows[i], s);
+                i = last;
             }
-            setcolor(wbody, MARKCOLOR);
-            if (l == -1)
-            {
-                strcpy(s, rows[i]+k);
-                s[strlen(s1)] = '\0';
-                mvwaddstr(wbody, 1, k, s);
-            }
-            else
-            {
-                strcpy(s, rows[i]+l);
-                s[strlen(s2)] = '\0';
-                mvwaddstr(wbody, 1, l, s);
-            }
-            setcolor(wbody, BODYCOLOR);
-            wrefresh(wbody);
-            msg("Change/Next/Prev/Quit? (C/N/P/Q):");
-            c = toupper(waitforkey());
-            msg(NULL);
-            if ((c == 'N') || (c == 'Q'))
+            if (c == 'Q')
                 break;
-            else if (c == 'P')
-                 {
-                     for (i=last-1; i>0; i--)
-                         if (((j = substr(rows[i], s1)) != -1)
-                         ||  ((j = substr(rows[i], s2)) != -1))
-                             break;
-                     continue;
-                 }
-            if (l == -1)
-            {
-                for (j=0; j<k; j++)
-                   s[j] = rows[i][j];
-                s[k] = '\0';
-                strcat(s, s2);
-                strcat(s, rows[i]+k+strlen(s1));
-                changes++;
-            }
-            else
-            {
-                for (j=0; j<l; j++)
-                   s[j] = rows[i][j];
-                s[l] = '\0';
-                strcat(s, s1);
-                strcat(s, rows[i]+l+strlen(s2));
-                if (changes > 0)
-                    changes--;
-                l = -1;
-            }
-            strcpy(rows[i], s);
-            i--;
         }
-        if (c == 'Q')
-            break;
     }
     if (changes)
     {
@@ -4642,13 +4665,14 @@ void edithelp(void)
         "Ctl-arrows:\tskip word",
         "    Ctrl-C:\tcopy",
         "    Ctrl-V:\tpaste",
+        "    Ctrl-B:\tpaste fstr",
         "Ctrl/Alt-U:\tuppercase",
         "Ctrl/Alt-L:\tlowercase",
         "       Esc:\tcancel",
         "     Enter:\tmodify record"
     };
     int i;
-    int j=15;
+    int j=16;
     
     wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-36)/2, j+2, 36);
     for (i=0; i<j; i++)
