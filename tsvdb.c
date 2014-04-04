@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.8.5 2014/03/27 $
+ * $Id: tcsvdb.c,v 0.8.6 2014/04/04 $
  */
 
-#define VERSION "0.8.5"
+#define VERSION "0.8.6"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -105,6 +105,7 @@ void opthelp(void);
 #define MAXROWS  1000000
 #define MAXCOLS  16
 #define MAXNLEN  19
+#define MAXFLEN  33
 
 #define MIN(a, b)  (((a) < (b)) ? (a) : (b))
 #define MAX(a, b)  (((a) > (b)) ? (a) : (b))
@@ -2132,6 +2133,11 @@ int loadfile(char *fname)
             {
                 strcpy(stru[i], p);
                 j = strlen(stru[i]);
+                if (j > MAXFLEN)
+                {
+                    stru[i][MAXFLEN] = 0;
+                    j = MAXFLEN;
+                }
                 strcat(stru[i], " ");
                 beg[i] = k;
                 len[i] = j+1;
@@ -2372,6 +2378,11 @@ int create(char *fn)
             {
                 strcpy(stru[i], p);
                 j = strlen(stru[i]);
+                if (j > MAXFLEN)
+                {
+                    stru[i][MAXFLEN] = 0;
+                    j = MAXFLEN;
+                }
                 strcat(stru[i], " ");
                 beg[i] = k;
                 len[i] = j+1;
@@ -4550,6 +4561,7 @@ void bye(void)
 void sub0(void), sub1(void), sub2(void);
 void subfunc1(void), subfunc2(void);
 void reghelp(void), edithelp(void);
+void limits(void);
 
 /***************************** menus initialization ***********************/
 
@@ -4596,6 +4608,7 @@ menu SubMenu2[] =
     { "Input keys", edithelp, "Keys in edit mode" },
     { "Regexp", reghelp, "Regular expression help" },
     { "Options", opthelp, "Command line options" },
+    { "Limits", limits, "Maximums" },
     { "About", subfunc2, "Info" },
     { "", (FUNC)0, "" }
 };
@@ -4713,6 +4726,41 @@ void reghelp(void)
     wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-65)/2, j+2, 65);
     for (i=0; i<j; i++)
         mvwaddstr(wmsg, i+1, 2, s[i]);
+    wrefresh(wmsg);
+    (void)toupper(waitforkey());
+    delwin(wmsg);
+    touchwin(wbody);
+    wrefresh(wbody);
+}
+
+void limits(void)
+{
+    WINDOW *wmsg;
+    char buf[40];
+    char *s[] =
+    {
+        "  Max length of rows: ",
+        "   Number of records: ",
+        "    Number of fields: ",
+        "Length of field name: "
+    };
+    int n[] =
+    {
+        MAXSTRLEN,
+        MAXROWS,
+        MAXCOLS,
+        MAXFLEN
+    };
+    int i;
+    int j=4;
+    
+    wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-33)/2, j+2, 33);
+    for (i=0; i<j; i++)
+    {
+        strcpy(buf, s[i]);
+        itoa(n[i], buf+strlen(buf), 10);
+        mvwaddstr(wmsg, i+1, 2, buf);
+    }
     wrefresh(wmsg);
     (void)toupper(waitforkey());
     delwin(wmsg);
