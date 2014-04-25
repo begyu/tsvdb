@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.8.6 2014/04/04 $
+ * $Id: tcsvdb.c,v 0.8.7 2014/04/25 $
  */
 
-#define VERSION "0.8.6"
+#define VERSION "0.8.7"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -153,7 +153,7 @@ static bool headspac = FALSE;
 #define RXFORW 0xFF
 #define RXBACK 0xFE
 #define WSTR (" Wait! ")
-#define DISABLEDHOT ("aCcDFNnSsT")
+#define DISABLEDHOT ("aCcDFfNnSsT")
 #define FROMSTR ("From:")
 #define TOSTR   ("  To:")
 
@@ -748,6 +748,12 @@ static void cleanup(void)   /* cleanup curses settings */
 {
     if (incurses)
     {
+        if (strstr(datfname, "$$$") != NULL)
+        {
+           wclear(wbody);
+           touchwin(wbody);
+           wrefresh(wbody);
+        }
         delwin(wtitl);
         delwin(wmain);
         delwin(wbody);
@@ -3427,6 +3433,33 @@ void selected(void)
     return;
 }
 
+void filter(void)
+{
+    int i, j;
+
+    getfstr();
+    memset(flags, 0, MAXROWS);
+    if (strlen(fstr))
+    {
+       i = curr;
+       curr = -1;
+       do
+       {
+          j = curr;
+          search(curr, regex ? RXFORW : 0);
+          if (curr != j)
+             flags[curr] = 1;
+          else
+             break;
+       } while (j < reccnt);
+       curr = i;
+       filtered = TRUE;
+       selected();
+    }
+    else
+       filtered = FALSE;
+}
+
 void dosort(void)
 {
     if (ro)
@@ -4589,6 +4622,7 @@ menu SubMenu1[] =
     { "Go", gorec, "Go to record" },
     { "Change", change, "Replace string" },
     { "scHange", schange, "Selectively change" },
+    { "fiLter", filter, "Choose records" },
     { "Delimit", unlimit, "Remove delimiters" },
     { "Terminate", delimit, "Add delimiters" },
     { "seParate", dosep, "Set field separator" },
