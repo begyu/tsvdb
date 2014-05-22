@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.8.7 2014/04/25 $
+ * $Id: tcsvdb.c,v 0.8.8 2014/05/22 $
  */
 
-#define VERSION "0.8.7"
+#define VERSION "0.8.8"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -4160,6 +4160,37 @@ void dosep(void)
 }
 
 
+void exchange(bool next)
+{
+    char *p;
+
+    if (!ro)
+    {
+        p = rows[curr];
+        if (next)
+        {
+            if (curr < (reccnt-1))
+            {
+                rows[curr] = rows[curr+1];
+                curr++;
+                rows[curr] = p;
+                modified = TRUE;
+            }
+        }
+        else
+        {
+            if ((curr > 0) && (curr < reccnt))
+            {
+                rows[curr] = rows[curr-1];
+                curr--;
+                rows[curr] = p;
+                modified = TRUE;
+            }
+        }
+    }
+}
+
+
 #ifdef NCURSES
 #define ALT_INS KEY_IL
 #define CTL_INS KEY_SIC
@@ -4506,12 +4537,18 @@ void edit(void)
             if (!ro)
                 align(field, curr, 3);
             break;
-        case CTL_DOWN:
+        case KEY_SHOME:
             if (!ro)
             {
                 align(field, curr, 1);
                 align(field, curr, 2);
             }
+            break;
+        case CTL_UP:
+            exchange(FALSE);
+            break;
+        case CTL_DOWN:
+            exchange(TRUE);
             break;
         default:
             if ((c == 0x81) || (c == 0xEB) || (c == 0x1FB))
@@ -4671,20 +4708,21 @@ void subfunc1(void)
     WINDOW *wmsg;
     char *s[] =
     {
-        " Ctrl-Ins:  insert line    \t\t    Ctrl-G:  goto line",
-        "  Alt-Ins:  duplicate      \t\t    Ctrl-A:  mark all",
-        " Ctrl-Del:  delete line    \t\t     Alt-A:  filter all",
-        "    Enter:  edit fields    \t\t    Ctrl-C:  copy",
-        "   Letter:  search (? mask)\t\t    Ctrl-V:  paste",
-        "   Ctrl-F:  regexp search  \t\tCtrl/Alt-U:  uppercase",
-        "    Alt-F:  seek curr field\t\tCtrl/Alt-L:  lowercase",
-        "Tab/C-Tab:  find next      \t\tC/A-arrows:  reorder fields",
-        " Shft-Tab:  previous       \t\t Shft-left:  align left",
-        "     Bksp:  del fstr back  \t\tShft-right:  align right",
-        " Del/Home:  clear fstr     \t\t Ctrl-down:  center"
+        " Ctrl-Ins:  insert line    \t\t    Ctrl-A:  mark all",
+        "  Alt-Ins:  duplicate      \t\t     Alt-A:  filter all",
+        " Ctrl-Del:  delete line    \t\t    Ctrl-C:  copy",
+        "    Enter:  edit fields    \t\t    Ctrl-V:  paste",
+        "   Letter:  search (? mask)\t\tCtrl/Alt-U:  uppercase",
+        "   Ctrl-F:  regexp search  \t\tCtrl/Alt-L:  lowercase",
+        "    Alt-F:  seek curr field\t\tC/A-arrows:  reorder fields",
+        "Tab/C-Tab:  find next      \t\t Shft-left:  align left",
+        " Shft-Tab:  previous       \t\tShft-right:  align right",
+        "     Bksp:  del fstr back  \t\t Shft-Home:  center",
+        " Del/Home:  clear fstr     \t\t    Ctl-Up:  move backward",
+        "   Ctrl-G:  goto line      \t\t  Ctl-Down:  move forward"
     };
     int i;
-    int j=11;
+    int j=12;
     
     wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-68)/2, j+2, 68);
     for (i=0; i<j; i++)
