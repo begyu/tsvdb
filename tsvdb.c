@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.8.8 2014/05/22 $
+ * $Id: tcsvdb.c,v 0.8.9 2014/05/26 $
  */
 
-#define VERSION "0.8.8"
+#define VERSION "0.8.9"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -4175,6 +4175,7 @@ void exchange(bool next)
                 curr++;
                 rows[curr] = p;
                 modified = TRUE;
+                flagmsg();
             }
         }
         else
@@ -4185,6 +4186,7 @@ void exchange(bool next)
                 curr--;
                 rows[curr] = p;
                 modified = TRUE;
+                flagmsg();
             }
         }
     }
