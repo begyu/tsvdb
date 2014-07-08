@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.8.9 2014/05/26 $
+ * $Id: tcsvdb.c,v 0.8.10 2014/07/08 $
  */
 
-#define VERSION "0.8.9"
+#define VERSION "0.8.10"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -1952,16 +1952,28 @@ void displn(int y, int r)
         if (y==curr)
         {
            if (i==field)
-              setcolor(wbody, CURRREVCOLOR);
+               setcolor(wbody, CURRREVCOLOR);
            else
-              setcolor(wbody, CURRCOLOR);
+               setcolor(wbody, CURRCOLOR);
         }
         else
            setcolor(wbody, BODYCOLOR);
-        if (beg[i+1] <= maxlen)
+        if ((beg[i]+len[i]) <= maxlen)
         {
            mvwaddstr(wbody, r, beg[i], s[i]);
            mvwaddstr(wbody, 0, beg[i], stru[i+curcol]);
+        }
+        else
+        {
+           j = maxlen - (beg[i]+len[i]);
+           if (j > 0)
+           {
+               s[i][j] = '\0';
+               mvwaddstr(wbody, r, beg[i], s[i]);
+               strcpy(buf, stru[i+curcol]);
+               buf[j] = '\0';
+               mvwaddstr(wbody, 0, beg[i], stru[i+curcol]);
+           }
         }
     }
     j = beg[field+1];
@@ -1989,7 +2001,6 @@ void displn(int y, int r)
     }
     setcolor(wbody, BODYCOLOR);
     wmove(wbody, r, beg[field]);
-/*    wclrtoeol(wbody);*/
     wrefresh(wbody);
 }
 
@@ -2762,7 +2773,7 @@ void modify(int y)
            strcat(buf, fieldbuf[i]);
         }
     }
-    strcat(buf, "\n\0");
+    strcat(buf, "\n");
     i = strlen(buf);
     if (rows[y] != NULL)
        free(rows[y]);
@@ -3077,6 +3088,10 @@ void change()
         if (s1[0] == '(' && s1[rlen-1] == ')')
         {
             p = slre_replace(s1, rows[i], s2);
+            j = strlen(p);
+            if (rows[i] != NULL)
+               free(rows[i]);
+            rows[i] = (char *)malloc(j+1);
             strcpy(rows[i], p);
             changes++;
         }
@@ -3088,6 +3103,10 @@ void change()
             s[k] = '\0';
             strcat(s, s2);
             strcat(s, rows[i]+k+rlen);
+            j = strlen(s);
+            if (rows[i] != NULL)
+               free(rows[i]);
+            rows[i] = (char *)malloc(j+1);
             strcpy(rows[i], s);
             changes++;
         }
@@ -3184,6 +3203,10 @@ void schange()
                          continue;
                      }
                 p = slre_replace(s1, rows[i], s2);
+                j = strlen(p);
+                if (rows[i] != NULL)
+                   free(rows[i]);
+                rows[i] = (char *)malloc(j+1);
                 strcpy(rows[i], p);
                 changes++;
             }
@@ -3262,6 +3285,10 @@ void schange()
                         changes--;
                     l = -1;
                 }
+                j = strlen(s);
+                if (rows[i] != NULL)
+                   free(rows[i]);
+                rows[i] = (char *)malloc(j+1);
                 strcpy(rows[i], s);
                 i = last;
             }
@@ -4193,6 +4220,157 @@ void exchange(bool next)
 }
 
 
+void insfield(void)
+{
+    register int i, j;
+    int k, l;
+    char fldname[MAXFLEN+1] = "";
+    char buf[MAXSTRLEN+1];
+
+    if ((ro) || (cols == 16))
+        return;
+
+    if ((i = strlen(head)) > 66)
+        return;
+
+    if (getfname ("Enter new field name:", fldname, MAXFLEN))
+    {
+        if (fldname[0] == '\0')
+            return;
+        strcat(fldname, TABSSEP);
+        l = strlen(fldname);
+        i = beg[field];
+        strcpy(buf, head+i);
+        strcpy(head+i, fldname);
+        strcat(head, buf);
+        cols++;
+        for (i=cols; i>field; i--)
+        {
+            strcpy(stru[i], stru[i-1]);
+            beg[i] = beg[i-1]+l;
+            len[i] = len[i-1];
+        }
+        strcpy(stru[field], fldname);
+        len[field] = l;
+        for (i=0; i<reccnt; i++)
+        {
+            if (field == 0)
+            {
+                strcpy(buf, "~");
+                strcat(buf, ssep);
+                strcat(buf, rows[i]);
+            }
+            else
+            {
+                strcpy(buf, rows[i]);
+                l = strlen(buf);
+                for (j=0,k=1; j<l; j++)
+                {
+                    if (buf[j] == csep)
+                        k++;
+                    if (k > field)
+                        break;
+                }
+                if ((k < field) || (j >= l))
+                    continue;
+                k = j+1;
+                for (j=l; j>=k; j--)
+                {
+                    buf[j+2] = buf[j];
+                }
+                buf[k] = '~';
+                buf[k+1] = csep;
+            }
+            if (rows[i] != NULL)
+                free(rows[i]);
+            l = strlen(buf);
+            rows[i] = (char *)malloc(l+1);
+            strcpy(rows[i], buf);
+        }
+        modified = TRUE;
+        redraw();
+        flagmsg();
+    }
+    curs_set(1);
+}
+
+void delfield(void)
+{
+    register int i, j;
+    int k, l;
+    char buf[MAXSTRLEN+1];
+
+    if (ro)
+        return;
+
+    if (cols > 0)
+    {
+        if ((i=yesno("Delete field! Are You sure? (Y/N):")) == 0)
+            return;
+        l = len[field];
+        i = beg[field];
+        strcpy(buf, head+i+l);
+        strcpy(head+i, buf);
+        cols--;
+        for (i=field; i<=cols; i++)
+        {
+            strcpy(stru[i], stru[i+1]);
+            beg[i] = beg[i+1]-l;
+            len[i] = len[i+1];
+        }
+        for (i=0; i<reccnt; i++)
+        {
+            strcpy(buf, rows[i]);
+            l = strlen(buf);
+            if (field > cols)
+            {
+                for (j=l; j>0; j--)
+                {
+                    if (buf[j] == csep)
+                        break;
+                }
+            }
+            else
+            {
+                for (j=0,k=0; j<l; j++)
+                {
+                    if (buf[j] == csep)
+                        k++;
+                    if (k > field)
+                        break;
+                }
+                if ((k < field) || (j >= l))
+                    continue;
+            }
+            k = j+1;
+            for (j--; j>0; j--)
+            {
+                if (buf[j] == csep)
+                    break;
+            }
+            strcpy(buf+j+1, buf+k);
+            if (field == cols)
+            {
+                strcat(buf, "\n");
+            }
+            if (rows[i] != NULL)
+                free(rows[i]);
+            l = strlen(buf);
+            rows[i] = (char *)malloc(l+1);
+            strcpy(rows[i], buf);
+        }
+        if (field > cols)
+        {
+            strcat(head, "\n");
+            field--;
+        }
+        modified = TRUE;
+        redraw();
+        flagmsg();
+    }
+}
+
+
 #ifdef NCURSES
 #define ALT_INS KEY_IL
 #define CTL_INS KEY_SIC
@@ -4552,6 +4730,12 @@ void edit(void)
         case CTL_DOWN:
             exchange(TRUE);
             break;
+        case ALT_I:
+            insfield();
+            break;
+        case ALT_D:
+            delfield();
+            break;
         default:
             if ((c == 0x81) || (c == 0xEB) || (c == 0x1FB))
                c = 0x55; /* U */
@@ -4721,10 +4905,11 @@ void subfunc1(void)
         " Shft-Tab:  previous       \t\tShft-right:  align right",
         "     Bksp:  del fstr back  \t\t Shft-Home:  center",
         " Del/Home:  clear fstr     \t\t    Ctl-Up:  move backward",
-        "   Ctrl-G:  goto line      \t\t  Ctl-Down:  move forward"
+        "   Ctrl-G:  goto line      \t\t  Ctl-Down:  move forward",
+        "    Alt-I:  insert field   \t\t     Alt-D:  remove field"
     };
     int i;
-    int j=12;
+    int j=13;
     
     wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-68)/2, j+2, 68);
     for (i=0; i<j; i++)
