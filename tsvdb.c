@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.8.10 2014/07/08 $
+ * $Id: tcsvdb.c,v 0.8.11 2014/07/10 $
  */
 
-#define VERSION "0.8.10"
+#define VERSION "0.8.11"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -76,16 +76,17 @@ static char *slre_replace(const char *regex, const char *buf,
 #define CTL_END         0x307
 #endif
 
-#define CTRL_C 0x03
-#define CTRL_F 0x06
-#define CTRL_G 0x07
-#define CTRL_V 0x16
-#define CTRL_X 0x18
-#define CTRL_U 0x15
-#define CTRL_L 0x0C
 #define CTRL_A 0x01
 #define CTRL_B 0x02
+#define CTRL_C 0x03
 #define CTRL_D 0x04
+#define CTRL_F 0x06
+#define CTRL_G 0x07
+#define CTRL_L 0x0C
+#define CTRL_U 0x15
+#define CTRL_V 0x16
+#define CTRL_X 0x18
+#define CTRL_Z 0x1A
 /*
 //#define       ALT_U 0x1B5
 //#define       ALT_L 0x1aC
@@ -130,6 +131,7 @@ static bool wr = FALSE;
 static bool cry = FALSE;
 static bool crypted = FALSE;
 static bool locked = FALSE;
+static bool safe = FALSE;
 static int button;
 static bool ontop = FALSE;
 static bool bottom = FALSE;
@@ -813,6 +815,8 @@ void titlemsg(char *msg)
        mvwaddstr(wtitl, 0, 1, "R+");
     else if (wr)
        mvwaddstr(wtitl, 0, 1, "W+");
+    else if (safe)
+       mvwaddstr(wtitl, 0, 1, "S+");
     else
        mvwaddstr(wtitl, 0, 1, "  ");
     mvwaddstr(wtitl, 0, 4, padstr(msg, bw - 5));
@@ -3597,7 +3601,7 @@ void reordall(bool left)
     char *p;
     char buf[MAXSTRLEN+1];
 
-    if (ro)
+    if (ro || safe)
         return;
 
     if (yesno("Reorder all fields? (Y/N):") == 0)
@@ -4227,7 +4231,7 @@ void insfield(void)
     char fldname[MAXFLEN+1] = "";
     char buf[MAXSTRLEN+1];
 
-    if ((ro) || (cols == 16))
+    if ((ro) || (safe) || (cols == 16))
         return;
 
     if ((i = strlen(head)) > 66)
@@ -4300,7 +4304,7 @@ void delfield(void)
     int k, l;
     char buf[MAXSTRLEN+1];
 
-    if (ro)
+    if (ro || safe) 
         return;
 
     if (cols > 0)
@@ -4646,6 +4650,10 @@ void edit(void)
                ro = (ro == TRUE) ? FALSE : TRUE;
                titlemsg(datfname);
             }
+            break;
+        case CTRL_Z:
+            safe = (safe == TRUE) ? FALSE : TRUE;
+            titlemsg(datfname);
             break;
         case ALT_A:
             filtered = TRUE;
@@ -5001,17 +5009,21 @@ void limits(void)
         "  Max length of rows: ",
         "   Number of records: ",
         "    Number of fields: ",
-        "Length of field name: "
+        "Length of field name: ",
+        "           Read only: ",
+        "              Safety: "
     };
     int n[] =
     {
         MAXSTRLEN,
         MAXROWS,
         MAXCOLS,
-        MAXFLEN
+        MAXFLEN,
+        ro,
+        safe
     };
     int i;
-    int j=4;
+    int j=6;
     
     wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-33)/2, j+2, 33);
     for (i=0; i<j; i++)
@@ -5032,6 +5044,7 @@ static char *hlpstrs[] =
     "-r        Read-only mode",
     "-x        Mixed mode",
     "-y        Locked mode",
+    "-z        Safety on",
     "-t        Top",
     "-b        Bottom",
     "-n <num>  Go to num'th row",
@@ -5103,7 +5116,7 @@ int main(int argc, char **argv)
     strcpy(progname, argv[0]);
     curr = 0;
     opterr = 0;
-    while ((c=getopt(argc, argv, "HhRrVvXxYyTtBbN:n:D:d:S:s:?")) != -1)
+    while ((c=getopt(argc, argv, "HhRrVvXxYyZzTtBbN:n:D:d:S:s:?")) != -1)
     {
       switch (c)
       {
@@ -5118,6 +5131,10 @@ int main(int argc, char **argv)
         case 'Y':
           ro = TRUE;
           locked = TRUE;
+          break;
+        case 'z':
+        case 'Z':
+          safe = TRUE;
           break;
         case 'v':
         case 'V':
@@ -5193,7 +5210,7 @@ int main(int argc, char **argv)
           }
         case 'h':
         case 'H':
-          printf("\nUsage: %s [-r|x|y] [-t|b] [-n<row>] [-s<fstr>] "
+          printf("\nUsage: %s [-r|x|y|z] [-t|b] [-n<row>] [-s<fstr>] "
             "[-d<sep>] [datafile]\n",
             (char *)basename(progname));
           if (toupper(c) == 'H')
