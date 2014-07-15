@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.8.11 2014/07/10 $
+ * $Id: tcsvdb.c,v 0.8.12 2014/07/15 $
  */
 
-#define VERSION "0.8.11"
+#define VERSION "0.8.12"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -40,7 +40,7 @@ static char *slre_replace(const char *regex, const char *buf,
 
   do {
     s_len = s == NULL ? 0 : strlen(s);
-    if ((n = slre_match(regex, buf, len, &cap, 1)) > 0) {
+    if ((n = slre_match(regex, buf, len, &cap, 1, 0)) > 0) {
       n1 = cap.ptr - buf, n2 = strlen(sub),
          n3 = &buf[n] - &cap.ptr[cap.len];
     } else {
@@ -2936,7 +2936,7 @@ void search(int y, int c)
     {
         for (i=y+1; i<reccnt; i++)
         {
-            if ((k = slre_match(fstr, rows[i], strlen(rows[i]), &cap, 1)) > 0)
+            if ((k = slre_match(fstr, rows[i], strlen(rows[i]), &cap, 1, 0)) > 0)
             {
                 curr = i;
                 break;
@@ -2947,7 +2947,7 @@ void search(int y, int c)
     {
         for (i=y-1; i>=0; i--)
         {
-            if ((k = slre_match(fstr, rows[i], strlen(rows[i]), &cap, 1)) > 0)
+            if ((k = slre_match(fstr, rows[i], strlen(rows[i]), &cap, 1, 0)) > 0)
             {
                 curr = i;
                 break;
@@ -3018,7 +3018,7 @@ void searchfield(int y, int x)
             for (j=0; !(p[j]==csep || p[j]=='\0'); j++);
             p[j] = '\0';
         }
-        if ((k = slre_match(fstr, p, strlen(p), &cap, 1)) > 0)
+        if ((k = slre_match(fstr, p, strlen(p), &cap, 1, 0)) > 0)
         {
             curr = i;
             break;
@@ -3166,7 +3166,7 @@ void schange()
     {
         for (i=0; i<reccnt; i++)
         {
-            if ((k = slre_match(s1, rows[i], strlen(rows[i]), &cap, 1)) > 0)
+            if ((k = slre_match(s1, rows[i], strlen(rows[i]), &cap, 1, 0)) > 0)
             {
                 last = (i==0) ? 1 : i;
                 displn(i, 1);
@@ -3201,7 +3201,7 @@ void schange()
                      {
                          for (i=last-1; i>0; i--)
                              if ((j = slre_match(s1, rows[i], 
-                                  strlen(rows[i]), &cap, 1)) > 0)
+                                  strlen(rows[i]), &cap, 1, 0)) > 0)
                                  break;
                          i--;
                          continue;
