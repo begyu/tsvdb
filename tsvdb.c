@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.8.12 2014/07/15 $
+ * $Id: tcsvdb.c,v 0.8.13 2014/07/16 $
  */
 
-#define VERSION "0.8.12"
+#define VERSION "0.8.13"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -138,6 +138,7 @@ static bool bottom = FALSE;
 static bool pfind = FALSE;
 static bool regex = FALSE;
 static bool getregexp = FALSE;
+static bool goregex = FALSE;
 static int unkeys[] = {KEY_RIGHT, '\n', '\n', '\t', KEY_END, KEY_UP, 0};
 static int unkeypos = -1;
 static int sortpos = -1;
@@ -2863,9 +2864,49 @@ int substr(char *str1, char *str2)
   return (-1);
 }
 
+void regerr(int i, char *s)
+{
+  switch (i)
+  {
+    case SLRE_NO_MATCH:
+        strcpy(s, "No match");
+        break;
+    case SLRE_UNEXPECTED_QUANTIFIER:
+        strcpy(s, "Unexpected quantifier");
+        break;
+    case SLRE_UNBALANCED_BRACKETS:
+        strcpy(s, "Unbalanced brackets");
+        break;
+    case SLRE_INTERNAL_ERROR:
+        strcpy(s, "Internal error");
+        break;
+    case SLRE_INVALID_CHARACTER_SET:
+        strcpy(s, "Invalid char set");
+        break;
+    case SLRE_INVALID_METACHARACTER:
+        strcpy(s, "Invalid metacharacter");
+        break;
+    case SLRE_CAPS_ARRAY_TOO_SMALL:
+        strcpy(s, "Caps array too small");
+        break;
+    case SLRE_TOO_MANY_BRANCHES:
+        strcpy(s, "Too many branches");
+        break;
+    case SLRE_TOO_MANY_BRACKETS:
+        strcpy(s, "Too many brackets");
+        break;
+    default:
+        s[0] = '\0';
+        break;
+  }
+  if (i < 0)
+      putmsg("REGEXP: ", s, "!");
+}
+
 void search(int y, int c)
 {
-    register int i, j, k;
+    register int i, j;
+    int k=0;
     char cstr[] = "?";
     char s[MAXSTRLEN+1];
     bool masked;
@@ -2942,6 +2983,11 @@ void search(int y, int c)
                 break;
             }
         }
+        if (goregex)
+        {
+            goregex = FALSE;
+            regerr(k, s);
+        }
     }
     else if (c == RXBACK)
     {
@@ -2994,7 +3040,8 @@ void search(int y, int c)
 
 void searchfield(int y, int x)
 {
-    register int i, j, k;
+    register int i, j;
+    int k=0;
     char s[MAXSTRLEN+1];
     char *p;
     struct slre_cap cap = { NULL, 0 };
@@ -3024,6 +3071,11 @@ void searchfield(int y, int x)
             break;
         }
     }
+    if (goregex)
+    {
+        goregex = FALSE;
+        regerr(k, s);
+    }
     j = strlen(fstr);
     setcolor(wstat, MAINMENUCOLOR);
     mvwaddstr(wstat, 0, 20, (j!=0) ? "*" : " ");
@@ -3050,6 +3102,7 @@ void getfstr(void)
         fstr[0] = fchr;
     getregexp = TRUE;
     getstrings(fieldname, fieldbuf, 0, MAXSL+1, NULL);
+    goregex = fstr[0] == 0 ? FALSE : TRUE;
     getregexp = FALSE;
     touchwin(wbody);
     wrefresh(wbody);
@@ -4628,12 +4681,14 @@ void edit(void)
 #endif
         case CTRL_F:
             getfstr();
+            goregex = TRUE;
             search(curr, RXFORW);
             if ((curr-ctop) >= r)
                ctop = curr - (r-1);
             break;
         case ALT_F:
             getfstr();
+            goregex = TRUE;
             searchfield(curr, field);
             if ((curr-ctop) >= r)
                ctop = curr - (r-1);
