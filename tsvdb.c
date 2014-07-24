@@ -1,8 +1,8 @@
-/*
- * $Id: tcsvdb.c,v 0.8.13 2014/07/16 $
+﻿/*
+ * $Id: tcsvdb.c,v 0.8.14 2014/07/24 $
  */
 
-#define VERSION "0.8.13"
+#define VERSION "0.8.14"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -28,9 +28,110 @@
   #include <libgen.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+#if 1
+#include <errno.h>
+
+char *itoa(int value, char *string, int radix)
+{
+  char tmp[33];
+  char *tp = tmp;
+  int i;
+  unsigned v;
+  int sign;
+  char *sp;
+
+  if (radix > 36 || radix <= 1)
+  {
+    errno = EDOM;
+    return 0;
+  }
+  sign = (radix == 10 && value < 0);
+  if (sign)
+    v = -value;
+  else
+    v = (unsigned)value;
+  while (v || tp == tmp)
+  {
+    i = v % radix;
+    v = v / radix;
+    if (i < 10)
+      *tp++ = i+'0';
+    else
+      *tp++ = i + 'a' - 10;
+  }
+  if (string == 0)
+    string = (char *)malloc((tp-tmp)+sign+1);
+  sp = string;
+  if (sign)
+    *sp++ = '-';
+  while (tp > tmp)
+    *sp++ = *--tp;
+  *sp = 0;
+  return string;
+}
+#endif
+
+#include <signal.h>
+
+void siginthandler(int param)
+{
+    return;
+}
+
+
+int putmsg(char *, char *, char *);
+
+
 /****REGEXP****/
 /* http://cesanta.com */
 #include "slre.c"
+
+#define RXCINS ("(?i)")
+#define RXCLEN 4
+
+void regerr(int i, char *s)
+{
+  switch (i)
+  {
+    case SLRE_NO_MATCH:
+        strcpy(s, "No match");
+        break;
+    case SLRE_UNEXPECTED_QUANTIFIER:
+        strcpy(s, "Unexpected quantifier");
+        break;
+    case SLRE_UNBALANCED_BRACKETS:
+        strcpy(s, "Unbalanced brackets");
+        break;
+    case SLRE_INTERNAL_ERROR:
+        strcpy(s, "Internal error");
+        break;
+    case SLRE_INVALID_CHARACTER_SET:
+        strcpy(s, "Invalid char set");
+        break;
+    case SLRE_INVALID_METACHARACTER:
+        strcpy(s, "Invalid metacharacter");
+        break;
+    case SLRE_CAPS_ARRAY_TOO_SMALL:
+        strcpy(s, "Caps array too small");
+        break;
+    case SLRE_TOO_MANY_BRANCHES:
+        strcpy(s, "Too many branches");
+        break;
+    case SLRE_TOO_MANY_BRACKETS:
+        strcpy(s, "Too many brackets");
+        break;
+    default:
+        s[0] = '\0';
+        break;
+  }
+  if (i < 0)
+      putmsg("REGEXP: ", s, "!");
+}
 
 static char *slre_replace(const char *regex, const char *buf,
                           const char *sub) {
@@ -59,6 +160,7 @@ static char *slre_replace(const char *regex, const char *buf,
   return s;
 }
 /*END_REGEXP*/
+
 
 
 #ifdef A_COLOR
@@ -139,6 +241,7 @@ static bool pfind = FALSE;
 static bool regex = FALSE;
 static bool getregexp = FALSE;
 static bool goregex = FALSE;
+static int regexcase = 0;
 static int unkeys[] = {KEY_RIGHT, '\n', '\n', '\t', KEY_END, KEY_UP, 0};
 static int unkeypos = -1;
 static int sortpos = -1;
@@ -167,112 +270,6 @@ void msg(char *);
 
 int casestr(char *, bool, bool);
 int capfstr(char *, bool, bool);
-
-int putmsg(char *, char *, char *);
-
-#if 1
-#include <errno.h>
-
-char *itoa(int value, char *string, int radix)
-{
-  char tmp[33];
-  char *tp = tmp;
-  int i;
-  unsigned v;
-  int sign;
-  char *sp;
-
-  if (radix > 36 || radix <= 1)
-  {
-    errno = EDOM;
-    return 0;
-  }
-  sign = (radix == 10 && value < 0);
-  if (sign)
-    v = -value;
-  else
-    v = (unsigned)value;
-  while (v || tp == tmp)
-  {
-    i = v % radix;
-    v = v / radix;
-    if (i < 10)
-      *tp++ = i+'0';
-    else
-      *tp++ = i + 'a' - 10;
-  }
-  if (string == 0)
-    string = (char *)malloc((tp-tmp)+sign+1);
-  sp = string;
-  if (sign)
-    *sp++ = '-';
-  while (tp > tmp)
-    *sp++ = *--tp;
-  *sp = 0;
-  return string;
-}
-#endif
-
-#include <signal.h>
-
-void siginthandler(int param)
-{
-    return;
-}
-
-/*
-//int utf8len(char ch)
-//{
-//    unsigned char uc = (unsigned char)ch;
-//    if (uc >= 0xFC)
-//        return(6);
-//    else if (uc >= 0xF8)
-//        return(5);
-//    else if (uc >= 0xF0)
-//        return(4);
-//    else if (uc >= 0xE0)
-//        return(3);
-//    else if (uc >= 0xC0)
-//        return(2);
-//    else
-//        return(1);
-//}
-//
-//void get_utf8char(char c[6], int len)
-//{
-//    int i;
-//
-//    c[0] = getch();
-//    len = utf8len(c[0]);
-//    for (i=1; i<len; i++)
-//        c[i] = getch();
-//}
-//
-//void insert_char(char *s, int pos, char c[6], int len)
-//{
-//    register int i;
-//    int j = strlen(s);
-////  char *old = s;
-//
-//    j += len;
-////  s = (char *) realloc(s, j);
-////  if (s == NULL)
-////  {
-////      s = old;
-////      return;
-////  }
-//    for (i=j; i>(pos+len); i--)
-//        s[i] = s[i-len];
-//    for (i=0; i<len; i++)
-//        s[pos+i] = c[i];
-//}
-//
-//void delete_char(char *s, int pos, int len)
-//{
-//    strcpy(s+pos, s+pos+len);
-//}
-*/
-
 
 /****DAT****/
 
@@ -2864,45 +2861,6 @@ int substr(char *str1, char *str2)
   return (-1);
 }
 
-void regerr(int i, char *s)
-{
-  switch (i)
-  {
-    case SLRE_NO_MATCH:
-        strcpy(s, "No match");
-        break;
-    case SLRE_UNEXPECTED_QUANTIFIER:
-        strcpy(s, "Unexpected quantifier");
-        break;
-    case SLRE_UNBALANCED_BRACKETS:
-        strcpy(s, "Unbalanced brackets");
-        break;
-    case SLRE_INTERNAL_ERROR:
-        strcpy(s, "Internal error");
-        break;
-    case SLRE_INVALID_CHARACTER_SET:
-        strcpy(s, "Invalid char set");
-        break;
-    case SLRE_INVALID_METACHARACTER:
-        strcpy(s, "Invalid metacharacter");
-        break;
-    case SLRE_CAPS_ARRAY_TOO_SMALL:
-        strcpy(s, "Caps array too small");
-        break;
-    case SLRE_TOO_MANY_BRANCHES:
-        strcpy(s, "Too many branches");
-        break;
-    case SLRE_TOO_MANY_BRACKETS:
-        strcpy(s, "Too many brackets");
-        break;
-    default:
-        s[0] = '\0';
-        break;
-  }
-  if (i < 0)
-      putmsg("REGEXP: ", s, "!");
-}
-
 void search(int y, int c)
 {
     register int i, j;
@@ -2977,7 +2935,9 @@ void search(int y, int c)
     {
         for (i=y+1; i<reccnt; i++)
         {
-            if ((k = slre_match(fstr, rows[i], strlen(rows[i]), &cap, 1, 0)) > 0)
+            if ((k = slre_match(fstr+(regexcase==0 ? 0 : RXCLEN),
+                                rows[i], strlen(rows[i]),
+                                &cap, 1, regexcase)) > 0)
             {
                 curr = i;
                 break;
@@ -2993,7 +2953,9 @@ void search(int y, int c)
     {
         for (i=y-1; i>=0; i--)
         {
-            if ((k = slre_match(fstr, rows[i], strlen(rows[i]), &cap, 1, 0)) > 0)
+            if ((k = slre_match(fstr+(regexcase==0 ? 0 : RXCLEN),
+                                rows[i], strlen(rows[i]),
+                                &cap, 1, regexcase)) > 0)
             {
                 curr = i;
                 break;
@@ -3065,7 +3027,8 @@ void searchfield(int y, int x)
             for (j=0; !(p[j]==csep || p[j]=='\0'); j++);
             p[j] = '\0';
         }
-        if ((k = slre_match(fstr, p, strlen(p), &cap, 1, 0)) > 0)
+        if ((k = slre_match(fstr+(regexcase==0 ? 0 : RXCLEN), p, strlen(p),
+                            &cap, 1, regexcase)) > 0)
         {
             curr = i;
             break;
@@ -3107,6 +3070,10 @@ void getfstr(void)
     touchwin(wbody);
     wrefresh(wbody);
     regex = TRUE;
+    if (strstr(fstr, RXCINS) == fstr)
+        regexcase = SLRE_IGNORE_CASE;
+    else
+        regexcase = 0;
 }
 
 void change()
@@ -4681,14 +4648,12 @@ void edit(void)
 #endif
         case CTRL_F:
             getfstr();
-            goregex = TRUE;
             search(curr, RXFORW);
             if ((curr-ctop) >= r)
                ctop = curr - (r-1);
             break;
         case ALT_F:
             getfstr();
-            goregex = TRUE;
             searchfield(curr, field);
             if ((curr-ctop) >= r)
                ctop = curr - (r-1);
@@ -4912,7 +4877,7 @@ menu SubMenu1[] =
     { "Delimit", unlimit, "Remove delimiters" },
     { "Terminate", delimit, "Add delimiters" },
     { "seParate", dosep, "Set field separator" },
-    { "adJust", doindent, "Align left/right" },
+    { "adJust", doindent, "Align left/right/center" },
     { "Sort", dosort, "Sort file" },
     { "Field", dosortby, "Sort by other field" },
     { "nUm", dosortnum, "Sort numerical order" },
@@ -5292,3 +5257,8 @@ int main(int argc, char **argv)
     startmenu(MainMenu, datfname);
     return 0;
 }
+
+#ifdef __cplusplus
+}
+#endif
+
