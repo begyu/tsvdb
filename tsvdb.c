@@ -1,8 +1,8 @@
-﻿/*
- * $Id: tcsvdb.c,v 0.8.14 2014/07/24 $
+/*
+ * $Id: tcsvdb.c,v 0.8.15 2014/07/31 $
  */
 
-#define VERSION "0.8.14"
+#define VERSION "0.8.15"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -3464,6 +3464,8 @@ void selected(void)
         }
         fclose(fp);
         msg(NULL);
+        def_prog_mode();
+        endwin();
         if (j == 0)
             return;
 /*        execlp("tsvdb", tmpfname, 0);*/
@@ -3471,6 +3473,7 @@ void selected(void)
         strcat(buf, " ");
         strcat(buf, tmpfname);
         system(buf);
+        reset_prog_mode();
         colorbox(wtitl, TITLECOLOR, 0);
         titlemsg(datfname);
         redraw();
@@ -3718,6 +3721,7 @@ void gorec()
     if ((i > 0) && (i <= reccnt))
         curr = i-1;
 }
+
 int selectfield(int n)
 {
     WINDOW *wmsg;
@@ -5114,6 +5118,7 @@ void subfunc2(void)
     };
     
     wmsg = mvwinputbox(wbody, (bodylen()-5)/3, (bodywidth()-40)/2, 7, 40);
+    wborder(wmsg, '|', '|', '-', '-', '+', '+', '+', '+');
     mvwaddstr(wmsg, 1,13, s[0]);
     mvwaddstr(wmsg, 2, 3, s[1]);
     mvwaddstr(wmsg, 3, 3, s[2]);
