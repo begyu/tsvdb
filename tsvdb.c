@@ -3679,7 +3679,9 @@ void calc(bool repl)
     copy(FALSE);
     for (i=0; clp[i]; i++)
     {
-        if (clp[i] == '\n')
+        if (clp[i] == ',')
+            clp[i] = '.';
+        else if (clp[i] == '\n')
             clp[i] = ' ';
     }
     num = calcExpression(clp);
