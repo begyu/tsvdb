@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.8.16 2014/08/07 $
+ * $Id: tcsvdb.c,v 0.9.0 2014/08/07 $
  */
 
-#define VERSION "0.8.16"
+#define VERSION "0.9.0"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -448,6 +448,7 @@ double calcExpression(char *str)
 //#define ALT_L 0x1aC
 //#define ALT_U 0x1B5
 //#define ALT_X 0x1b8
+//#define ALT_Y 0x1b9
 */
 
 void subfunc1(void);
@@ -3415,7 +3416,7 @@ void schange()
     char s[MAXSTRLEN+1];
     int changes=0;
     int rlen;
-    char c;
+    char c=0;
     char *p;
     struct slre_cap cap = { NULL, 0 };
     int last=0;
@@ -3591,7 +3592,7 @@ void schange()
 }
 
 
-void copy()
+void copy(bool ro)
 {
     register int i, j;
     char c;
@@ -3624,7 +3625,7 @@ void copy()
     clp[j] = '\0';
 }
 
-void paste()
+void paste(bool ro)
 {
     int i, j, k, l;
     char c;
@@ -3662,6 +3663,8 @@ void paste()
         rows[curr][i] = c;
         i++;
         j++;
+        if (j >= (len[field]-1))
+            break;
     }
     modified = TRUE;
     flagmsg();
@@ -3670,9 +3673,10 @@ void paste()
 void calc(bool repl)
 {
     register int i;
-    double num;
+    double num, num2;
+    char *endptr;
 
-    copy();
+    copy(FALSE);
     for (i=0; clp[i]; i++)
     {
         if (clp[i] == '\n')
@@ -3687,13 +3691,40 @@ void calc(bool repl)
         if (ro || calcerr)
             return;
         sprintf(clp, "%lf", num);
-        paste();
+        i = strlen(clp);
+        while(i > (len[field]-1))
+        {
+            i--;
+            clp[i] = '\0';
+        }
+        num2 = strtod(clp, &endptr);
+        if (num2 == num)
+            paste(FALSE);
     }
     else
     {
         putmsg(calcerr ? "ERROR: " : "", clp, "");
     }
 }
+
+void evalall()
+{
+    int i;
+
+    if (ro)
+        return;
+
+    if ((i=yesno("Evaluate whole column! Are You sure? (Y/N):")) == 0)
+        return;
+
+    i = curr;
+    for (curr=0; curr<reccnt; curr++)
+    {
+        calc(TRUE);
+    }
+    curr = i;
+}
+
 
 void redraw()
 {
@@ -4952,10 +4983,10 @@ void edit(void)
                ctop = curr - (r-1);
             break;
         case CTRL_C:
-            copy();
+            copy(ro);
             break;
         case CTRL_V:
-            paste();
+            paste(ro);
             break;
         case CTRL_X:
             if (wr == TRUE)
@@ -5062,6 +5093,9 @@ void edit(void)
             break;
         case ALT_X:
             calc(TRUE);
+            break;
+        case ALT_Y:
+            evalall();
             break;
         default:
             if ((c == 0x81) || (c == 0xEB) || (c == 0x1FB))
@@ -5234,7 +5268,7 @@ void subfunc1(void)
         " Del/Home:  clear fstr     \t\t    Ctl-Up:  move backward",
         "   Ctrl-G:  goto line      \t\t  Ctl-Down:  move forward",
         "    Alt-I:  insert field   \t\t     Alt-D:  remove field",
-        "    Alt-C:  calculate      \t\t     Alt-X:  calc field"
+        "    Alt-C:  calculate      \t\t   Alt-X/Y:  calc fld/cols"
     };
     int i;
     int j=14;
