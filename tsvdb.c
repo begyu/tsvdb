@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.8.15 2014/07/31 $
+ * $Id: tcsvdb.c,v 0.8.16 2014/08/07 $
  */
 
-#define VERSION "0.8.15"
+#define VERSION "0.8.16"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -13,20 +13,24 @@
 # include <curses.h>
 #endif
 
-/*#include <ctype.h>*/
-/*#include <stdio.h>*/
+#include <ctype.h>
+#include <stdio.h>
 #include <stdlib.h>
-/*#include <string.h>*/
+#include <string.h>
 #include <time.h>
 #include <locale.h>
 #include <unistd.h>
 #include <wchar.h>
-/*#include <getopt.h>*/
+#include <getopt.h>
 #include <sys/stat.h>
 
 #ifndef MSDOS
   #include <libgen.h>
 #endif
+
+//#ifdef __MINGW_VERSION
+//  #include <windows.h>
+//#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -162,6 +166,256 @@ static char *slre_replace(const char *regex, const char *buf,
 /*END_REGEXP*/
 
 
+/****CALCU****/
+static bool calcerr=FALSE;
+
+/*#include <stdio.h>*/
+/*#include <stdlib.h>*/
+/*#include <ctype.h>*/
+#include <math.h>
+
+size_t proccessSum(double *);
+
+enum
+{
+	LT_NUMBER,
+	LT_OPERATOR,
+	LT_NONE
+} LexType;
+
+enum
+{
+	ANNERR_NONE,
+	ANERR_SYNTAX,
+	ANERR_DIVBYZERO,
+	ANERR_BRACKETS,
+	ANERR_NUM
+} AnalError;
+
+char token[256];
+char *expr;
+size_t i = 0;
+size_t tokenType;
+
+size_t getToken()
+{
+/*	size_t len = strlen(expr);*/
+	size_t j = 0;
+	size_t res = LT_NONE;
+
+	if(expr[i] == '\0')
+		return 0;
+
+	while(isspace(expr[i]))
+		++i;
+
+	// number
+	if(isdigit(expr[i]) || expr[i] == '.')
+	{
+		do
+		{
+			token[j] = expr[i];
+			++i; ++j;
+		}
+		while(isdigit(expr[i]) || expr[i] == '.');
+		token[j] = '\0';
+		res = LT_NUMBER;
+	}
+	else //operator
+	if(strchr("+-*/^()", expr[i]))
+	{
+		token[0] = expr[i];
+		token[1] = '\0';
+		res = LT_OPERATOR;
+		++i;
+	}
+	else
+	{
+/*		printf("Error parsing first symbol\n");*/
+		calcerr = TRUE;
+	}
+
+	tokenType = res;
+	return res;
+}
+
+size_t proccessAtom(double *answ)
+{
+/*	char op;*/
+/*	double t = 0;*/
+
+	if(tokenType == LT_NUMBER)
+	{
+		*answ = atof(token);
+		getToken();
+	}
+	else
+		return ANERR_SYNTAX;
+	return 0;
+}
+
+
+size_t proccessBrackets(double *answ)
+{
+	size_t r;
+	char op = *token;
+
+	if(op == '(')
+	{
+		getToken();
+		if((r = proccessSum(answ)) != 0)
+			return r;
+		op = *token;
+		if(op != ')')
+			return ANERR_BRACKETS;
+		getToken();
+	}
+	else 
+	if((r = proccessAtom(answ)) != 0)
+		return r;
+	
+	return 0;
+}
+
+size_t proccessUnary(double *answ)
+{
+	char op;
+	size_t r;
+/*	double t = 0;*/
+	
+	op = *token;
+	if(op == '+' || op == '-')
+	{
+		getToken();
+	}
+	if((r = proccessBrackets(answ)) != 0)
+		return r;
+
+	if(op == '-')
+		(*answ) = -(*answ);
+	
+	return 0;
+}
+
+size_t proccessPow(double *answ)
+{
+	char op;
+	size_t r;
+	double t = 0;
+	
+	if((r = proccessUnary(answ)) != 0)
+		return r;
+
+	op = *token;
+	while(op == '^')
+	{
+		getToken();
+		if((r = proccessUnary(&t)) != 0)
+			return r;
+		*answ = pow(*answ, t);
+		op = *token;
+	}
+
+	return 0;
+}
+
+size_t proccessMul(double *answ)
+{
+	char op;
+	size_t r;
+	double t = 0;
+	
+	if((r = proccessPow(answ)) != 0)
+		return r;
+
+	op = *token;
+	while(op == '*' || op == '/')
+	{
+		getToken();
+		if((r = proccessPow(&t)) != 0)
+			return r;
+		switch(op)
+		{
+			case '*':
+				*answ *= t;
+			break;
+
+			case '/':
+				if(t == 0)
+					return ANERR_DIVBYZERO;
+				*answ /= t;
+			break;
+		}
+		op = *token;
+	}
+
+	return 0;
+}
+
+size_t proccessSum(double *answ)
+{
+	char op;
+	double t = 0;
+	size_t r;
+	if((r = proccessMul(answ)) != 0)
+		return r;
+
+	op = *token;
+	while(op == '+' || op == '-')
+	{
+		getToken();
+		if((r = proccessMul(&t)) != 0)
+			return r;
+		switch(op)
+		{
+			case '+':
+				*answ += t;
+			break;
+
+			case '-':
+				*answ -= t;
+			break;
+		}
+		
+		op = *token;
+	}
+
+	return 0 ;
+}
+
+double calcExpression(char *str)
+{
+	double res = 0;
+	size_t r = 0;
+	expr = str;
+	i = 0;
+	calcerr = FALSE;
+	getToken();
+	if((r = proccessSum(&res)) != 0)
+	{
+		char buf[64];
+		switch(r)
+		{
+			case ANERR_SYNTAX:
+				strcpy(buf, "Syntax error");
+			break;
+			case ANERR_DIVBYZERO:
+				strcpy(buf, "Division by zero");
+			break;
+			case ANERR_BRACKETS:
+				strcpy(buf, "Brackets pairing error");
+			break;
+		}
+/*		printf("Calculation error %d (%s)\n", r, buf);*/
+		sprintf(str, "Calculation error %d (%s)\n", r, buf);
+	}else
+/*		printf("%s =  %lf\n", expr, res);*/
+		sprintf(str, "%s =  %lf\n", expr, res);
+	return res;
+}
+/*END_CALCU*/
+
+
 
 #ifdef A_COLOR
 #define A_ATTR  (A_ATTRIBUTES ^ A_COLOR)  /* A_BLINK, A_REVERSE, A_BOLD */
@@ -190,8 +444,10 @@ static char *slre_replace(const char *regex, const char *buf,
 #define CTRL_X 0x18
 #define CTRL_Z 0x1A
 /*
-//#define       ALT_U 0x1B5
-//#define       ALT_L 0x1aC
+//#define ALT_C 0x1a3
+//#define ALT_L 0x1aC
+//#define ALT_U 0x1B5
+//#define ALT_X 0x1b8
 */
 
 void subfunc1(void);
@@ -3335,7 +3591,7 @@ void schange()
 }
 
 
-void copy(int y)
+void copy()
 {
     register int i, j;
     char c;
@@ -3346,7 +3602,7 @@ void copy(int y)
     j = 0;
     if (field > 0)
     {
-        while ((c = rows[y][i]) != '\0')
+        while ((c = rows[curr][i]) != '\0')
         {
             i++;
             if (c == csep)
@@ -3358,7 +3614,7 @@ void copy(int y)
     j = 0;
     while (1)
     {
-        c = rows[y][i];
+        c = rows[curr][i];
         if ((c == csep) || (c == '\0'))
             break;
         i++;
@@ -3368,7 +3624,7 @@ void copy(int y)
     clp[j] = '\0';
 }
 
-void paste(int y)
+void paste()
 {
     int i, j, k, l;
     char c;
@@ -3381,7 +3637,7 @@ void paste(int y)
     j = 0;
     if (field > 0)
     {
-        while ((c = rows[y][i]) != '\0')
+        while ((c = rows[curr][i]) != '\0')
         {
             i++;
             if (c == csep)
@@ -3393,17 +3649,17 @@ void paste(int y)
     j = 0;
     while (1)
     {
-        c = rows[y][i];
+        c = rows[curr][i];
         if ((c == csep) || (c == '\0'))
         {
-            l = strlen(rows[y]);
+            l = strlen(rows[curr]);
             for (k=l; k>i; k--)
-                rows[y][k] = rows[y][k-1];
+                rows[curr][k] = rows[curr][k-1];
         }
         c = clp[j];
         if (c == '\0')
             break;
-        rows[y][i] = c;
+        rows[curr][i] = c;
         i++;
         j++;
     }
@@ -3411,6 +3667,33 @@ void paste(int y)
     flagmsg();
 }    
 
+void calc(bool repl)
+{
+    register int i;
+    double num;
+
+    copy();
+    for (i=0; clp[i]; i++)
+    {
+        if (clp[i] == '\n')
+            clp[i] = ' ';
+    }
+    num = calcExpression(clp);
+    i = strlen(clp);
+    clp[i-1] = '\0';
+
+    if (repl)
+    {
+        if (ro || calcerr)
+            return;
+        sprintf(clp, "%lf", num);
+        paste();
+    }
+    else
+    {
+        putmsg(calcerr ? "ERROR: " : "", clp, "");
+    }
+}
 
 void redraw()
 {
@@ -4048,6 +4331,12 @@ void dosum(void)
             else
                 strcpy(s[j], " ");
             n = strtod(s[j], &bp);
+            if (bp != NULL)
+            {
+                n = calcExpression(s[j]);
+                if (calcerr)
+                    n = 0.0;
+            }
             x[j] += n;
         }
     }
@@ -4663,10 +4952,10 @@ void edit(void)
                ctop = curr - (r-1);
             break;
         case CTRL_C:
-            copy(curr);
+            copy();
             break;
         case CTRL_V:
-            paste(curr);
+            paste();
             break;
         case CTRL_X:
             if (wr == TRUE)
@@ -4767,6 +5056,12 @@ void edit(void)
             break;
         case ALT_D:
             delfield();
+            break;
+        case ALT_C:
+            calc(FALSE);
+            break;
+        case ALT_X:
+            calc(TRUE);
             break;
         default:
             if ((c == 0x81) || (c == 0xEB) || (c == 0x1FB))
@@ -4938,10 +5233,11 @@ void subfunc1(void)
         "     Bksp:  del fstr back  \t\t Shft-Home:  center",
         " Del/Home:  clear fstr     \t\t    Ctl-Up:  move backward",
         "   Ctrl-G:  goto line      \t\t  Ctl-Down:  move forward",
-        "    Alt-I:  insert field   \t\t     Alt-D:  remove field"
+        "    Alt-I:  insert field   \t\t     Alt-D:  remove field",
+        "    Alt-C:  calculate      \t\t     Alt-X:  calc field"
     };
     int i;
-    int j=13;
+    int j=14;
     
     wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-68)/2, j+2, 68);
     for (i=0; i<j; i++)
