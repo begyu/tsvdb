@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.0 2014/08/07 $
+ * $Id: tcsvdb.c,v 0.9.1 2014/08/08 $
  */
 
-#define VERSION "0.9.0"
+#define VERSION "0.9.1"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -3629,16 +3629,20 @@ void paste(bool ro)
 {
     int i, j, k, l;
     char c;
+    char buf[MAXSTRLEN+1];
 
     if (ro)
         return;
+
     if (clp[0] == '\0')
         return;
+
+    strcpy(buf, rows[curr]);
     i = 0;
     j = 0;
     if (field > 0)
     {
-        while ((c = rows[curr][i]) != '\0')
+        while ((c = buf[i]) != '\0')
         {
             i++;
             if (c == csep)
@@ -3650,22 +3654,30 @@ void paste(bool ro)
     j = 0;
     while (1)
     {
-        c = rows[curr][i];
+        c = buf[i];
         if ((c == csep) || (c == '\0'))
         {
-            l = strlen(rows[curr]);
+            l = strlen(buf);
             for (k=l; k>i; k--)
-                rows[curr][k] = rows[curr][k-1];
+                buf[k] = buf[k-1];
         }
         c = clp[j];
         if (c == '\0')
+        {
+            buf[i] = ' ';
             break;
-        rows[curr][i] = c;
+        }
+        buf[i] = c;
         i++;
         j++;
         if (j >= (len[field]-1))
             break;
     }
+    i = strlen(buf);
+    if (rows[curr] != NULL)
+       free(rows[curr]);
+    rows[curr] = (char *)malloc(i+1);
+    strcpy(rows[curr], buf);
     modified = TRUE;
     flagmsg();
 }    
@@ -3682,7 +3694,7 @@ void calc(bool repl)
         if (clp[i] == ',')
             clp[i] = '.';
         else if (clp[i] == '\n')
-            clp[i] = ' ';
+            clp[i] = '\0';
     }
     num = calcExpression(clp);
     i = strlen(clp);
