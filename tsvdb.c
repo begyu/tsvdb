@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.3 2014/08/27 $
+ * $Id: tcsvdb.c,v 0.9.4 2014/09/08 $
  */
 
-#define VERSION "0.9.3"
+#define VERSION "0.9.4"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -601,11 +601,17 @@ int     load(char *name)
         if (!f)
                 return error("$load file \"%s\"", name);
         if (fseek(f, 0, SEEK_END))
+        {
+                fclose(f);
                 return error("$seek");
+        }
         i = ftell(f);
         if (ins_mem(i)) {
                 if (fseek(f, 0, SEEK_SET))
+                {
+                        fclose(f);
                         return error("$seek");
+                }
                 if ((j=fread(text + cur_pos, 1, i, f)) < i)
                 {
                         for ( ; j<i; j++)
@@ -626,7 +632,10 @@ int     save(char *name, int pos, int size)
         if (!f)
                 return error("$save file \"%s\"", name);
         if (fwrite(text + pos, 1, size, f) < size)
+        {
+                fclose(f);
                 return error("$write");
+        }
         if (fclose(f))
                 return error("$close");
         return 1;
@@ -1102,7 +1111,7 @@ double calcExpression(char *str)
 			break;
 		}
 /*		printf("Calculation error %d (%s)\n", r, buf);*/
-		sprintf(str, "Calculation error %d (%s)\n", r, buf);
+		sprintf(str, "Calculation error %d (%s)\n", (int)r, buf);
 	}else
 /*		printf("%s =  %lf\n", expr, res);*/
 		sprintf(str, "%s =  %lf\n", expr, res);
@@ -1238,10 +1247,10 @@ typedef struct
 /*
 void    clsbody(void);
 int     bodylen(void);
-WINDOW *bodywin(void);
+// WINDOW *bodywin(void);
 
 void    rmerror(void);
-void    rmstatus(void);
+// void    rmstatus(void);
 
 void    titlemsg(char *msg);
 void    bodymsg(char *msg);
@@ -1742,20 +1751,20 @@ int bodylen(void)
 #endif
 }
 
-WINDOW *bodywin(void)
-{
-    return wbody;
-}
+//WINDOW *bodywin(void)
+//{
+//    return wbody;
+//}
 
 void rmerror(void)
 {
     rmline(wstat, 0);
 }
 
-void rmstatus(void)
-{
-    rmline(wstat, 1);
-}
+//void rmstatus(void)
+//{
+//    rmline(wstat, 1);
+//}
 
 void titlemsg(char *msg)
 {
@@ -3079,6 +3088,7 @@ int loadfile(char *fname)
         {
             sprintf(buf, "ERROR: Can't open file '%s'", fname);
             errormsg(buf);
+            fclose(fp);
             return -1;
         }
         strcpy(head, buf);
@@ -5101,10 +5111,9 @@ void limit(bool set)
 {
     register int i, j, k;
     int l;
-    bool limited = FALSE;
+    bool limited = (rows[0][0] == '"');
     char buf[MAXSTRLEN+1];
 
-    limited = (rows[0][0] == '"');
     for (i=0; i<reccnt; i++)
     {
         if (rows[i] != NULL)
@@ -5831,6 +5840,7 @@ void edit(void)
     wrefresh(wbody);
     werase(wstat);
 }
+
 void DoOpen(void)
 {
     char fname[MAXSTRLEN];
@@ -6182,10 +6192,10 @@ void subfunc2(void)
 
 int main(int argc, char **argv)
 {
-    int i, j, c;
+    int i, c;
     char s[MAXSTRLEN] = "";
 
-    strcpy(progname, argv[0]);
+    strncpy(progname, argv[0], MAXSTRLEN-1);
     curr = 0;
     opterr = 0;
     while ((c=getopt(argc, argv, "HhRrVvXxYyZzTtBbEeN:n:D:d:S:s:?")) != -1)
@@ -6224,18 +6234,22 @@ int main(int argc, char **argv)
         case 's':
         case 'S':
           strcpy(fstr, optarg);
-          j = strlen(fstr);
-          for (i=0; i<j; i++)
+          if (fstr[0] == '(')
           {
-              if (is_metacharacter((unsigned char *)(fstr+i)))
+              regex = TRUE;
+              unkeys[3] = CTRL_F;
+              i = strlen(fstr);
+              if (fstr[i-1] != ')')
               {
-                  regex = TRUE;
-                  unkeys[3] = CTRL_F;
-                  break;
+                  strcat(fstr, ")");
               }
           }
-          if (regex == FALSE)
+          else
+          {
               casestr(fstr, TRUE, TRUE);
+              unkeys[4] = '\n';
+              unkeys[5] = '\0';
+          }
           pfind = TRUE;
           break;
         case '?':
@@ -6322,4 +6336,3 @@ int main(int argc, char **argv)
 #ifdef __cplusplus
 }
 #endif
-
