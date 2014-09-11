@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.4 2014/09/08 $
+ * $Id: tcsvdb.c,v 0.9.5 2014/09/11 $
  */
 
-#define VERSION "0.9.4"
+#define VERSION "0.9.5"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -850,6 +850,7 @@ int ed(char *f)
                         k_goto();
                         break;
                 case KEY_ESC:
+                case KEY_F(1):
                         hmsg(HLPSTR);
                         break;
                 case '\r':
@@ -6296,7 +6297,7 @@ int main(int argc, char **argv)
           }
         case 'h':
         case 'H':
-          printf("\nUsage: %s [-r|x|y|z] [-t|b] [-n<row>] [-s<fstr>] "
+          printf("\nUsage: %s [-r|x|y|z|t|b|e|h|v] [-n<row>] [-s<fstr>] "
             "[-d<sep>] [datafile]\n",
             (char *)basename(progname));
           if (toupper(c) == 'H')
@@ -6336,3 +6337,4 @@ int main(int argc, char **argv)
 #ifdef __cplusplus
 }
 #endif
+
