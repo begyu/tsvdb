@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.5 2014/09/11 $
+ * $Id: tcsvdb.c,v 0.9.6 2014/09/18 $
  */
 
-#define VERSION "0.9.5"
+#define VERSION "0.9.6"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -2217,6 +2217,7 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
                 bp--;
             break;
         case CTL_RIGHT:
+            defdisp = FALSE;
             while ((bp - buf < (int)strlen(buf)) && (*(bp) != ' ')) 
                 bp++;
             while ((bp - buf < (int)strlen(buf)) && (*(bp) == ' ')) 
@@ -2318,6 +2319,17 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
                 buf[6] = (char)buf[5];
                 buf[5] = (char)buf[4];
                 buf[4] = (char)'.';
+            }
+            defdisp = FALSE;
+            break;
+        case ALT_D:
+            j = strlen(buf);
+            for (i=0; i<j; i++)
+            {
+                if (buf[i] == '.')
+                    buf[i] = ',';
+                else if (buf[i] == ',')
+                    buf[i] = '.';
             }
             defdisp = FALSE;
             break;
@@ -6028,13 +6040,15 @@ void edithelp(void)
         "    Ctrl-B:\tpaste fstr",
         "Ctrl/Alt-U:\tuppercase",
         "Ctrl/Alt-L:\tlowercase",
+        "    Ctrl-D:\tformat date",
+        "     Alt-D:\tchange dot & colon",
         "       Esc:\tcancel",
         "     Enter:\tmodify record"
     };
     int i;
-    int j=16;
+    int j=18;
     
-    wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-36)/2, j+2, 36);
+    wmsg = mvwinputbox(wbody, (bodylen()-j)/4, (bodywidth()-36)/2, j+2, 36);
     for (i=0; i<j; i++)
         mvwaddstr(wmsg, i+1, 2, s[i]);
     wrefresh(wmsg);
@@ -6071,7 +6085,7 @@ void reghelp(void)
     int i;
     int j=18;
     
-    wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-65)/2, j+2, 65);
+    wmsg = mvwinputbox(wbody, (bodylen()-j)/4, (bodywidth()-65)/2, j+2, 65);
     for (i=0; i<j; i++)
         mvwaddstr(wmsg, i+1, 2, s[i]);
     wrefresh(wmsg);
@@ -6130,7 +6144,7 @@ static char *hlpstrs[] =
     "-b        Bottom",
     "-n <num>  Go to num'th row",
     "-s <str>  Search str",
-    "          or \"-s <(regexp)>\"",
+    "          or \"-s (regexp)\"",
     "-d <,|;>  Set separator to ',' or ';'",
     "-e        Edit as text",
     "-h        Help",
