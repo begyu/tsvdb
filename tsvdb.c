@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.6 2014/09/18 $
+ * $Id: tcsvdb.c,v 0.9.7 2014/12/03 $
  */
 
-#define VERSION "0.9.6"
+#define VERSION "0.9.7"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -166,7 +166,7 @@ static char *slre_replace(const char *regex, const char *buf,
 /*END_REGEXP*/
 
 /***ED***/
-#include <curses.h>
+/*#include <curses.h>*/
 #include <signal.h>
 #include <string.h>
 #include <stdlib.h>
@@ -2271,7 +2271,8 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
                 clp[i] = *tp++;
                 i++;
             }
-            clp[i] = '\0';
+            if (i > 0)
+                clp[i] = '\0';
             break;
         case CTRL_V:
             j = strlen(clp);
@@ -3755,6 +3756,11 @@ void modify(int y)
            strcat(buf, ssep);
            strcat(buf, fieldbuf[i]);
         }
+        else
+        {
+           strcat(buf, ssep);
+           strcat(buf, " ");
+        }
     }
     strcat(buf, "\n");
     i = strlen(buf);
@@ -4323,6 +4329,7 @@ void copy(bool ro)
 
     if (ro)
         return;
+
     i = 0;
     j = 0;
     if (field > 0)
@@ -4336,11 +4343,19 @@ void copy(bool ro)
                break;
         }
     }
+
+    if (rows[curr][i] == ' ')
+    {
+        c = rows[curr][i+1];
+        if ((c == csep) || (c == '\n') || (c == '\0'))
+            return;
+    }
+
     j = 0;
     while (1)
     {
         c = rows[curr][i];
-        if ((c == csep) || (c == '\0'))
+        if ((c == csep) || (c == '\n') || (c == '\0'))
             break;
         i++;
         clp[j] = c;
@@ -6012,6 +6027,9 @@ void subfunc1(void)
     int j=14;
     
     wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-68)/2, j+2, 68);
+#ifndef __MINGW_VERSION
+    wborder(wmsg, '|', '|', '-', '-', '+', '+', '+', '+');
+#endif
     for (i=0; i<j; i++)
         mvwaddstr(wmsg, i+1, 2, s[i]);
     wrefresh(wmsg);
@@ -6049,6 +6067,9 @@ void edithelp(void)
     int j=18;
     
     wmsg = mvwinputbox(wbody, (bodylen()-j)/4, (bodywidth()-36)/2, j+2, 36);
+#ifndef __MINGW_VERSION
+    wborder(wmsg, '|', '|', '-', '-', '+', '+', '+', '+');
+#endif
     for (i=0; i<j; i++)
         mvwaddstr(wmsg, i+1, 2, s[i]);
     wrefresh(wmsg);
@@ -6086,6 +6107,9 @@ void reghelp(void)
     int j=18;
     
     wmsg = mvwinputbox(wbody, (bodylen()-j)/4, (bodywidth()-65)/2, j+2, 65);
+#ifndef __MINGW_VERSION
+    wborder(wmsg, '|', '|', '-', '-', '+', '+', '+', '+');
+#endif
     for (i=0; i<j; i++)
         mvwaddstr(wmsg, i+1, 2, s[i]);
     wrefresh(wmsg);
@@ -6121,6 +6145,9 @@ void limits(void)
     int j=6;
     
     wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-33)/2, j+2, 33);
+#ifndef __MINGW_VERSION
+    wborder(wmsg, '|', '|', '-', '-', '+', '+', '+', '+');
+#endif
     for (i=0; i<j; i++)
     {
         strcpy(buf, s[i]);
@@ -6168,6 +6195,9 @@ void opthelp(void)
     int j=11;
     
     wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-40)/2, j+2, 40);
+#ifndef __MINGW_VERSION
+    wborder(wmsg, '|', '|', '-', '-', '+', '+', '+', '+');
+#endif
     for (i=0; i<j; i++)
         mvwaddstr(wmsg, i+1, 2, hlpstrs[i]);
     wrefresh(wmsg);
