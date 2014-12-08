@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.7 2014/12/03 $
+ * $Id: tcsvdb.c,v 0.9.8 2014/12/08 $
  */
 
-#define VERSION "0.9.7"
+#define VERSION "0.9.8"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -3318,6 +3318,41 @@ int savefile(char *fname, int force)
     return 0;
 }
 
+int copyfile(char *fname, char *str)
+{
+    int i, j;
+    FILE *fp;
+    char buf[MAXSTRLEN+1];
+    char *p;
+
+    if (((p = strstr(fname, ".tsv")) == NULL)
+    ||  ((p = strstr(fname, ".csv")) == NULL))
+    {
+        if ((fp = fopen(fname, "r")) == NULL)
+        {
+            strcat(fname, ".tsv");
+        }
+        else
+            fclose(fp);
+    }
+
+    if ((fp = fopen(fname, "r")) != NULL)
+    {
+        buf[0] = '\0';
+        fgets(buf, MAXSTRLEN, fp);
+        while (!feof(fp))
+        {
+            buf[0] = '\0';
+            fgets(buf, MAXSTRLEN, fp);
+            j = strlen(buf);
+            if ((i = slre_match(str, buf, j, NULL, 1, 0)) > 0)
+                 printf("%s", buf);
+        }
+        fclose(fp);
+    }
+    return 0;
+}
+
 void clean()
 {
     register int i;
@@ -6172,6 +6207,7 @@ static char *hlpstrs[] =
     "-n <num>  Go to num'th row",
     "-s <str>  Search str",
     "          or \"-s (regexp)\"",
+    "-l <str>  List str found",
     "-d <,|;>  Set separator to ',' or ';'",
     "-e        Edit as text",
     "-h        Help",
@@ -6243,7 +6279,7 @@ int main(int argc, char **argv)
     strncpy(progname, argv[0], MAXSTRLEN-1);
     curr = 0;
     opterr = 0;
-    while ((c=getopt(argc, argv, "HhRrVvXxYyZzTtBbEeN:n:D:d:S:s:?")) != -1)
+    while ((c=getopt(argc, argv, "HhRrVvXxYyZzTtBbEeN:n:D:d:S:s:L:l:?")) != -1)
     {
       switch (c)
       {
@@ -6297,6 +6333,11 @@ int main(int argc, char **argv)
           }
           pfind = TRUE;
           break;
+        case 'l':
+        case 'L':
+          strcpy(fstr, optarg);
+          i = -2;
+          break;
         case '?':
           if ((toupper(optopt) == 'N')
           || (toupper(optopt) == 'S')
@@ -6341,8 +6382,8 @@ int main(int argc, char **argv)
           }
         case 'h':
         case 'H':
-          printf("\nUsage: %s [-r|x|y|z|t|b|e|h|v] [-n<row>] [-s<fstr>] "
-            "[-d<sep>] [datafile]\n",
+          printf("\nUsage: %s [-r|x|y|z|t|b|e|h|v] [-n<row>] [-[s|l]<fstr>] "
+            "[-d<sep>] [file]\n",
             (char *)basename(progname));
           if (toupper(c) == 'H')
               help();
@@ -6363,6 +6404,11 @@ int main(int argc, char **argv)
     if (i == -1)
     {
        ed(s);
+       return 0;
+    }
+    else if (i == -2)
+    {
+       copyfile(s, fstr);
        return 0;
     }
     init();
