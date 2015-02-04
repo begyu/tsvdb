@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.8 2014/12/08 $
+ * $Id: tcsvdb.c,v 0.9.9 2015/02/04 $
  */
 
-#define VERSION "0.9.8"
+#define VERSION "0.9.9"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -744,12 +744,12 @@ int ed(char *f)
                 refresh();
                 ch = getch();
                 switch (ch) {
-                case 129: //0x81='ü'
-                case 144: //0x90='É'
-                case 395: //0x8B='ő'
-                case 394: //0x8A='Ő'
+                case 129: //0x81=''
+                case 144: //0x90=''
+                case 395: //0x8B='‹'
+                case 394: //0x8A='Š'
                 case 507: //0xFB='ű'
-                case 491: //0xEB='Ű'
+                case 491: //0xEB='ë'
                         ins_ch(ch);
                         break;
                 case KEY_UP:
@@ -2163,7 +2163,7 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
             break;
 
         case 507: //0xFB='ű'
-        case 491: //0xEB='Ű'
+        case 491: //0xEB='ë'
             goto ins_char;
             break;
 
@@ -2381,16 +2381,16 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
                 case '|':
                     tp[i] = 0x92;
                     break;
-                case 'í': /*161*/
+                case 'ˇ': /*161*/
                     tp[i] = 0xFB;
                     break;
-                case 'ĺ': /*146*/
+                case '’': /*146*/
                     tp[i] = 0xEB;
                     break;
                 case 'ű': /*251*/
                     tp[i] = 0xA1;
                     break;
-                case 'Ű': /*235*/
+                case 'ë': /*235*/
                     tp[i] = 0x92;
                     break;
                 case '=':
@@ -2408,7 +2408,7 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
                 case '0':
                     tp[i] = 0x94;
                     break;
-                case 'ö': /*148*/
+                case '”': /*148*/
                     tp[i] = 0x30;
                     break;
                 case ')':
@@ -2622,12 +2622,12 @@ char *getfname(char *desc, char *fname, int length)
 int casestr(char *str, bool upper, bool ascii)
 {
 #define MAXCHS 9
-  char chr_lo[] = "áéíóöőúüű";
-  char chr_hi[] = "ÁÉÍÓÖŐÚÜŰ";
+  char chr_lo[] = " ‚ˇ˘”‹Łű";
+  char chr_hi[] = "µÖŕ™Šéšë";
   char asc_lo[] = "aeiooouuu";
   char asc_hi[] = "AEIOOOUUU";
-/*  char chr_utflo[] = "├í├ę├ş├│├Â┼Ĺ├║├╝┼▒";*/
-/*  char chr_utfhi[] = "├ü├ë├Ź├ô├ľ┼É├Ü├ť┼░";*/
+/*  char chr_utflo[] = "ĂˇĂ©Ă­ĂłĂ¶Ĺ‘ĂşĂĽĹ±";*/
+/*  char chr_utfhi[] = "ĂĂ‰ĂŤĂ“Ă–ĹĂšĂśĹ°";*/
   register int i, j;
   int len=strlen(str);
   unsigned char c;
@@ -3318,7 +3318,7 @@ int savefile(char *fname, int force)
     return 0;
 }
 
-int copyfile(char *fname, char *str)
+int copyfile(char *fname, char *str, bool head)
 {
     int i, j;
     FILE *fp;
@@ -3342,6 +3342,11 @@ int copyfile(char *fname, char *str)
         fgets(buf, MAXSTRLEN, fp);
         while (!feof(fp))
         {
+            if (head)
+            {
+                 printf("%s", buf);
+                 head = FALSE;
+            }
             buf[0] = '\0';
             fgets(buf, MAXSTRLEN, fp);
             j = strlen(buf);
@@ -6207,7 +6212,9 @@ static char *hlpstrs[] =
     "-n <num>  Go to num'th row",
     "-s <str>  Search str",
     "          or \"-s (regexp)\"",
+    "          or \"-S (regexp)\" to extract",
     "-l <str>  List str found",
+    "          or \"-L\" with header",
     "-d <,|;>  Set separator to ',' or ';'",
     "-e        Edit as text",
     "-h        Help",
@@ -6228,7 +6235,7 @@ void opthelp(void)
 {
     WINDOW *wmsg;
     int i;
-    int j=11;
+    int j=16;
     
     wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-40)/2, j+2, 40);
 #ifndef __MINGW_VERSION
@@ -6273,7 +6280,8 @@ void subfunc2(void)
 
 int main(int argc, char **argv)
 {
-    int i, c;
+    int i = 0;
+    int c;
     char s[MAXSTRLEN] = "";
 
     strncpy(progname, argv[0], MAXSTRLEN-1);
@@ -6324,6 +6332,11 @@ int main(int argc, char **argv)
               {
                   strcat(fstr, ")");
               }
+              if (c == 'S')
+              {
+                  unkeys[2] = 'l';
+                  unkeys[3] = '\0';
+              }
           }
           else
           {
@@ -6334,13 +6347,16 @@ int main(int argc, char **argv)
           pfind = TRUE;
           break;
         case 'l':
+          i = -2;
         case 'L':
           strcpy(fstr, optarg);
-          i = -2;
+          if (i != -2)
+              i = -3;
           break;
         case '?':
           if ((toupper(optopt) == 'N')
           || (toupper(optopt) == 'S')
+          || (toupper(optopt) == 'L')
           || (toupper(optopt) == 'D'))
               fprintf (stderr, "Option -%c requires an argument.\n", optopt);
           else if (isprint (optopt))
@@ -6406,9 +6422,9 @@ int main(int argc, char **argv)
        ed(s);
        return 0;
     }
-    else if (i == -2)
+    else if (i < -1)
     {
-       copyfile(s, fstr);
+       copyfile(s, fstr, (i==-3));
        return 0;
     }
     init();
@@ -6427,4 +6443,3 @@ int main(int argc, char **argv)
 #ifdef __cplusplus
 }
 #endif
-
