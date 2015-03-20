@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.9 2015/02/04 $
+ * $Id: tcsvdb.c,v 0.9.10 2015/03/20 $
  */
 
-#define VERSION "0.9.9"
+#define VERSION "0.9.10"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -1210,6 +1210,7 @@ static int sortpos = -1;
 static bool numsort = FALSE;
 static bool filtered = FALSE;
 static bool headspac = FALSE;
+static bool hunsort = FALSE;
 
 #define TABCSEP '\t'
 #define TABSSEP "\t"
@@ -2695,13 +2696,269 @@ int capfstr(char *str, bool upper, bool ascii)
 
 int hstrcmp(const char *s1, const char *s2)
 {
+    register int i, j, k;
+    char c, c1, c2, c3;
     char e1[MAXSTRLEN];
     char e2[MAXSTRLEN];
+#define MAXCH 59
+    char abc[] = "Aµ BCCDDE‚FGGHIÖˇJKLLMNNOŕ˘™”Š‹PQRSSTTUéŁšëűVWXYZZ[\\]^_`";
+    char abd[] = "AAABCDEFGGGHIJKLLLMNOPQRSTTTUUUUVWXYZabcccddddefghijklmnop";
 
-    strcpy(e1, s1);
-    strcpy(e2, s2);
-    casestr(e1, TRUE, TRUE);
-    casestr(e2, TRUE, TRUE);
+    if (hunsort == FALSE)
+    {
+        strcpy(e1, s1);
+        strcpy(e2, s2);
+        casestr(e1, TRUE, TRUE);
+        casestr(e2, TRUE, TRUE);
+        return strcmp(e1, e2);
+    }
+
+    i = j = 0;
+    do
+    {
+        c1 = s1[i];
+        if (c1>='a' && c1<='z')
+            	c1 -= ('a'-'A');
+        c = c1;
+        for (k=0; k<MAXCH; k++)
+        {
+            if (c1 == abc[k])
+            {
+                c = abd[k];
+                break;
+            }
+        }
+        c2 = toupper(s1[i+1]);
+        c3 = toupper(s1[i+2]);
+        switch (c1)
+        {
+        case 'C':
+           if (c2 == 'S')
+           {
+               i++;
+               c++;
+           }
+           else if ((c2 == 'C') && (c3 == 'S'))
+                {
+                    i++; i++;
+                    c++; j++;
+                }
+           break;
+        case 'D':
+           if (c2 == 'Z')
+           {
+               i++;
+               c++;
+           }
+           else if ((c2 == 'D') && (c3 == 'Z'))
+                {
+                    i++; i++;
+                    c++; j++;
+                }
+           break;
+        case 'G':
+           if (c2 == 'Y')
+           {
+               i++;
+               c++;
+           }
+           else if ((c2 == 'G') && (c3 == 'Y'))
+                {
+                    i++; i++;
+                    c++; j++;
+                }
+           break;
+        case 'L':
+           if (c2 == 'Y')
+           {
+               i++;
+               c++;
+           }
+           else if ((c2 == 'L') && (c3 == 'Y'))
+                {
+                    i++; i++;
+                    c++; j++;
+                }
+           break;
+        case 'N':
+           if (c2 == 'Y')
+           {
+               i++;
+               c++;
+           }
+           else if ((c2 == 'N') && (c3 == 'Y'))
+                {
+                    i++; i++;
+                    c++; j++;
+                }
+           break;
+        case 'T':
+           if (c2 == 'Y')
+           {
+               i++;
+               c++;
+           }
+           else if ((c2 == 'T') && (c3 == 'Y'))
+                {
+                    i++; i++;
+                    c++; j++;
+                }
+           break;
+        case 'S':
+           if (c2 == 'Z')
+           {
+               i++;
+               c++;
+           }
+           else if ((c2 == 'S') && (c3 == 'Z'))
+                {
+                    i++; i++;
+                    c++; j++;
+                }
+           break;
+        case 'Z':
+           if (c2 == 'S')
+           {
+               i++;
+               c++;
+           }
+           else if ((c2 == 'Z') && (c3 == 'S'))
+                {
+                    i++; i++;
+                    c++; j++;
+                }
+           break;
+        default:
+           break;
+        }
+        e1[j] = c;
+        i++;
+        j++;
+    } while (c1 != 0);
+
+    i = j = 0;
+    do
+    {
+        c1 = s2[i];
+        if (c1>='a' && c1<='z') 
+            	c1 -= ('a'-'A');
+        c = c1;
+        for (k=0; k<MAXCH; k++)
+        {
+            if (c1 == abc[k])
+            {
+                c = abd[k];
+                break;
+            }
+        }
+        c2 = toupper(s2[i+1]);
+        c3 = toupper(s2[i+2]);
+        switch (c1)
+        {
+        case 'C':
+           if (c2 == 'S')
+           {
+               i++;
+               c++;
+           }
+           else if ((c2 == 'C') && (c3 == 'S'))
+                {
+                    i++; i++;
+                    c++; j++;
+                }
+           break;
+        case 'D':
+           if (c2 == 'Z')
+           {
+               i++;
+               c++;
+           }
+           else if ((c2 == 'D') && (c3 == 'Z'))
+                {
+                    i++; i++;
+                    c++; j++;
+                }
+           break;
+        case 'G':
+           if (c2 == 'Y')
+           {
+               i++;
+               c++;
+           }
+           else if ((c2 == 'G') && (c3 == 'Y'))
+                {
+                    i++; i++;
+                    c++; j++;
+                }
+           break;
+        case 'L':
+           if (c2 == 'Y')
+           {
+               i++;
+               c++;
+           }
+           else if ((c2 == 'L') && (c3 == 'Y'))
+                {
+                    i++; i++;
+                    c++; j++;
+                }
+           break;
+        case 'N':
+           if (c2 == 'Y')
+           {
+               i++;
+               c++;
+           }
+           else if ((c2 == 'N') && (c3 == 'Y'))
+                {
+                    i++; i++;
+                    c++; j++;
+                }
+           break;
+        case 'T':
+           if (c2 == 'Y')
+           {
+               i++;
+               c++;
+           }
+           else if ((c2 == 'T') && (c3 == 'Y'))
+                {
+                    i++; i++;
+                    c++; j++;
+                }
+           break;
+        case 'S':
+           if (c2 == 'Z')
+           {
+               i++;
+               c++;
+           }
+           else if ((c2 == 'S') && (c3 == 'Z'))
+                {
+                    i++; i++;
+                    c++; j++;
+                }
+           break;
+        case 'Z':
+           if (c2 == 'S')
+           {
+               i++;
+               c++;
+           }
+           else if ((c2 == 'Z') && (c3 == 'S'))
+                {
+                    i++; i++;
+                    c++; j++;
+                }
+           break;
+        default:
+           break;
+        }
+        e2[j] = c;
+        i++;
+        j++;
+    } while (c1 != 0);
+
     return strcmp(e1, e2);
 }
 
@@ -3089,6 +3346,16 @@ int loadfile(char *fname)
     {
         buf[0] = '\0';
         fgets(buf, MAXSTRLEN, fp);
+        i = strlen(buf);
+        for (i--; i>1; i--)
+            if (buf[i] > 0x1F)
+              	break;
+        if (i > 2)
+        {
+            buf[i+1] = 0x20;
+            buf[i+2] = 0x0A;
+            buf[i+3] = '\0';
+        }
         if ((p = strchr(buf, csep)) == NULL)
         {
             for (i=0; buf[i]!=0; i++)
@@ -4944,7 +5211,10 @@ void dosortby(void)
 #else
         sleep(1);
 #endif
-        sortpos = i;
+        sortpos = (i==0) ? -1 : i;
+        hunsort = FALSE;
+        if (yesno("Hungarian abc? (Y/N):") != 0)
+            hunsort = TRUE;
         if (yesno("Reverse order? (Y/N):") == 0)
             sort(reccnt);
         else
@@ -6443,3 +6713,4 @@ int main(int argc, char **argv)
 #ifdef __cplusplus
 }
 #endif
+
