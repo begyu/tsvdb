@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.10 2015/03/20 $
+ * $Id: tcsvdb.c,v 0.9.11 2015/03/31 $
  */
 
-#define VERSION "0.9.10"
+#define VERSION "0.9.11"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -2700,9 +2700,9 @@ int hstrcmp(const char *s1, const char *s2)
     char c, c1, c2, c3;
     char e1[MAXSTRLEN];
     char e2[MAXSTRLEN];
-#define MAXCH 59
-    char abc[] = "Aµ BCCDDE‚FGGHIÖˇJKLLMNNOŕ˘™”Š‹PQRSSTTUéŁšëűVWXYZZ[\\]^_`";
-    char abd[] = "AAABCDEFGGGHIJKLLLMNOPQRSTTTUUUUVWXYZabcccddddefghijklmnop";
+#define MAXCH 60
+    char abc[]="Aµ BCCDDE‚FGGHIÖˇJKLLMNNOŕ˘™”Š‹PQRSSTTUéŁšëűVWXYZZ[\\]^_`„";
+    char abd[]="AAABCDEFGGGHIJKLLLMNOPQRSTTTUUUUVWXYZabcccddddefghijklmnopA";
 
     if (hunsort == FALSE)
     {
@@ -2741,7 +2741,7 @@ int hstrcmp(const char *s1, const char *s2)
            else if ((c2 == 'C') && (c3 == 'S'))
                 {
                     i++; i++;
-                    c++; j++;
+                    c++;
                 }
            break;
         case 'D':
@@ -2753,7 +2753,7 @@ int hstrcmp(const char *s1, const char *s2)
            else if ((c2 == 'D') && (c3 == 'Z'))
                 {
                     i++; i++;
-                    c++; j++;
+                    c++;
                 }
            break;
         case 'G':
@@ -2765,7 +2765,7 @@ int hstrcmp(const char *s1, const char *s2)
            else if ((c2 == 'G') && (c3 == 'Y'))
                 {
                     i++; i++;
-                    c++; j++;
+                    c++;
                 }
            break;
         case 'L':
@@ -2777,7 +2777,7 @@ int hstrcmp(const char *s1, const char *s2)
            else if ((c2 == 'L') && (c3 == 'Y'))
                 {
                     i++; i++;
-                    c++; j++;
+                    c++;
                 }
            break;
         case 'N':
@@ -2789,7 +2789,7 @@ int hstrcmp(const char *s1, const char *s2)
            else if ((c2 == 'N') && (c3 == 'Y'))
                 {
                     i++; i++;
-                    c++; j++;
+                    c++;
                 }
            break;
         case 'T':
@@ -2801,7 +2801,7 @@ int hstrcmp(const char *s1, const char *s2)
            else if ((c2 == 'T') && (c3 == 'Y'))
                 {
                     i++; i++;
-                    c++; j++;
+                    c++;
                 }
            break;
         case 'S':
@@ -2813,7 +2813,7 @@ int hstrcmp(const char *s1, const char *s2)
            else if ((c2 == 'S') && (c3 == 'Z'))
                 {
                     i++; i++;
-                    c++; j++;
+                    c++;
                 }
            break;
         case 'Z':
@@ -2825,7 +2825,7 @@ int hstrcmp(const char *s1, const char *s2)
            else if ((c2 == 'Z') && (c3 == 'S'))
                 {
                     i++; i++;
-                    c++; j++;
+                    c++;
                 }
            break;
         default:
@@ -2864,7 +2864,7 @@ int hstrcmp(const char *s1, const char *s2)
            else if ((c2 == 'C') && (c3 == 'S'))
                 {
                     i++; i++;
-                    c++; j++;
+                    c++;
                 }
            break;
         case 'D':
@@ -2876,7 +2876,7 @@ int hstrcmp(const char *s1, const char *s2)
            else if ((c2 == 'D') && (c3 == 'Z'))
                 {
                     i++; i++;
-                    c++; j++;
+                    c++;
                 }
            break;
         case 'G':
@@ -2888,7 +2888,7 @@ int hstrcmp(const char *s1, const char *s2)
            else if ((c2 == 'G') && (c3 == 'Y'))
                 {
                     i++; i++;
-                    c++; j++;
+                    c++;
                 }
            break;
         case 'L':
@@ -2900,7 +2900,7 @@ int hstrcmp(const char *s1, const char *s2)
            else if ((c2 == 'L') && (c3 == 'Y'))
                 {
                     i++; i++;
-                    c++; j++;
+                    c++;
                 }
            break;
         case 'N':
@@ -2912,7 +2912,7 @@ int hstrcmp(const char *s1, const char *s2)
            else if ((c2 == 'N') && (c3 == 'Y'))
                 {
                     i++; i++;
-                    c++; j++;
+                    c++;
                 }
            break;
         case 'T':
@@ -2924,7 +2924,7 @@ int hstrcmp(const char *s1, const char *s2)
            else if ((c2 == 'T') && (c3 == 'Y'))
                 {
                     i++; i++;
-                    c++; j++;
+                    c++;
                 }
            break;
         case 'S':
@@ -2936,7 +2936,7 @@ int hstrcmp(const char *s1, const char *s2)
            else if ((c2 == 'S') && (c3 == 'Z'))
                 {
                     i++; i++;
-                    c++; j++;
+                    c++;
                 }
            break;
         case 'Z':
@@ -2948,7 +2948,7 @@ int hstrcmp(const char *s1, const char *s2)
            else if ((c2 == 'Z') && (c3 == 'S'))
                 {
                     i++; i++;
-                    c++; j++;
+                    c++;
                 }
            break;
         default:
