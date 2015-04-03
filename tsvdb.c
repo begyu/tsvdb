@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.11 2015/03/31 $
+ * $Id: tcsvdb.c,v 0.9.12 2015/04/03 $
  */
 
-#define VERSION "0.9.11"
+#define VERSION "0.9.12"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -5794,6 +5794,7 @@ void edit(void)
     int r = bodylen() -1;
     int b = reccnt-bodylen();
     bool quit = FALSE;
+    bool unget= FALSE;
     int ctop;
     int c;
 
@@ -5827,7 +5828,11 @@ void edit(void)
         }
         statusln();
         displn(curr, curr-ctop+1);
-        switch (c = waitforkey())
+        if (unget == FALSE)
+            	c = waitforkey();
+        else
+            	unget = FALSE;
+        switch (c)
         {
         case KEY_UP:
             if (curr > 0)
@@ -6029,6 +6034,16 @@ void edit(void)
                     modify(curr);
                     curs_set(1);
                 }
+            }
+            if (MOUSE_WHEEL_UP)
+            {
+                c = KEY_UP;
+                unget = TRUE;
+            }
+            else if (MOUSE_WHEEL_DOWN)
+            {
+                c = KEY_DOWN;
+                unget = TRUE;
             }
             break;
 #endif
