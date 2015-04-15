@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.12 2015/04/03 $
+ * $Id: tcsvdb.c,v 0.9.13 2015/04/15 $
  */
 
-#define VERSION "0.9.12"
+#define VERSION "0.9.13"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -1684,6 +1684,16 @@ static void mainmenu(menu *mp)
                     key = ERR;
                 }
             }
+            if (MOUSE_WHEEL_UP)
+            {
+                cur = (cur + nitems - 1) % nitems;
+                key = ERR;
+            }
+            else if (MOUSE_WHEEL_DOWN)
+            {
+                cur = (cur + 1) % nitems;
+                key = ERR;
+            }
             break;
 #endif
 
@@ -1998,6 +2008,16 @@ void domenu(menu *mp)
                     }
                 }
             }
+            if (MOUSE_WHEEL_UP)
+            {
+                key = KEY_UP;
+                continue;
+            }
+            else if (MOUSE_WHEEL_DOWN)
+            {
+                key = KEY_DOWN;
+                continue;
+            }
             break;
 #endif
 
@@ -2261,6 +2281,16 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
                          c = KEY_ESC;
                     stop = TRUE;
                 }
+            }
+            if (MOUSE_WHEEL_UP)
+            {
+                c = KEY_UP;
+                stop = TRUE;
+            }
+            else if (MOUSE_WHEEL_DOWN)
+            {
+                c = KEY_DOWN;
+                stop = TRUE;
             }
             break;
 #endif
@@ -3822,6 +3852,10 @@ void brows(void)
                       curr = (curr+j) < k ? curr+j : k;
                 }
             }
+            if (MOUSE_WHEEL_UP && (curr>0))
+                curr--;
+            else if (MOUSE_WHEEL_DOWN && (curr<k))
+                curr++;
             break;
 #endif
         case 'Q':
@@ -5184,6 +5218,10 @@ int selectfield(int n)
                     }
                 }
             }
+            if (MOUSE_WHEEL_UP)
+                i = i>0 ? i-1 : n;
+            else if (MOUSE_WHEEL_DOWN)
+                i = i<n ? i+1 : 0;
             break;
 #endif
         }
