@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.13 2015/04/15 $
+ * $Id: tcsvdb.c,v 0.9.14 2015/04/17 $
  */
 
-#define VERSION "0.9.13"
+#define VERSION "0.9.14"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -5930,7 +5930,7 @@ void edit(void)
             {
                ctop += r;
                if (ctop > b)
-                  ctop = b;
+                  ctop = b+1;
             }
             break;
         case KEY_HOME:
