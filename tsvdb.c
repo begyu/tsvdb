@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.14 2015/04/17 $
+ * $Id: tcsvdb.c,v 0.9.15 2015/04/21 $
  */
 
-#define VERSION "0.9.14"
+#define VERSION "0.9.15"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -166,6 +166,7 @@ static char *slre_replace(const char *regex, const char *buf,
 /*END_REGEXP*/
 
 /***ED***/
+/* frox25.no-ip.org/~mtve */
 /*#include <curses.h>*/
 #include <signal.h>
 #include <string.h>
@@ -1147,6 +1148,7 @@ double calcExpression(char *str)
 #define CTRL_U 0x15
 #define CTRL_V 0x16
 #define CTRL_X 0x18
+#define CTRL_Y 0x19
 #define CTRL_Z 0x1A
 /*
 //#define ALT_C 0x1a3
@@ -1211,6 +1213,7 @@ static bool numsort = FALSE;
 static bool filtered = FALSE;
 static bool headspac = FALSE;
 static bool hunsort = FALSE;
+static bool insert = FALSE;
 
 #define TABCSEP '\t'
 #define TABSSEP "\t"
@@ -2140,7 +2143,7 @@ static void repainteditbox(WINDOW *win, int x, char *buf, int lim)
 int weditstr(WINDOW *win, char *buf, int field, int lim)
 {
     char org[MAXSTRLEN], *tp, *bp = buf;
-    bool defdisp = TRUE, stop = FALSE, insert = FALSE;
+    bool defdisp = TRUE, stop = FALSE;
     int cury, curx, begy, begx, oldattr;
     WINDOW *wedit;
     int c = 0;
@@ -2171,7 +2174,7 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
     colorbox(wedit, EDITBOXCOLOR, 0);
 
     keypad(wedit, TRUE);
-    curs_set(1);
+    curs_set(insert ? 2 : 1);
 
     while (!stop)
     {
@@ -2456,6 +2459,59 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
                     break;
                 case '_':
                     tp[i] = 0x9A;
+                    break;
+                }
+                i++;
+            }
+            break;
+        case CTRL_Y:
+            i = 0;
+            tp = buf;
+            while (tp[i] != '\0')
+            {
+                switch (tp[i])
+                {
+                case ',':
+                    tp[i] = '.';
+                    break;
+                case '.':
+                    tp[i] = ';';
+                    break;
+                case ';':
+                    tp[i] = ':';
+                    break;
+                case ':':
+                    tp[i] = ',';
+                    break;
+                case '"':
+                    tp[i] = '\'';
+                    break;
+                case '\'':
+                    tp[i] = '"';
+                    break;
+                case '(':
+                    tp[i] = '[';
+                    break;
+                case ')':
+                    tp[i] = ']';
+                    break;
+                case '[':
+                    tp[i] = '{';
+                    break;
+                case ']':
+                    tp[i] = '}';
+                    break;
+                case '{':
+                    tp[i] = '<';
+                    break;
+                case '}':
+                    tp[i] = '>';
+                    break;
+                case '<':
+                    tp[i] = '(';
+                    break;
+                case '>':
+                    tp[i] = ')';
                     break;
                 }
                 i++;
@@ -6409,25 +6465,24 @@ void edithelp(void)
     {
         "      Home:\tgo to 1'st char",
         "       End:\tgo to EOL",
-        "        Up:\tprevious field",
-        "      Down:\tnext field",
+        "   Up/Down:\tprevious/next field",
         "       Del:\tdelete char",
         "      Bksp:\tdelete back",
         "  Ctrl-End:\tdelete from cursor",
         "    Ctrl-W:\tdelete word back",
         "Ctl-arrows:\tskip word",
-        "    Ctrl-C:\tcopy",
-        "    Ctrl-V:\tpaste",
+        "  Ctrl-C/V:\tcopy/paste",
         "    Ctrl-B:\tpaste fstr",
         "Ctrl/Alt-U:\tuppercase",
         "Ctrl/Alt-L:\tlowercase",
         "    Ctrl-D:\tformat date",
         "     Alt-D:\tchange dot & colon",
+        "  Ctrl-X/Y:\taccent/punctuation",
         "       Esc:\tcancel",
         "     Enter:\tmodify record"
     };
     int i;
-    int j=18;
+    int j=17;
     
     wmsg = mvwinputbox(wbody, (bodylen()-j)/4, (bodywidth()-36)/2, j+2, 36);
 #ifndef __MINGW_VERSION
