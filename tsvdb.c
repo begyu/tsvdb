@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.15 2015/04/21 $
+ * $Id: tcsvdb.c,v 0.9.16 2015/04/22 $
  */
 
-#define VERSION "0.9.15"
+#define VERSION "0.9.16"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -4181,7 +4181,7 @@ void newrec(int y, bool dupl)
         msg(NULL);
         return;
     }
-    i = dupl ? strlen(rows[y+1]) : 2;
+    i = dupl ? strlen(rows[y]) : 2;
     p = (char *)malloc(i);
     if (p == NULL)
     {
