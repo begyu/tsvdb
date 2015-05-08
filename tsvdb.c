@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.16 2015/04/22 $
+ * $Id: tcsvdb.c,v 0.9.17 2015/05/08 $
  */
 
-#define VERSION "0.9.16"
+#define VERSION "0.9.17"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -3438,9 +3438,8 @@ int loadfile(char *fname)
               	break;
         if (i > 2)
         {
-            buf[i+1] = 0x20;
-            buf[i+2] = 0x0A;
-            buf[i+3] = '\0';
+            buf[i+1] = 0x0A;
+            buf[i+2] = '\0';
         }
         if ((p = strchr(buf, csep)) == NULL)
         {
@@ -4744,7 +4743,7 @@ void copy(bool ro)
     if (rows[curr][i] == ' ')
     {
         c = rows[curr][i+1];
-        if ((c == csep) || (c == '\n') || (c == '\0'))
+        if ((c == csep) || (c == '\r') || (c == '\n') || (c == '\0'))
             return;
     }
 
@@ -4752,7 +4751,7 @@ void copy(bool ro)
     while (1)
     {
         c = rows[curr][i];
-        if ((c == csep) || (c == '\n') || (c == '\0'))
+        if ((c == csep) || (c == '\r') || (c == '\n') || (c == '\0'))
             break;
         i++;
         clp[j] = c;
@@ -4989,6 +4988,7 @@ void dosort(void)
     else
         sort_back(reccnt);
     modified = TRUE;
+    flagmsg();
     redraw();
 }
 
@@ -6548,7 +6548,8 @@ void limits(void)
         "    Number of fields: ",
         "Length of field name: ",
         "           Read only: ",
-        "              Safety: "
+        "              Safety: ",
+        "             Crypted: "
     };
     int n[] =
     {
@@ -6557,10 +6558,11 @@ void limits(void)
         MAXCOLS,
         MAXFLEN,
         ro,
-        safe
+        safe,
+        cry
     };
     int i;
-    int j=6;
+    int j=7;
     
     wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-33)/2, j+2, 33);
 #ifndef __MINGW_VERSION
