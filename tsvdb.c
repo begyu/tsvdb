@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.17 2015/05/08 $
+ * $Id: tcsvdb.c,v 0.9.18 2015/05/13 $
  */
 
-#define VERSION "0.9.17"
+#define VERSION "0.9.18"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -1145,6 +1145,7 @@ double calcExpression(char *str)
 #define CTRL_F 0x06
 #define CTRL_G 0x07
 #define CTRL_L 0x0C
+#define CTRL_O 0x0F
 #define CTRL_U 0x15
 #define CTRL_V 0x16
 #define CTRL_X 0x18
@@ -2047,7 +2048,18 @@ void domenu(menu *mp)
 
 void init()
 {
+#ifdef XCURSES
+    FILE *fd;
+    if ( !(fd = fopen("/dev/tty", "r+")) )
+    {
+        fprintf(stderr, "Failed to open /dev/tty\n");
+        exit(1);
+    }
+/*    set_term(newterm(getenv("TERM"), stderr, stdin));*/
+    set_term(newterm(NULL, fd, fd));
+#else
     initscr();
+#endif
     incurses = TRUE;
     initcolor();
 
@@ -5737,7 +5749,7 @@ void insfield(void)
     if ((i = strlen(head)) > 66)
         return;
 
-    if (getfname ("Enter new field name:", fldname, MAXFLEN))
+    if (getfname("Enter new field name:", fldname, MAXFLEN))
     {
         if (fldname[0] == '\0')
             return;
@@ -5871,6 +5883,73 @@ void delfield(void)
         modified = TRUE;
         redraw();
         flagmsg();
+    }
+}
+
+void count(bool column)
+{
+    register int i, j;
+    int k = 0;
+    char *p;
+    struct slre_cap cap = { NULL, 0 };
+    char buf[MAXFLEN+1] = "";
+    char s[MAXSTRLEN+1];
+
+    if (getfname("Count for:", buf, MAXFLEN))
+    {
+        if (column)
+        {
+            k = 0;
+            for (i=0; i<reccnt; i++)
+            {
+                strcpy(s, rows[i]);
+                p = s;
+                if (field == 0)
+                {
+                    for (j=0; !(s[j]==csep || s[j]=='\0'); j++);
+                    s[j] = '\0';
+                }
+                else
+                {
+                    for (j=0; j<field; j++)
+                    {
+                        while (!(p[0]==csep || p[0]=='\0')) p++;
+                        p++;
+                    }
+                    for (j=0; !(p[j]==csep || p[j]=='\0'); j++);
+                    p[j] = '\0';
+                }
+                if ((j = slre_match(buf, p, strlen(p), &cap, 1, 0)) > 0)
+                    	k++;
+            }
+        }
+        else
+        {
+            k = 0;
+            for (i=0; i<reccnt; i++)
+            {
+                if ((j = slre_match(buf, rows[i], strlen(rows[i]),
+                                    &cap, 1, 0)) > 0)
+                    	k++;
+            }
+        }
+        strcpy(s, "\" is ");
+        strcat(s, itoa(k, s+6, 10));
+        strcat(s, " ");
+        i = strlen(buf)+strlen(s)+len[field]+26;
+        if (i > bodywidth())
+            	column = FALSE;
+        if (column)
+        {
+            strcat(s, "in ");
+            strcat(s, stru[field]);
+        }
+        putmsg(" Occurence of the \"", buf, s);
+#ifdef __MINGW_VERSION
+        pause(1);
+#else
+        sleep(1);
+#endif
     }
 }
 
@@ -6194,6 +6273,7 @@ void edit(void)
             if (filtered)
             {
                fltls();
+               curr = i;
                clsbody();
                wrefresh(wbody);
             }
@@ -6268,6 +6348,12 @@ void edit(void)
         case ALT_Y:
             evalall();
             break;
+        case CTRL_O:
+            count(FALSE);
+            break;
+        case ALT_O:
+            count(TRUE);
+            break;
         default:
             if ((c == 0x81) || (c == 0xEB) || (c == 0x1FB))
                c = 0x55; /* U */
@@ -6299,7 +6385,7 @@ void DoOpen(void)
                return;
     }
     strcpy(fname, datfname);
-    if (getfname ("File to open:", fname, 50))
+    if (getfname("File to open:", fname, 50))
     {
         if (loadfile(fname) == 0)
             titlemsg(fname);
@@ -6313,7 +6399,7 @@ void DoSave(void)
     if (ro && !cry)
         return;
     strcpy(fname, datfname);
-    if (getfname ("Save to file:", fname, 50))
+    if (getfname("Save to file:", fname, 50))
     {
         if (savefile(fname, 0) == 0)
             titlemsg(fname);
@@ -6437,13 +6523,14 @@ void subfunc1(void)
         "Tab/C-Tab:  find next      \t\t Shft-left:  align left",
         " Shft-Tab:  previous       \t\tShft-right:  align right",
         "     Bksp:  del fstr back  \t\t Shft-Home:  center",
-        " Del/Home:  clear fstr     \t\t    Ctl-Up:  move backward",
-        "   Ctrl-G:  goto line      \t\t  Ctl-Down:  move forward",
+        " Del/Home:  clear fstr     \t\t   Ctrl-Up:  move backward",
+        "   Ctrl-G:  goto line      \t\t Ctrl-Down:  move forward",
         "    Alt-I:  insert field   \t\t     Alt-D:  remove field",
-        "    Alt-C:  calculate      \t\t   Alt-X/Y:  calc fld/cols"
+        "    Alt-C:  calculate      \t\t    Ctrl-O:  count substr",
+        "  Alt-X/Y:  calc fld/cols  \t\t     Alt-O:  count in field"
     };
     int i;
-    int j=14;
+    int j=15;
     
     wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-68)/2, j+2, 68);
 #ifndef __MINGW_VERSION
