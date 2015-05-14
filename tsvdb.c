@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.18 2015/05/13 $
+ * $Id: tcsvdb.c,v 0.9.19 2015/05/14 $
  */
 
-#define VERSION "0.9.18"
+#define VERSION "0.9.19"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -1183,6 +1183,7 @@ void opthelp(void);
 static char progname[MAXSTRLEN] = "";
 static char datfname[MAXSTRLEN] = "";
 static char fstr[MAXSTRLEN] = "";
+static char regstr[MAXFLEN] = "(?i)";
 static char fchr = '\0';
 static char head[MAXSTRLEN] = "";
 static char clp[MAXSTRLEN] = "";
@@ -2048,18 +2049,7 @@ void domenu(menu *mp)
 
 void init()
 {
-#ifdef XCURSES
-    FILE *fd;
-    if ( !(fd = fopen("/dev/tty", "r+")) )
-    {
-        fprintf(stderr, "Failed to open /dev/tty\n");
-        exit(1);
-    }
-/*    set_term(newterm(getenv("TERM"), stderr, stdin));*/
-    set_term(newterm(NULL, fd, fd));
-#else
     initscr();
-#endif
     incurses = TRUE;
     initcolor();
 
@@ -4444,8 +4434,6 @@ void searchfield(int y, int x)
     wrefresh(wstat);
 }
 
-#define MAXSL 33
-
 void getfstr(void)
 {
     char *fieldname[2];
@@ -4453,14 +4441,15 @@ void getfstr(void)
 
     fieldname[0] = "Search:";
     fieldname[1] = 0;
-    fieldbuf[0] = fstr;
+    fieldbuf[0] = regstr;
     fieldbuf[1] = 0;
 
-    if (fstr[0] == '\0')
-        fstr[0] = fchr;
+    if (regstr[0] == '\0')
+        	strcpy(regstr, "(?i)");
     getregexp = TRUE;
-    getstrings(fieldname, fieldbuf, 0, MAXSL+1, NULL);
-    goregex = fstr[0] == 0 ? FALSE : TRUE;
+    getstrings(fieldname, fieldbuf, 0, MAXFLEN+1, NULL);
+    goregex = regstr[0] == 0 ? FALSE : TRUE;
+    strcpy(fstr, regstr);
     getregexp = FALSE;
     touchwin(wbody);
     wrefresh(wbody);
@@ -4474,8 +4463,8 @@ void getfstr(void)
 void change()
 {
     register int i, j, k;
-    static char s1[MAXSL] = "";
-    static char s2[MAXSL] = "";
+    static char s1[MAXFLEN] = "";
+    static char s2[MAXFLEN] = "";
     char *fieldname[3];
     char *fieldbuf[3];
     char s[MAXSTRLEN+1];
@@ -4490,13 +4479,13 @@ void change()
     fieldname[0] = FROMSTR;
     fieldname[1] = TOSTR;
     fieldname[2] = 0;
-    if (strlen(fstr) <= MAXSL)
+    if (strlen(fstr) <= MAXFLEN)
         strcpy(s1, fstr);
     fieldbuf[0] = s1;
     fieldbuf[1] = s2;
     fieldbuf[2] = 0;
 
-    getstrings(fieldname, fieldbuf, 0, MAXSL+1, NULL);
+    getstrings(fieldname, fieldbuf, 0, MAXFLEN+1, NULL);
 
     rlen = strlen(s1);
     if (rlen == 0)
@@ -4547,8 +4536,8 @@ void schange()
 {
     register int i, j;
     int k, l;
-    static char s1[MAXSL] = "";
-    static char s2[MAXSL] = "";
+    static char s1[MAXFLEN] = "";
+    static char s2[MAXFLEN] = "";
     char *fieldname[3];
     char *fieldbuf[3];
     char s[MAXSTRLEN+1];
@@ -4565,13 +4554,13 @@ void schange()
     fieldname[0] = FROMSTR;
     fieldname[1] = TOSTR;
     fieldname[2] = 0;
-    if (strlen(fstr) <= MAXSL)
+    if (strlen(fstr) <= MAXFLEN)
         strcpy(s1, fstr);
     fieldbuf[0] = s1;
     fieldbuf[1] = s2;
     fieldbuf[2] = 0;
 
-    getstrings(fieldname, fieldbuf, 0, MAXSL+1, NULL);
+    getstrings(fieldname, fieldbuf, 0, MAXFLEN+1, NULL);
 
     rlen = strlen(s1);
     if (rlen == 0)
@@ -5892,10 +5881,10 @@ void count(bool column)
     int k = 0;
     char *p;
     struct slre_cap cap = { NULL, 0 };
-    char buf[MAXFLEN+1] = "";
     char s[MAXSTRLEN+1];
 
-    if (getfname("Count for:", buf, MAXFLEN))
+    getregexp = TRUE;
+    if (getfname("Count for:", regstr, MAXFLEN))
     {
         if (column)
         {
@@ -5919,7 +5908,7 @@ void count(bool column)
                     for (j=0; !(p[j]==csep || p[j]=='\0'); j++);
                     p[j] = '\0';
                 }
-                if ((j = slre_match(buf, p, strlen(p), &cap, 1, 0)) > 0)
+                if ((j = slre_match(regstr, p, strlen(p), &cap, 1, 0)) > 0)
                     	k++;
             }
         }
@@ -5928,7 +5917,7 @@ void count(bool column)
             k = 0;
             for (i=0; i<reccnt; i++)
             {
-                if ((j = slre_match(buf, rows[i], strlen(rows[i]),
+                if ((j = slre_match(regstr, rows[i], strlen(rows[i]),
                                     &cap, 1, 0)) > 0)
                     	k++;
             }
@@ -5936,7 +5925,7 @@ void count(bool column)
         strcpy(s, "\" is ");
         strcat(s, itoa(k, s+6, 10));
         strcat(s, " ");
-        i = strlen(buf)+strlen(s)+len[field]+26;
+        i = strlen(regstr)+strlen(s)+len[field]+26;
         if (i > bodywidth())
             	column = FALSE;
         if (column)
@@ -5944,13 +5933,14 @@ void count(bool column)
             strcat(s, "in ");
             strcat(s, stru[field]);
         }
-        putmsg(" Occurence of the \"", buf, s);
+        putmsg(" Occurence of the \"", regstr, s);
 #ifdef __MINGW_VERSION
         pause(1);
 #else
         sleep(1);
 #endif
     }
+    getregexp = FALSE;
 }
 
 
