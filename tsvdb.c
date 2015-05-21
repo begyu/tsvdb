@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.19 2015/05/14 $
+ * $Id: tcsvdb.c,v 0.9.20 2015/05/21 $
  */
 
-#define VERSION "0.9.19"
+#define VERSION "0.9.20"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -703,6 +703,7 @@ void    edinit(void)
         nonl();
         raw();
         noecho();
+        refresh();
 }
 
 void    norm_cur(void)
@@ -844,6 +845,7 @@ int ed(char *f)
                         k_getblock();
                         break;
                 case KEY_IC:
+                case CTL_PADPLUS:
                         ins_mode ^= 1;
                         curs_set(ins_mode ? 2 : 1);
                         break;
@@ -2082,6 +2084,7 @@ void init()
 #endif
     newterm(getenv("TERM"), stderr, stdin);
     keypad(stdscr,  TRUE);
+    refresh();
 }
 
 void startmenu(menu *mp, char *mtitle)
@@ -2220,9 +2223,9 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
                                   is broken on HPUX */
         case KEY_IC:          /* enter insert mode */
         case KEY_EIC:         /* exit insert mode */
+        case CTL_PADPLUS:
             defdisp = FALSE;
             insert = !insert;
-
             curs_set(insert ? 2 : 1);
             break;
 
@@ -3428,6 +3431,15 @@ int loadfile(char *fname)
         }
         else
             fclose(fp);
+    }
+
+    i = strlen(fname);
+    if ((i > 4) 
+    && (fname[i-4]=='.' && fname[i-3]=='c' 
+        && fname[i-2]=='s' && fname[i-1]=='v'))
+    {
+        csep = COLCSEP;
+        ssep[0] = COLCSEP;
     }
 
     if ((fp = fopen(fname, "r")) != NULL)
@@ -6087,10 +6099,12 @@ void edit(void)
                curs_set(1);
             }
             break;
+        case CTL_PADPLUS:
         case CTL_INS:
             newrec(curr, FALSE);
             b = reccnt-bodylen();
             break;
+        case ALT_PADPLUS:
         case ALT_INS:
             newrec(curr, TRUE);
             b = reccnt-bodylen();
@@ -6503,8 +6517,8 @@ void subfunc1(void)
     WINDOW *wmsg;
     char *s[] =
     {
-        " Ctrl-Ins:  insert line    \t\t    Ctrl-A:  mark all",
-        "  Alt-Ins:  duplicate      \t\t     Alt-A:  filter all",
+        " Ctrl-Ins:  insert line (C-+)\t\t    Ctrl-A:  mark all",
+        "  Alt-Ins:  duplicate   (A-+)\t\t     Alt-A:  filter all",
         " Ctrl-Del:  delete line    \t\t    Ctrl-C:  copy",
         "    Enter:  edit fields    \t\t    Ctrl-V:  paste",
         "   Letter:  search (? mask)\t\tCtrl/Alt-U:  uppercase",
