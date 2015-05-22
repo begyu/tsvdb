@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.20 2015/05/21 $
+ * $Id: tcsvdb.c,v 0.9.21 2015/05/22 $
  */
 
-#define VERSION "0.9.20"
+#define VERSION "0.9.21"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -4472,6 +4472,46 @@ void getfstr(void)
         regexcase = 0;
 }
 
+void getdupstr(void)
+{
+    char *fieldname[3];
+    char *fieldbuf[3];
+    char str1[MAXFLEN] = "";
+    char str2[MAXFLEN] = "";
+
+    fieldname[0] = " First:";
+    fieldname[1] = "Second:";
+    fieldname[2] = 0;
+    fieldbuf[0] = str1;
+    fieldbuf[1] = str2;
+    fieldbuf[2] = 0;
+
+    getregexp = TRUE;
+    getstrings(fieldname, fieldbuf, 0, MAXFLEN+1, NULL);
+    strcpy(fstr, str1);
+    strcat(fstr, ".*");
+    strcat(fstr, str2);
+    strcat(fstr, "|");
+    strcat(fstr, str2);
+    strcat(fstr, ".*");
+    strcat(fstr, str1);
+    if (7 > strlen(fstr))
+    {
+        fstr[0] = 0;
+        goregex = FALSE;
+    }
+    else
+        goregex = TRUE;
+    getregexp = FALSE;
+    touchwin(wbody);
+    wrefresh(wbody);
+    regex = TRUE;
+    if (strstr(fstr, RXCINS) == fstr)
+        regexcase = SLRE_IGNORE_CASE;
+    else
+        regexcase = 0;
+}
+
 void change()
 {
     register int i, j, k;
@@ -6230,6 +6270,15 @@ void edit(void)
             if ((curr-ctop) >= r)
                ctop = curr - (r-1);
             break;
+        case CTRL_D:
+            getdupstr();
+            if (field == 0)
+               search(curr, RXFORW);
+            else
+               searchfield(curr, field);
+            if ((curr-ctop) >= r)
+               ctop = curr - (r-1);
+            break;
         case ALT_F:
             getfstr();
             searchfield(curr, field);
@@ -6522,7 +6571,7 @@ void subfunc1(void)
         " Ctrl-Del:  delete line    \t\t    Ctrl-C:  copy",
         "    Enter:  edit fields    \t\t    Ctrl-V:  paste",
         "   Letter:  search (? mask)\t\tCtrl/Alt-U:  uppercase",
-        "   Ctrl-F:  regexp search  \t\tCtrl/Alt-L:  lowercase",
+        " Ctrl-F/D:  regexp search  \t\tCtrl/Alt-L:  lowercase",
         "    Alt-F:  seek curr field\t\tC/A-arrows:  reorder fields",
         "Tab/C-Tab:  find next      \t\t Shft-left:  align left",
         " Shft-Tab:  previous       \t\tShft-right:  align right",
