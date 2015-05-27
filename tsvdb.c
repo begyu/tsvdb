@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.21 2015/05/22 $
+ * $Id: tcsvdb.c,v 0.9.22 2015/05/27 $
  */
 
-#define VERSION "0.9.21"
+#define VERSION "0.9.22"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -6854,6 +6854,7 @@ int main(int argc, char **argv)
               }
               if (c == 'S')
               {
+                  strncpy(regstr, fstr, MAXFLEN);
                   unkeys[2] = 'l';
                   unkeys[3] = '\0';
               }
