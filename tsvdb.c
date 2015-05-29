@@ -3692,6 +3692,8 @@ int savefile(char *fname, int force)
         for (i=0; i<reccnt; i++)
             fputs(rows[i], fp);
         fflush(fp);
+        fseek(fp, 0L, SEEK_END);
+        filesize = ftell(fp);
         fclose(fp);
         msg(NULL);
     }
