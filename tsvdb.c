@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.22 2015/05/27 $
+ * $Id: tcsvdb.c,v 0.9.23 2015/05/29 $
  */
 
-#define VERSION "0.9.22"
+#define VERSION "0.9.23"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -1218,6 +1218,7 @@ static bool filtered = FALSE;
 static bool headspac = FALSE;
 static bool hunsort = FALSE;
 static bool insert = FALSE;
+static long int filesize = 0L;
 
 #define TABCSEP '\t'
 #define TABSSEP "\t"
@@ -3411,7 +3412,7 @@ int loadfile(char *fname)
 {
     register int i, j, k;
     FILE *fp;
-    char buf[MAXSTRLEN+1];
+    char buf[MAXSTRLEN];
     bool ateof = FALSE;
     char *p;
 
@@ -3548,6 +3549,8 @@ int loadfile(char *fname)
                 ateof = TRUE;
         }
         reccnt = i;
+        fseek(fp, 0L, SEEK_END);
+        filesize = ftell(fp);
         fclose(fp);
         rows[reccnt] = (char *)malloc(2);
         strcpy(rows[reccnt], "\0");
@@ -3634,8 +3637,10 @@ int yesno(char *msg)
 int savefile(char *fname, int force)
 {
     register int i;
+    long int size = 0L;
     FILE *fp;
-    char buf[MAXSTRLEN+1];
+    char *tmp;
+    char buf[MAXSTRLEN];
 
     if (ro && !cry)
         return -1;
@@ -3648,6 +3653,24 @@ int savefile(char *fname, int force)
            if (yesno("File exists! Overwrite it? (Y/N):") == 0)
               return -1;
         }
+    }
+    if ((fp = fopen(fname, "r")) != NULL)
+    {
+        fseek(fp, 0L, SEEK_END);
+        size = ftell(fp);
+        fclose(fp);
+        (void)chmod(fname, S_IRUSR);
+        if (size != filesize)
+        {
+            tmp = tmpnam(NULL);
+            strcpy(buf, ".");
+            strcat(buf, tmp);
+            strcat(buf, "_");
+            strcat(buf, fname);
+            strcpy(fname, buf);
+            strcpy(datfname, buf);
+        }
+        (void)chmod(fname, S_IWUSR);
     }
     if ((fp = fopen(fname, "w")) != NULL)
     {
