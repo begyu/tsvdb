@@ -1,6 +1,6 @@
 /***ED***/
 /* frox25.no-ip.org/~mtve */
-#include <curses.h>
+//#include <curses.h>
 #include <signal.h>
 #include <string.h>
 #include <stdlib.h>
