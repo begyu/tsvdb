@@ -3129,6 +3129,20 @@ void fltls(void)
                       curr = (curr+j) < x ? curr+j : x;
                 }
             }
+            if (MOUSE_WHEEL_UP)
+            {
+                if (curr > 0)
+                   curr--;
+                while (flags[curr] != 1 && curr > 0)
+                   curr--;
+            }
+            else if (MOUSE_WHEEL_DOWN)
+            {
+                if (curr < x)
+                   curr++;
+                while (flags[curr] != 1 && curr < x)
+                   curr++;
+            }
             break;
 #endif
         case 'Q':
