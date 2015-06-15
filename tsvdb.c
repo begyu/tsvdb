@@ -5320,7 +5320,7 @@ void edit(void)
 #ifdef PDCURSES
         case KEY_MOUSE:
             getmouse();
-                button = 0;
+            button = 0;
             request_mouse_pos();
             if (BUTTON_CHANGED(1))
                 button = 1;
