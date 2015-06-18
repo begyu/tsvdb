@@ -3735,6 +3735,7 @@ void schange()
     {
         for (i=0; i<reccnt; i++)
         {
+            highlight = TRUE;
             if ((k = slre_match(s1, rows[i], strlen(rows[i]), &cap, 1, 0)) > 0)
             {
                 last = (i==0) ? 1 : i;
@@ -3808,6 +3809,7 @@ void schange()
         {
             while (TRUE)
             {
+                highlight = TRUE;
                 k = substr(rows[i], s1);
                 l = substr(rows[i], s2);
                 if ((k+l) == -2)
