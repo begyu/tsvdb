@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.24 2015/06/10 $
+ * $Id: tcsvdb.c,v 0.9.26 2015/06/18 $
  */
 
-#define VERSION "0.9.24"
+#define VERSION "0.9.26"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -198,6 +198,7 @@ static char *slre_replace(const char *regex, const char *buf,
 #define CTRL_G 0x07
 #define CTRL_L 0x0C
 #define CTRL_O 0x0F
+#define CTRL_S 0x13
 #define CTRL_U 0x15
 #define CTRL_V 0x16
 #define CTRL_X 0x18
@@ -2875,7 +2876,6 @@ int create(char *fn)
                    buf[i] = csep;
             }
             strcpy(head, buf);
-            strcat(head, "\n");
             i = 0;
             k = 0;
             p = strtok(buf, ssep );
@@ -3699,7 +3699,7 @@ void change()
 void schange()
 {
     register int i, j;
-    int k, l;
+    int k, l, m, n;
     static char s1[MAXFLEN] = "";
     static char s2[MAXFLEN] = "";
     char *fieldname[3];
@@ -3711,6 +3711,7 @@ void schange()
     char *p;
     struct slre_cap cap = { NULL, 0 };
     int last=0;
+    bool highlight = TRUE;
 
     if (ro)
         return;
@@ -3749,11 +3750,25 @@ void schange()
                        wrefresh(wbody);
                     }
                 }
-                setcolor(wbody, MARKCOLOR);
-                l = rlen-2;
-                strcpy(s, rows[i]+(k-l));
-                s[l] = '\0';
-                mvwaddstr(wbody, 1, k-l, s);
+                m = n = 0;
+                for (j=0; j<k; j++)
+                {
+                    if (rows[i][j] == csep)
+                    {
+                       m++;
+                       n = beg[m];
+                       if ((j+1) < n)
+                          	highlight = FALSE;
+                    }
+                }
+                if (highlight)
+                {
+                    setcolor(wbody, MARKCOLOR);
+                    l = rlen-2;
+                    strcpy(s, rows[i]+(k-l));
+                    s[l] = '\0';
+                    mvwaddstr(wbody, 1, k-l, s);
+                }
                 setcolor(wbody, BODYCOLOR);
                 wrefresh(wbody);
                 msg("Change/Next/Prev/Quit? (C/N/P/Q):");
@@ -3774,13 +3789,16 @@ void schange()
                          i--;
                          continue;
                      }
-                p = slre_replace(s1, rows[i], s2);
-                j = strlen(p);
-                if (rows[i] != NULL)
-                   free(rows[i]);
-                rows[i] = (char *)malloc(j+1);
-                strcpy(rows[i], p);
-                changes++;
+                else if (c == 'C')
+                     {
+                         p = slre_replace(s1, rows[i], s2);
+                         j = strlen(p);
+                         if (rows[i] != NULL)
+                            free(rows[i]);
+                         rows[i] = (char *)malloc(j+1);
+                         strcpy(rows[i], p);
+                         changes++;
+                     }
             }
         }
     }
@@ -3807,18 +3825,43 @@ void schange()
                        wrefresh(wbody);
                     }
                 }
-                setcolor(wbody, MARKCOLOR);
-                if (l == -1)
+                m = n = 0;
+                for (j=0; j<k; j++)
                 {
-                    strcpy(s, rows[i]+k);
-                    s[rlen] = '\0';
-                    mvwaddstr(wbody, 1, k, s);
+                    if (rows[i][j] == csep)
+                    {
+                       m++;
+                       n = beg[m];
+                       if ((j+1) < n)
+                          	highlight = FALSE;
+                    }
                 }
-                else
+                m = n = 0;
+                for (j=0; j<l; j++)
                 {
-                    strcpy(s, rows[i]+l);
-                    s[strlen(s2)] = '\0';
-                    mvwaddstr(wbody, 1, l, s);
+                    if (rows[i][j] == csep)
+                    {
+                       m++;
+                       n = beg[m];
+                       if ((j+1) < n)
+                          	highlight = FALSE;
+                    }
+                }
+                if (highlight)
+                {
+                    setcolor(wbody, MARKCOLOR);
+                    if (l == -1)
+                    {
+                        strcpy(s, rows[i]+k);
+                        s[rlen] = '\0';
+                        mvwaddstr(wbody, 1, k, s);
+                    }
+                    else
+                    {
+                        strcpy(s, rows[i]+l);
+                        s[strlen(s2)] = '\0';
+                        mvwaddstr(wbody, 1, l, s);
+                    }
                 }
                 setcolor(wbody, BODYCOLOR);
                 wrefresh(wbody);
@@ -5504,6 +5547,12 @@ void edit(void)
         case ALT_D:
             delfield();
             break;
+        case CTRL_S:
+            change();
+            break;
+        case ALT_S:
+            schange();
+            break;
         case ALT_C:
             calc(FALSE);
             break;
@@ -5690,7 +5739,7 @@ void subfunc1(void)
         "     Bksp:  del fstr back  \t\t Shft-Home:  center",
         " Del/Home:  clear fstr     \t\t   Ctrl-Up:  move backward",
         "   Ctrl-G:  goto line      \t\t Ctrl-Down:  move forward",
-        "    Alt-I:  insert field   \t\t     Alt-D:  remove field",
+        "Ctl/Alt-S:  replace/change \t\t   Alt-I/D:  ins/remove fld",
         "    Alt-C:  calculate      \t\t    Ctrl-O:  count substr",
         "  Alt-X/Y:  calc fld/cols  \t\t     Alt-O:  count in field"
     };
