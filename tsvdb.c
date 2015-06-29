@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.26 2015/06/18 $
+ * $Id: tcsvdb.c,v 0.9.27 2015/06/29 $
  */
 
-#define VERSION "0.9.26"
+#define VERSION "0.9.27"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -198,9 +198,11 @@ static char *slre_replace(const char *regex, const char *buf,
 #define CTRL_G 0x07
 #define CTRL_L 0x0C
 #define CTRL_O 0x0F
+#define CTRL_Q 0x11
 #define CTRL_S 0x13
 #define CTRL_U 0x15
 #define CTRL_V 0x16
+#define CTRL_W 0x17
 #define CTRL_X 0x18
 #define CTRL_Y 0x19
 #define CTRL_Z 0x1A
@@ -208,6 +210,7 @@ static char *slre_replace(const char *regex, const char *buf,
 //#define ALT_C 0x1a3
 //#define ALT_L 0x1aC
 //#define ALT_U 0x1B5
+//#define ALT_W 0x1b7
 //#define ALT_X 0x1b8
 //#define ALT_Y 0x1b9
 */
@@ -2421,6 +2424,129 @@ void statusln(void)
     statusmsg(rows[curr]);
 }
 
+
+int numcompr(const char *s3, char *s2)
+{
+    unsigned int i;
+
+    if (!(isdigit(s3[0]) && isdigit(s3[1]) && isdigit(s3[2])))
+        	return -1;
+
+    i = 100 * (s3[0] - '0');
+    i += 10 * (s3[1] - '0');
+    i += (s3[2] - '0');
+    if (i < 224)
+    {
+        s2[0] = 1;
+        s2[1] = i+32;
+    }
+    else if (i < 448)
+    {
+        s2[0] = 2;
+        s2[1] = i-192;
+    }
+    else if (i < 672)
+    {
+        s2[0] = 3;
+        s2[1] = i-416;
+    }
+    else if (i < 896)
+    {
+        s2[0] = 4;
+        s2[1] = i-640;
+    }
+    else
+    {
+        s2[0] = 5;
+        s2[1] = i-864;
+    }
+    return 0;
+}
+
+void numextr(const char *s, char *dst)
+{
+    int i,j;
+    unsigned int d,t,z;
+    unsigned char c;
+
+    i = j = 0;
+    while (i < strlen(s))
+    {
+        c = s[i];
+        d = (unsigned char)s[i+1];
+        if (c > 5)
+        {
+            dst[j] = s[i];
+            i++; j++;
+            continue;
+        }
+        else if (c == 1)
+            d -= 32;
+        else if (c == 2)
+            d += 192;
+        else if (c == 3)
+            d += 416;
+        else if (c == 4)
+            d += 640;
+        else if (c == 5)
+            d += 864;
+        z = (int)(d / 100);
+        t = (int)((d-(100*z)) / 10);
+        dst[j] = z + '0';
+        dst[j+1] = t + '0';
+        dst[j+2] = (d % 10) + '0';
+        i += 2;
+        j += 3;
+    }
+    dst[j] = '\0';
+}
+
+void strcompr(const char *str, char *cpr)
+{
+    int i, j;
+    int lim = strlen(str)-3;
+
+    j =0;
+    for (i=0; i<lim; i++, j++)
+    {
+        if (numcompr(str+i, cpr+j) == 0)
+        {
+            i += 2;
+            j++;
+        }
+        else
+            cpr[j] = str[i];
+    }
+    lim += 3;
+    while (i < lim)
+    {
+        cpr[j] = str[i];
+        i++;
+        j++;
+    }
+    cpr[j] = '\0';
+}
+
+void compress(bool rev)
+{
+    register int i, j;
+    char s[MAXSTRLEN+1];
+
+    for (i=0; i<reccnt; i++)
+    {
+        if (rev)
+           	numextr(rows[i], s);
+        else
+           	strcompr(rows[i], s);
+        j = strlen(s);
+        if (rows[i] != NULL)
+           	free(rows[i]);
+        rows[i] = (char *)malloc(j+1);
+        strcpy(rows[i], s);
+    }
+}
+
+
 void crypt(int n)
 {
 #define KEYLEN 17
@@ -2428,6 +2554,8 @@ void crypt(int n)
     char k0, k1, k2;
     int i, j, k, l;
 
+    if (head[0] != '\3')
+        	compress(FALSE);
     for (i=0; i<n; i++)
     {
         l = strlen(rows[i]);
@@ -2457,6 +2585,7 @@ void crypt(int n)
         if (!locked)
             ro = FALSE;
         cry= FALSE;
+        compress(TRUE);
     }
     else
     {
@@ -5151,6 +5280,7 @@ void count(bool column)
     }
     getregexp = FALSE;
 }
+
 
 
 #ifdef NCURSES
