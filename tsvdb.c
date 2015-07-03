@@ -2431,6 +2431,8 @@ int numcompr(const char *s3, char *s2)
 
     if (!(isdigit(s3[0]) && isdigit(s3[1]) && isdigit(s3[2])))
         	return -1;
+    if ((s3[0] == 'í') || (s3[1] == 'í') || (s3[2] == 'í'))
+        	return -1;
 
     i = 100 * (s3[0] - '0');
     i += 10 * (s3[1] - '0');
