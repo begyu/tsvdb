@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.27 2015/06/29 $
+ * $Id: tcsvdb.c,v 0.9.28 2015/07/17 $
  */
 
-#define VERSION "0.9.27"
+#define VERSION "0.9.28"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -592,6 +592,13 @@ static void repaintmenu(WINDOW *wmenu, menu *mp)
                 setcolor(wmenu, INPUTBOXCOLOR);
             else
                 setcolor(wmenu, SUBMENUCOLOR);
+            if (locked)
+            {
+                if (strstr(p->name, "Sor")
+                ||  strstr(p->name, "Fie")
+                ||  strstr(p->name, "nUm"))
+                    	setcolor(wmenu, SUBMENUCOLOR);
+            }
         }
         else
         {
@@ -956,6 +963,13 @@ void domenu(menu *mp)
                         setcolor(wmenu, INPUTBOXCOLOR);
                     else
                         setcolor(wmenu, SUBMENUCOLOR);
+                    if (locked)
+                    {
+                        if (strstr(mp[old].name, "Sor")
+                        ||  strstr(mp[old].name, "Fie")
+                        ||  strstr(mp[old].name, "nUm"))
+                            	setcolor(wmenu, SUBMENUCOLOR);
+                    }
                 }
                 else
                 {
@@ -1274,7 +1288,8 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
                     buf[i] = '\0';
                     i--;
                 }
-                break;
+                if (i != -1)
+                    	break;
             }
             stop = TRUE;
             break;
@@ -2431,8 +2446,10 @@ int numcompr(const char *s3, char *s2)
 
     if (!(isdigit(s3[0]) && isdigit(s3[1]) && isdigit(s3[2])))
         	return -1;
-    if ((s3[0] == 'í') || (s3[1] == 'í') || (s3[2] == 'í'))
+#ifdef DJGPP
+    if ((s3[0] == 'ˇ') || (s3[1] == 'ˇ') || (s3[2] == 'ˇ'))
         	return -1;
+#endif
 
     i = 100 * (s3[0] - '0');
     i += 10 * (s3[1] - '0');
@@ -4320,7 +4337,7 @@ void filter(void)
 
 void dosort(void)
 {
-    if (ro)
+    if (ro && !locked)
         return;
     if (yesno("Sort database? (Y/N):") == 0)
         return;
@@ -4328,7 +4345,8 @@ void dosort(void)
         sort(reccnt);
     else
         sort_back(reccnt);
-    modified = TRUE;
+    if (!locked)
+        modified = TRUE;
     flagmsg();
     redraw();
 }
@@ -4634,7 +4652,7 @@ void dosortby(void)
 {
     register int i, j;
 
-    if (ro)
+    if (ro && !locked)
         return;
 
     i = selectfield(cols);
@@ -4648,14 +4666,18 @@ void dosortby(void)
 #endif
         sortpos = (i==0) ? -1 : i;
         hunsort = FALSE;
-        if (yesno("Hungarian abc? (Y/N):") != 0)
-            hunsort = TRUE;
+        if (numsort == FALSE)
+        {
+            if (yesno("Hungarian abc? (Y/N):") != 0)
+                hunsort = TRUE;
+        }
         if (yesno("Reverse order? (Y/N):") == 0)
             sort(reccnt);
         else
             sort_back(reccnt);
         sortpos = -1;
-        modified = TRUE;
+        if (!locked)
+            modified = TRUE;
         flagmsg();
         j = 0;
         for (i=0; i<bodylen(); i++)
@@ -6093,7 +6115,7 @@ void subfunc2(void)
     wrefresh(wbody);
 }
 
-/***************************** start main menu  ***************************/
+/*** start main ***/
 
 int main(int argc, char **argv)
 {
