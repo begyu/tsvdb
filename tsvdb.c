@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.28 2015/07/17 $
+ * $Id: tcsvdb.c,v 0.9.29 2015/07/27 $
  */
 
-#define VERSION "0.9.28"
+#define VERSION "0.9.29"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -606,6 +606,8 @@ static void repaintmenu(WINDOW *wmenu, menu *mp)
                 setcolor(wmenu, INPUTBOXCOLOR);
             else
                 setcolor(wmenu, SUBMENUCOLOR);
+            if (safe && strstr(p->name, "Tex"))
+                setcolor(wmenu, INPUTBOXCOLOR);
         }
         mvwaddstr(wmenu, i + 1, 2, p->name);
     }
@@ -978,6 +980,8 @@ void domenu(menu *mp)
                         setcolor(wmenu, INPUTBOXCOLOR);
                     else
                         setcolor(wmenu, SUBMENUCOLOR);
+                    if (safe && strstr(mp[old].name, "Tex"))
+                        setcolor(wmenu, INPUTBOXCOLOR);
                 }
                 mvwaddstr(wmenu, old + 1, 1, 
                           prepad(padstr(mp[old].name, barlen - 1), 1));
@@ -2998,6 +3002,7 @@ int create(char *fn)
         errormsg(buf);
         return -1;
     }
+
     strcpy(buf, fn);
     j = strlen(head);
     if ((j == 0) || (j > 66))
@@ -4289,7 +4294,7 @@ void selected(void)
         endwin();
         if (j == 0)
             return;
-/*        execlp("tsvdb", tmpfname, 0);*/
+/*        execlp("tsvdb", tmpfname, (char *)0);*/
         strcpy(buf, progname);
         strcat(buf, " ");
         strcat(buf, tmpfname);
@@ -5781,6 +5786,32 @@ void newdb(void)
     create(FNAME);
 }
 
+void txted(void)
+{
+    char buf[MAXSTRLEN];
+
+    if (!ro && !safe)
+    {
+        if ((i=yesno("Directly editing! Are You sure? (Y/N):")) == 0)
+            return;
+        if (modified == TRUE)
+            if (savefile(datfname, 0) != 0)
+               return;
+        def_prog_mode();
+        endwin();
+        strcpy(buf, progname);
+        strcat(buf, " -e ");
+        strcat(buf, datfname);
+        system(buf);
+        (int)loadfile(datfname);
+        reset_prog_mode();
+        colorbox(wtitl, TITLECOLOR, 0);
+        titlemsg(datfname);
+        redraw();
+        flagmsg();
+    }
+}
+
 void bye(void)
 {
     quit = FALSE;
@@ -5823,6 +5854,7 @@ menu SubMenu0[] =
     { "Open", DoOpen, "Open data file" },
     { "New", newdb, "Create data file" },
     { "Save", DoSave, "Save data file" },
+    { "Text", txted, "Edit as text" },
     { "Exit", bye, "Quit" },
     { "", (FUNC)0, "" }
 };
@@ -6273,7 +6305,11 @@ int main(int argc, char **argv)
     else
     {
        if (create(s) != 0)
-                return -1;
+       {
+          curs_set(1);
+          endwin();
+          return -1;
+       }
     }
     signal(SIGINT, siginthandler);
     startmenu(MainMenu, datfname);
