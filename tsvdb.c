@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.29 2015/07/27 $
+ * $Id: tcsvdb.c,v 0.9.30 2015/07/03 $
  */
 
-#define VERSION "0.9.29"
+#define VERSION "0.9.30"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -2208,7 +2208,8 @@ int qsort_stringlist(const void *e1, const void *e2)
             s2[MAXNLEN] = '\0';
             n1 = atof(s1);
             n2 = atof(s2);
-            return (n1 < n2) ? -1 : 1;
+            if ((n1 != 0.0) && (n2 != 0.0))
+                	return (n1 < n2) ? -1 : 1;
         }
         return hstrcmp(*(char **)(e1)+i, *(char **)(e2)+j);
     }
