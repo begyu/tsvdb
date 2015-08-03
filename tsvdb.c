@@ -2279,7 +2279,8 @@ int qs_stringlist_rev(const void *e1, const void *e2)
             s2[MAXNLEN] = '\0';
             n1 = atof(s1);
             n2 = atof(s2);
-            return (n1 < n2) ? -1 : 1;
+            if ((n1 != 0.0) && (n2 != 0.0))
+                	return (n1 < n2) ? -1 : 1;
         }
         return hstrcmp(*(char **)(e2)+i, *(char **)(e1)+j);
     }
