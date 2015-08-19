@@ -929,9 +929,16 @@ double calcExpression(char *str)
 	double res = 0;
 	size_t r = 0;
 	expr = str;
+	if((expr[0] == 0) || (expr[0] == 32 && expr[1] == 0))
+	{
+		strcpy(str, "0.000");
+		return res;
+	}
 	i = 0;
 	calcerr = FALSE;
 	getToken();
+	if(calcerr)
+		return res;
 	if((r = proccessSum(&res)) != 0)
 	{
 		char buf[64];
@@ -953,5 +960,22 @@ double calcExpression(char *str)
 /*		printf("%s =  %lf\n", expr, res);*/
 		sprintf(str, "%s =  %lf\n", expr, res);
 	return res;
+}
+
+void calcexp(char *str)
+{
+	double res = 0;
+	size_t r = 0;
+	expr = str;
+	i = 0;
+	calcerr = FALSE;
+	getToken();
+	if(calcerr)
+		return;
+	if((r = proccessSum(&res)) == 0)
+	{
+		sprintf(str, "%lf", res);
+		str[strlen(str)] = '\0';
+	}
 }
 /*END_CALCU*/
