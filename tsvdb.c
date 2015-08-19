@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.30 2015/08/03 $
+ * $Id: tcsvdb.c,v 0.9.31 2015/08/19 $
  */
 
-#define VERSION "0.9.30"
+#define VERSION "0.9.31"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -1469,6 +1469,9 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
                     buf[i] = '.';
             }
             defdisp = FALSE;
+            break;
+        case ALT_C:
+            calcexp(buf);
             break;
         case CTRL_U:
             casestr(buf, TRUE, FALSE);
@@ -5954,8 +5957,7 @@ void edithelp(void)
     WINDOW *wmsg;
     char *s[] =
     {
-        "      Home:\tgo to 1'st char",
-        "       End:\tgo to EOL",
+        "  Home/End:\tgo to 1'st char/EOL",
         "   Up/Down:\tprevious/next field",
         "       Del:\tdelete char",
         "      Bksp:\tdelete back",
@@ -5967,6 +5969,7 @@ void edithelp(void)
         "Ctrl/Alt-U:\tuppercase",
         "Ctrl/Alt-L:\tlowercase",
         "    Ctrl-D:\tformat date",
+        "     Alt-C:\tcalculate",
         "     Alt-D:\tchange dot & colon",
         "  Ctrl-X/Y:\taccent/punctuation",
         "       Esc:\tundo/cancel",
