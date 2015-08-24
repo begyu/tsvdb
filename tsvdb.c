@@ -4187,6 +4187,7 @@ void paste()
 
 void calc(bool repl)
 {
+    clp[0] = '\0';
     copy();
     if (repl)
     {
@@ -5869,7 +5870,7 @@ menu SubMenu2[] =
 {
     { "Keys", subfunc1, "General keys" },
     { "Input keys", edithelp, "Keys in edit mode" },
-    { "Edit keys", txthelp, "Keys in text editor" },
+    { "Edit keys", txthelp, "Keys in texteditor" },
     { "Regexp", reghelp, "Regular expression help" },
     { "Options", opthelp, "Command line options" },
     { "Limits", limits, "Maximums & conditions" },
