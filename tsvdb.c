@@ -4091,9 +4091,6 @@ void copy()
     register int i, j;
     char c;
 
-    if (ro)
-        return;
-
     i = 0;
     j = 0;
     if (field > 0)
