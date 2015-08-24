@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.31 2015/08/19 $
+ * $Id: tcsvdb.c,v 0.9.32 2015/08/24 $
  */
 
-#define VERSION "0.9.31"
+#define VERSION "0.9.32"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -4187,39 +4187,19 @@ void paste(bool ro)
 
 void calc(bool repl)
 {
-    register int i;
-    double num, num2;
-    char *endptr;
-
     copy(FALSE);
-    for (i=0; clp[i]; i++)
-    {
-        if (clp[i] == ',')
-            clp[i] = '.';
-        else if (clp[i] == '\n')
-            clp[i] = '\0';
-    }
-    num = calcExpression(clp);
-    i = strlen(clp);
-    clp[i-1] = '\0';
-
     if (repl)
     {
-        if (ro || calcerr)
+        if (ro)
             return;
-        sprintf(clp, "%lf", num);
-        i = strlen(clp);
-        while(i > (len[field]-1))
-        {
-            i--;
-            clp[i] = '\0';
-        }
-        num2 = strtod(clp, &endptr);
-        if (num2 == num)
-            paste(FALSE);
+        calcexp(clp);
+        if (calcerr)
+            return;
+        paste(FALSE);
     }
     else
     {
+        calcExpression(clp);
         putmsg(calcerr ? "ERROR: " : "", clp, "");
     }
 }
@@ -5842,7 +5822,7 @@ void bye(void)
 void sub0(void), sub1(void), sub2(void);
 void subfunc1(void), subfunc2(void);
 void reghelp(void), edithelp(void);
-void limits(void);
+void txthelp(void), limits(void);
 
 /***************************** menus initialization ***********************/
 
@@ -5889,6 +5869,7 @@ menu SubMenu2[] =
 {
     { "Keys", subfunc1, "General keys" },
     { "Input keys", edithelp, "Keys in edit mode" },
+    { "Editor keys", txthelp, "Keys in editor" },
     { "Regexp", reghelp, "Regular expression help" },
     { "Options", opthelp, "Command line options" },
     { "Limits", limits, "Maximums & conditions" },
@@ -5987,6 +5968,50 @@ void edithelp(void)
     wrefresh(wmsg);
     (void)toupper(waitforkey());
     delwin(wmsg);
+    touchwin(wbody);
+    wrefresh(wbody);
+}
+
+void txthelp(void)
+{
+    WINDOW *wmsg;
+    char *s[] =
+    {
+        " ^A:\tgo to line",
+        " ^B:\tbegin of block",
+        " ^C:\tcopy block",
+        " ^D:\tdelete block",
+        " ^E:\tend of block",
+        " ^F:\tfind",
+        " ^G:\tget from file",
+        " ^J:\tpgup",
+        " ^K:\tpgdn",
+        " ^N:\tsearch again",
+        " ^O:\tgo bottom of text",
+        " ^P:\tput to file",
+        " ^Q:\tquote char",
+        " ^R:\treplace string",
+        " ^S:\tsave file",
+        " ^T:\tgo top of text",
+        " ^V:\tmove block",
+        " ^X:\texit",
+        " ^Y:\tdelete line"
+    };
+    int i;
+    int j=19;
+    
+    wmsg = mvwinputbox(wbody, (bodylen()-j)/4, (bodywidth()-28)/2, j+2, 28);
+#ifndef __MINGW_VERSION
+    wborder(wmsg, '|', '|', '-', '-', '+', '+', '+', '+');
+#endif
+    for (i=0; i<j; i++)
+        mvwaddstr(wmsg, i+1, 2, s[i]);
+    wrefresh(wmsg);
+    (void)toupper(waitforkey());
+    delwin(wmsg);
+/*    @@@*/
+    touchwin(wstat);
+    wrefresh(wstat);
     touchwin(wbody);
     wrefresh(wbody);
 }
