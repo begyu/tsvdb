@@ -4189,6 +4189,8 @@ void calc(bool repl)
 {
     clp[0] = '\0';
     copy();
+    if (clp[0] == '\0')
+        return;
     if (repl)
     {
         if (ro)
