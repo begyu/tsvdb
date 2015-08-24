@@ -4086,7 +4086,7 @@ void schange()
 }
 
 
-void copy(bool ro)
+void copy()
 {
     register int i, j;
     char c;
@@ -4111,7 +4111,7 @@ void copy(bool ro)
     if (rows[curr][i] == ' ')
     {
         c = rows[curr][i+1];
-        if ((c == csep) || (c == '\r') || (c == '\n') || (c == '\0'))
+        if ((c == csep) || (c == '\0') || (c == '\n') || (c == '\r'))
             return;
     }
 
@@ -4119,7 +4119,7 @@ void copy(bool ro)
     while (1)
     {
         c = rows[curr][i];
-        if ((c == csep) || (c == '\r') || (c == '\n') || (c == '\0'))
+        if ((c == csep) || (c == '\0') || (c == '\n') || (c == '\r'))
             break;
         i++;
         clp[j] = c;
@@ -4128,7 +4128,7 @@ void copy(bool ro)
     clp[j] = '\0';
 }
 
-void paste(bool ro)
+void paste()
 {
     int i, j, k, l;
     char c;
@@ -4158,7 +4158,7 @@ void paste(bool ro)
     while (1)
     {
         c = buf[i];
-        if ((c == csep) || (c == '\0'))
+        if ((c == csep) || (c == '\0') || (c == '\n') || (c == '\r'))
         {
             l = strlen(buf);
             for (k=l; k>i; k--)
@@ -4187,7 +4187,7 @@ void paste(bool ro)
 
 void calc(bool repl)
 {
-    copy(FALSE);
+    copy();
     if (repl)
     {
         if (ro)
@@ -4195,7 +4195,7 @@ void calc(bool repl)
         calcexp(clp);
         if (calcerr)
             return;
-        paste(FALSE);
+        paste();
     }
     else
     {
@@ -5587,10 +5587,10 @@ void edit(void)
                ctop = curr - (r-1);
             break;
         case CTRL_C:
-            copy(ro);
+            copy();
             break;
         case CTRL_V:
-            paste(ro);
+            paste();
             break;
         case CTRL_X:
             if (wr == TRUE)
@@ -5869,7 +5869,7 @@ menu SubMenu2[] =
 {
     { "Keys", subfunc1, "General keys" },
     { "Input keys", edithelp, "Keys in edit mode" },
-    { "Editor keys", txthelp, "Keys in editor" },
+    { "Edit keys", txthelp, "Keys in text editor" },
     { "Regexp", reghelp, "Regular expression help" },
     { "Options", opthelp, "Command line options" },
     { "Limits", limits, "Maximums & conditions" },
