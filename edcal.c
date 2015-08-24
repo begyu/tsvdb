@@ -958,7 +958,7 @@ double calcExpression(char *str)
 		sprintf(str, "Calculation error %d (%s)\n", (int)r, buf);
 	}else
 /*		printf("%s =  %lf\n", expr, res);*/
-		sprintf(str, "%s =  %lf\n", expr, res);
+		sprintf(str, "%s = %lf %c", expr, res, '\0');
 	return res;
 }
 
@@ -973,9 +973,6 @@ void calcexp(char *str)
 	if(calcerr)
 		return;
 	if((r = proccessSum(&res)) == 0)
-	{
-		sprintf(str, "%lf", res);
-		str[strlen(str)] = '\0';
-	}
+		sprintf(str, "%lf %c", res, '\0');
 }
 /*END_CALCU*/
