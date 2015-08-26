@@ -1,8 +1,9 @@
 /*
- * $Id: tcsvdb.c,v 0.9.32 2015/08/24 $
+ * $Id: tcsvdb.c,v 0.9.33 2015/08/26 $
  */
 
-#define VERSION "0.9.32"
+#define VERSION "0.9.33"
+#define URL "http://tsvdb.sf.net"
 /*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
@@ -715,7 +716,7 @@ static void mainmenu(menu *mp)
 #ifdef PDCURSES
         case KEY_MOUSE:
             getmouse();
-                button = 0;
+            button = 0;
             request_mouse_pos();
             if (BUTTON_CHANGED(1))
                 button = 1;
@@ -1049,7 +1050,7 @@ void domenu(menu *mp)
 #ifdef PDCURSES
         case KEY_MOUSE:
             getmouse();
-                button = 0;
+            button = 0;
             request_mouse_pos();
             if (BUTTON_CHANGED(1))
                 button = 1;
@@ -1355,7 +1356,7 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
 #ifdef PDCURSES
         case KEY_MOUSE:
             getmouse();
-                button = 0;
+            button = 0;
             request_mouse_pos();
             if (BUTTON_CHANGED(1))
                 button = 1;
@@ -3156,7 +3157,7 @@ void brows(void)
 #ifdef PDCURSES
         case KEY_MOUSE:
             getmouse();
-                button = 0;
+            button = 0;
             request_mouse_pos();
             if (BUTTON_CHANGED(1))
                 button = 1;
@@ -3266,7 +3267,7 @@ void fltls(void)
 #ifdef PDCURSES
         case KEY_MOUSE:
             getmouse();
-                button = 0;
+            button = 0;
             request_mouse_pos();
             if (BUTTON_CHANGED(1))
                 button = 1;
@@ -4592,7 +4593,7 @@ int selectfield(int n)
 #ifdef PDCURSES
         case KEY_MOUSE:
             getmouse();
-                button = 0;
+            button = 0;
             request_mouse_pos();
             if (BUTTON_CHANGED(1))
                 button = 1;
@@ -4883,7 +4884,7 @@ void dosum(void)
     }
     for (i = 0; i <= cols; i++)
     {
-        sprintf(s[i], "%f", x[i]);
+        sprintf(s[i], "%f %c", x[i], '\0');
         fieldnam[i] = stru[i];
         fieldbuf[i] = s[i];
     }
@@ -6009,7 +6010,6 @@ void txthelp(void)
     wrefresh(wmsg);
     (void)toupper(waitforkey());
     delwin(wmsg);
-/*    @@@*/
     touchwin(wstat);
     wrefresh(wstat);
     touchwin(wbody);
@@ -6154,13 +6154,17 @@ void opthelp(void)
 void subfunc2(void)
 {
     WINDOW *wmsg;
+    int c = 0;
+    int begx, begy;
+    char buf[MAXSTRLEN+1] = "";
+    char *brows;
     char *s[] =
     {
         "TSVdb v."VERSION,
         "Simple tab separated text database",
         " Based on PDCurses TUIdemo sample",
         " With SLRE lib http://cesanta.com",
-        "       http://tsvdb.sf.net"
+        "       "URL
     };
     
     wmsg = mvwinputbox(wbody, (bodylen()-5)/3, (bodywidth()-40)/2, 7, 40);
@@ -6171,7 +6175,52 @@ void subfunc2(void)
     mvwaddstr(wmsg, 4, 3, s[3]);
     mvwaddstr(wmsg, 5, 3, s[4]);
     wrefresh(wmsg);
-    (void)toupper(waitforkey());
+/*    (void)toupper(waitforkey());*/
+    c = waitforkey();
+#ifdef PDCURSES
+    if (c == KEY_MOUSE)
+    {
+        getmouse();
+        button = 0;
+        request_mouse_pos();
+        if (BUTTON_CHANGED(1))
+            button = 1;
+        else if (BUTTON_CHANGED(2))
+            button = 2;
+        else if (BUTTON_CHANGED(3))
+            button = 3;
+        if (((BUTTON_STATUS(button) & BUTTON_ACTION_MASK) == BUTTON_PRESSED)
+        || ((BUTTON_STATUS(button) & BUTTON_ACTION_MASK) == BUTTON_CLICKED))
+        {
+            getbegyx(wmsg, begy, begx);
+            if ((MOUSE_Y_POS == begy+5)
+            &&  (MOUSE_X_POS > begx+8) && (MOUSE_X_POS < begx+30))
+            {
+#ifdef __MINGW_VERSION
+                brows = "explorer.exe";
+#else
+                brows = getenv("browser");
+                if (brows == NULL)
+                    brows = getenv("BROWSER");
+#endif
+                if (brows != NULL)
+                {
+                    strcpy(buf, brows);
+                    strcat(buf, " ");
+                    strcat(buf, URL);
+                    def_prog_mode();
+                    endwin();
+                    system(buf);
+                    reset_prog_mode();
+                    colorbox(wtitl, TITLECOLOR, 0);
+                    titlemsg(datfname);
+                    redraw();
+                    flagmsg();
+                }
+            }
+        }
+    }
+#endif
     delwin(wmsg);
     touchwin(wbody);
     wrefresh(wbody);
@@ -6210,7 +6259,7 @@ int main(int argc, char **argv)
           break;
         case 'v':
         case 'V':
-          printf("\nTSVdb v.%s %s by begyu\n", VERSION, __DATE__);
+          printf("\nTSVdb v.%s %s by begyu (%s)\n", VERSION, __DATE__, URL);
           exit(0);
           break;
         case 't':
