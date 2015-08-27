@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.33 2015/08/26 $
+ * $Id: tcsvdb.c,v 0.9.34 2015/08/27 $
  */
 
-#define VERSION "0.9.33"
+#define VERSION "0.9.34"
 #define URL "http://tsvdb.sf.net"
 /*#define __MINGW_VERSION 1*/
 
@@ -6175,7 +6175,11 @@ void subfunc2(void)
     mvwaddstr(wmsg, 4, 3, s[3]);
     mvwaddstr(wmsg, 5, 3, s[4]);
     wrefresh(wmsg);
-/*    (void)toupper(waitforkey());*/
+#ifdef __MINGW_VERSION
+    pause(1);
+#else
+    sleep(1);
+#endif
     c = waitforkey();
 #ifdef PDCURSES
     if (c == KEY_MOUSE)
@@ -6208,14 +6212,7 @@ void subfunc2(void)
                     strcpy(buf, brows);
                     strcat(buf, " ");
                     strcat(buf, URL);
-                    def_prog_mode();
-                    endwin();
                     system(buf);
-                    reset_prog_mode();
-                    colorbox(wtitl, TITLECOLOR, 0);
-                    titlemsg(datfname);
-                    redraw();
-                    flagmsg();
                 }
             }
         }
@@ -6349,8 +6346,8 @@ int main(int argc, char **argv)
           }
         case 'h':
         case 'H':
-          printf("\nUsage: %s [-r|x|y|z|t|b|e|h|v] [-n<row>] [-[s|l]<fstr>] "
-            "[-d<sep>] [file]\n",
+          printf("\nUsage: %s [-r|x|y|z|t|b|e|h|v] [-n<row>] [-[s|l]{str}] "
+            "[-d{sep}] [file]\n",
             (char *)basename(progname));
           if (toupper(c) == 'H')
               help();
