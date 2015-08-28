@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.34 2015/08/27 $
+ * $Id: tcsvdb.c,v 0.9.35 2015/08/28 $
  */
 
-#define VERSION "0.9.34"
+#define VERSION "0.9.35"
 #define URL "http://tsvdb.sf.net"
 /*#define __MINGW_VERSION 1*/
 
@@ -2154,7 +2154,6 @@ int hstrcmp(const char *s1, const char *s2)
     return strcmp(e1, e2);
 }
 
-
 int qsort_stringlist(const void *e1, const void *e2)
 {
     register int i, j, k;
@@ -2214,6 +2213,8 @@ int qsort_stringlist(const void *e1, const void *e2)
             n2 = atof(s2);
             if ((n1 != 0.0) && (n2 != 0.0))
                 	return (n1 < n2) ? -1 : 1;
+            while (isspace(p1[i])) { i++; }
+            while (isspace(p2[j])) { j++; }
         }
         return hstrcmp(*(char **)(e1)+i, *(char **)(e2)+j);
     }
@@ -2285,6 +2286,8 @@ int qs_stringlist_rev(const void *e1, const void *e2)
             n2 = atof(s2);
             if ((n1 != 0.0) && (n2 != 0.0))
                 	return (n1 < n2) ? -1 : 1;
+            while (isspace(p2[i])) { i++; }
+            while (isspace(p1[j])) { j++; }
         }
         return hstrcmp(*(char **)(e2)+i, *(char **)(e1)+j);
     }
@@ -4261,7 +4264,7 @@ void selected(void)
     {
         p[0] = '\0';
     }
-    strcat(tmpfname, ".$$$");
+    strcat(tmpfname, ".tmp");
     if ((fp = fopen(tmpfname, "w")) != NULL)
     {
         msg(WSTR);
@@ -6212,7 +6215,9 @@ void subfunc2(void)
                     strcpy(buf, brows);
                     strcat(buf, " ");
                     strcat(buf, URL);
+                    #ifdef __MINGW_VERSION 	//Glib err! :(
                     system(buf);
+                    #endif
                 }
             }
         }
@@ -6346,7 +6351,7 @@ int main(int argc, char **argv)
           }
         case 'h':
         case 'H':
-          printf("\nUsage: %s [-r|x|y|z|t|b|e|h|v] [-n<row>] [-[s|l]{str}] "
+          printf("\nUsage: %s [-r|x|y|z|t|b|e|h|v] [-n{row}] [-[s|l]{str}] "
             "[-d{sep}] [file]\n",
             (char *)basename(progname));
           if (toupper(c) == 'H')
