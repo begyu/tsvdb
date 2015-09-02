@@ -5341,13 +5341,15 @@ void gominmax(bool max)
             n = calcExpression(s);
             if (calcerr)
                 n = 0.0;
+            else
+            {
+                minmax = max ? MAX(minmax, n) : MIN(minmax, n);
+                x = (minmax == n) ? i : x;
+            }
         }
-        minmax = max ? MAX(minmax, n) : MIN(minmax, n);
-        x = (minmax == n) ? i : x;
     }
     curr = x;
 }
-
 
 
 int topset(int top, int y)
