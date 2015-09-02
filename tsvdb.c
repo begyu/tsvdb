@@ -5296,17 +5296,19 @@ void count(bool column)
     getregexp = FALSE;
 }
 
-void gominmax(bool max)
+void gominmax(bool ismax)
 {
     register int i, j, k;
     int l;
-    int x = 0;
+    int x = curr;
     double n;
     double minmax;
     char s[MAXSTRLEN+1];
     BUFDEF;
     char *p=NULL;
     char *bp;
+
+    minmax = ismax ? -INFINITY : INFINITY;
 
     for (i=0; i<reccnt; i++)
     {
@@ -5340,11 +5342,26 @@ void gominmax(bool max)
         {
             n = calcExpression(s);
             if (calcerr)
-                n = 0.0;
+                n = INFINITY;
+        }
+        if (!isnan(n) && (n != INFINITY))
+        {
+            if (ismax)
+            {
+                if (isgreater(n, minmax))
+                {
+                    minmax = n;
+                    x = i;
+                }
+           
+            }
             else
             {
-                minmax = max ? MAX(minmax, n) : MIN(minmax, n);
-                x = (minmax == n) ? i : x;
+                if (isless(n, minmax))
+                {
+                    minmax = n;
+                    x = i;
+                }
             }
         }
     }
