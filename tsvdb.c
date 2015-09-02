@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.35 2015/08/28 $
+ * $Id: tcsvdb.c,v 0.9.36 2015/09/02 $
  */
 
-#define VERSION "0.9.35"
+#define VERSION "0.9.36"
 #define URL "http://tsvdb.sf.net"
 /*#define __MINGW_VERSION 1*/
 
@@ -232,6 +232,8 @@ void opthelp(void);
 #define MAXNLEN  19
 #define MAXFLEN  33
 
+#define BUFDEF char buf[MAXSTRLEN+1]
+
 #define MIN(a, b)  (((a) < (b)) ? (a) : (b))
 #define MAX(a, b)  (((a) > (b)) ? (a) : (b))
 
@@ -427,7 +429,7 @@ static char wordchar(void)
 
 static char *padstr(char *s, int length)
 {
-    static char buf[MAXSTRLEN+1];
+    static BUFDEF;
     char fmt[10];
 
     sprintf(fmt, (int)strlen(s) > length ? "%%.%ds" : "%%-%ds", length);
@@ -529,7 +531,7 @@ static void colorbox(WINDOW *win, chtype color, int hasbox)
 
 static void idle(void)
 {
-    char buf[MAXSTRLEN];
+    BUFDEF;
     time_t t;
     struct tm *tp;
 
@@ -2327,7 +2329,7 @@ void displn(int y, int r)
     register int i, j, k;
     int maxlen;
     char s[MAXCOLS][MAXSTRLEN+1];
-    char buf[MAXSTRLEN+1];
+    BUFDEF;
     char delim[] = "?\n";
     char *p=NULL;
 
@@ -2438,7 +2440,7 @@ void displn(int y, int r)
 
 void statusln(void)
 {
-    char buf[MAXSTRLEN];
+    BUFDEF;
 
     sprintf(buf, "%5u/%u (%u/%u) ", curr+1, reccnt, field+1, cols+1);
     setcolor(wbody, STATUSCOLOR);
@@ -2642,7 +2644,7 @@ int loadfile(char *fname)
 {
     register int i, j, k;
     FILE *fp;
-    char buf[MAXSTRLEN];
+    BUFDEF;
     bool ateof = FALSE;
     char *p;
 
@@ -2870,7 +2872,7 @@ int savefile(char *fname, int force)
     long int size = 0L;
     FILE *fp;
     char *tmp;
-    char buf[MAXSTRLEN];
+    BUFDEF;
 
     if (ro && !cry)
         return -1;
@@ -2943,7 +2945,7 @@ int copyfile(char *fname, char *str, bool head)
 {
     int i, j;
     FILE *fp;
-    char buf[MAXSTRLEN+1];
+    BUFDEF;
     char *p;
 
     if (((p = strstr(fname, ".tsv")) == NULL)
@@ -2993,7 +2995,7 @@ void clean()
 
 int create(char *fn)
 {
-    char buf[MAXSTRLEN+1];
+    BUFDEF;
     int i, j, k;
     char *p;
     bool new=TRUE;
@@ -3092,7 +3094,7 @@ void brows(void)
     int len = MIN(bodywidth(), strlen(head));
     bool firsttab;
     bool quit = FALSE;
-    char buf[MAXSTRLEN+1];
+    BUFDEF;
 
     if (reccnt == 0)
        return;
@@ -3196,7 +3198,7 @@ void fltls(void)
     int x = reccnt-1;
     int len=bodywidth()-9;
     bool quit = FALSE;
-    char buf[MAXSTRLEN+1];
+    BUFDEF;
 
     setcolor(wbody, BODYCOLOR);
     wclear(wstat);
@@ -3314,7 +3316,7 @@ void modify(int y)
 {
     int i, j, k, l;
     char s[MAXCOLS][MAXSTRLEN+1];
-    char buf[MAXSTRLEN+1];
+    BUFDEF;
     char *p=NULL;
     char *fieldnam[MAXCOLS+1];
     char *fieldbuf[MAXCOLS+1];
@@ -4128,7 +4130,7 @@ void paste()
 {
     int i, j, k, l;
     char c;
-    char buf[MAXSTRLEN+1];
+    BUFDEF;
 
     if (ro)
         return;
@@ -4243,7 +4245,7 @@ void selected(void)
     FILE *fp;
     char *p;
     char tmpfname[MAXSTRLEN];
-    char buf[MAXSTRLEN+1];
+    BUFDEF;
 
     if (filtered == FALSE)
     {
@@ -4365,7 +4367,7 @@ int putmsg(char *beg, char *str, char *end)
 void reorder(int y, bool left)
 {
     register int i, j, k;
-    char buf[MAXSTRLEN+1];
+    BUFDEF;
     char tmpstr[MAXCOLS+1][MAXSTRLEN+1];
     char *p;
     j = left ? field-1 : field+1;
@@ -4434,7 +4436,7 @@ void reordall(bool left)
 {
     register int i, j, k;
     char *p;
-    char buf[MAXSTRLEN+1];
+    BUFDEF;
 
     if (ro || safe)
         return;
@@ -4693,7 +4695,7 @@ void align(int n, int y, int m)
     int k, l;
     int beg, dis;
     int from, to;
-    char buf[MAXSTRLEN+1];
+    BUFDEF;
 
     if (y == -1)
     {
@@ -4835,7 +4837,7 @@ void dosum(void)
     double n;
     double x[MAXCOLS];
     char s[MAXCOLS][MAXSTRLEN+1];
-    char buf[MAXSTRLEN+1];
+    BUFDEF;
     char *p=NULL;
     char *bp;
     char *fieldnam[MAXCOLS+1];
@@ -4896,7 +4898,7 @@ void limit(bool set)
     register int i, j, k;
     int l;
     bool limited = (rows[0][0] == '"');
-    char buf[MAXSTRLEN+1];
+    BUFDEF;
 
     for (i=0; i<reccnt; i++)
     {
@@ -5081,7 +5083,7 @@ void insfield(void)
     register int i, j;
     int k, l;
     char fldname[MAXFLEN+1] = "";
-    char buf[MAXSTRLEN+1];
+    BUFDEF;
 
     if ((ro) || (safe) || (cols == 16))
         return;
@@ -5154,7 +5156,7 @@ void delfield(void)
 {
     register int i, j;
     int k, l;
-    char buf[MAXSTRLEN+1];
+    BUFDEF;
 
     if (ro || safe) 
         return;
@@ -5294,6 +5296,74 @@ void count(bool column)
     getregexp = FALSE;
 }
 
+void gominmax(bool max)
+{
+    register int i, j, k;
+    int l;
+    int x = 0;
+    double n;
+    double minmax;
+    char s[MAXSTRLEN+1];
+    BUFDEF;
+    char *p=NULL;
+    char *bp;
+
+    for (i=0; i<reccnt; i++)
+    {
+        strcpy(buf, rows[i]);
+        l = strlen(buf);
+        for (j=0; j<l; j++)
+        {
+            if ((buf[j] == csep) && (buf[j+1] == csep))
+            {
+                l++;
+                for (k=l; k>j; k--)
+                    buf[k] = buf[k-1];
+                j++;
+                buf[j] = ' ';
+            }
+        }
+        p = strtok(buf, ssep );
+        for (j=0; j<=field; j++)
+        {
+            if (p != NULL)
+            {
+                strcpy(s, p);
+                s[len[j]] = '\0';
+                p = strtok( 0, ssep );
+            }
+            else
+                strcpy(s, " ");
+        }
+        n = strtod(s, &bp);
+        if (bp != NULL)
+        {
+            n = calcExpression(s);
+            if (calcerr)
+                n = 0.0;
+        }
+        minmax = max ? MAX(minmax, n) : MIN(minmax, n);
+        x = (minmax == n) ? i : x;
+    }
+    curr = x;
+}
+
+
+
+int topset(int top, int y)
+{
+    register int i;
+
+    if (curr > 0)
+    {
+        for (i=0; i<curr; i++)
+        {
+            if ((i-top) >= y)
+               top++;
+        }
+    }
+    return top;
+}
 
 
 #ifdef NCURSES
@@ -5314,15 +5384,7 @@ void edit(void)
     int c;
 
     curr = (curr <= reccnt) ? curr : 0;
-    ctop = curr;
-    if (curr > 0)
-    {
-        for (i=0; i<curr; i++)
-        {
-            if ((i-ctop) >= r)
-               ctop++;
-        }
-    }
+    ctop = topset(curr, r);
     field = 0;
     curcol= 0;
     clsbody();
@@ -5380,7 +5442,7 @@ void edit(void)
             {
                field++;
                i = bodywidth()-2;
-               j = beg[field+1];
+               j = beg[field] + len[field];
                if (j>i)
                   curcol++;
             }
@@ -5664,6 +5726,7 @@ void edit(void)
             break;
         case CTRL_G:
             gorec();
+            ctop = topset(curr, r);
             break;
         case KEY_SLEFT:
             if (!ro)
@@ -5712,6 +5775,14 @@ void edit(void)
             break;
         case ALT_O:
             count(TRUE);
+            break;
+        case SHF_PADMINUS:
+            gominmax(FALSE);
+            ctop = topset(curr, r);
+            break;
+        case SHF_PADPLUS:
+            gominmax(TRUE);
+            ctop = topset(curr, r);
             break;
         default:
             if ((c == 0x81) || (c == 0xEB) || (c == 0x1FB))
@@ -5772,7 +5843,7 @@ void newdb(void)
 
 void txted(void)
 {
-    char buf[MAXSTRLEN];
+    BUFDEF;
 
     if (!ro && !safe)
     {
@@ -5857,7 +5928,7 @@ menu SubMenu1[] =
     { "adJust", doindent, "Align left/right/center" },
     { "Sort", dosort, "Sort the whole file" },
     { "Field", dosortby, "Sort by other field" },
-    { "nUm", dosortnum, "Sort numerical order" },
+    { "nUm", dosortnum, "Sort natural order" },
     { "cRypt", docrypt, "Code/decode" },
     { "tOtal", dosum, "Aggregate" },
     { "eXport", selected, "Restricted set" },
@@ -5913,8 +5984,8 @@ void subfunc1(void)
         " Del/Home:  clear fstr     \t\t   Ctrl-Up:  move backward",
         "   Ctrl-G:  goto line      \t\t Ctrl-Down:  move forward",
         "Ctl/Alt-S:  replace/change \t\t   Alt-I/D:  ins/remove fld",
-        "    Alt-C:  calculate      \t\t    Ctrl-O:  count substr",
-        "  Alt-X/Y:  calc fld/cols  \t\t     Alt-O:  count in field"
+        "    Alt-C:  calculate      \t\tCtrl/Alt-O:  count subs/fld",
+        "  Alt-X/Y:  calc fld/cols  \t\t  Shft_+/-:  go max/min"
     };
     int i;
     int j=15;
@@ -6154,7 +6225,7 @@ void subfunc2(void)
     WINDOW *wmsg;
     int c = 0;
     int begx, begy;
-    char buf[MAXSTRLEN+1] = "";
+    BUFDEF = "";
     char *brows;
     char *s[] =
     {
