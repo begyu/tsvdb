@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.36 2015/09/02 $
+ * $Id: tcsvdb.c,v 0.9.37 2015/09/03 $
  */
 
-#define VERSION "0.9.36"
+#define VERSION "0.9.37"
 #define URL "http://tsvdb.sf.net"
 /*#define __MINGW_VERSION 1*/
 
@@ -1824,10 +1824,10 @@ int casestr(char *str, bool upper, bool ascii)
 /*  char chr_utflo[] = "ĂˇĂ©Ă­ĂłĂ¶Ĺ‘ĂşĂĽĹ±";*/
 /*  char chr_utfhi[] = "ĂĂ‰ĂŤĂ“Ă–ĹĂšĂśĹ°";*/
   register int i, j;
-  int len=strlen(str);
+  int w=strlen(str);
   unsigned char c;
 
-  for (i=0; i<len; i++)
+  for (i=0; i<w; i++)
   {
       if ((c=str[i]) < 0x7F)
           str[i] = (upper ? toupper(c) : tolower(c));
@@ -3091,7 +3091,7 @@ void brows(void)
     int j = bodylen()-1;
     int k = reccnt-bodylen()+1;
     int x;
-    int len = MIN(bodywidth(), strlen(head));
+    int w = MIN(bodywidth(), strlen(head));
     bool firsttab;
     bool quit = FALSE;
     BUFDEF;
@@ -3112,11 +3112,11 @@ void brows(void)
             x = 9-strlen(buf);
             strcat(buf, ssep);
             strcat(buf, rows[i]);
-            x = MIN(strlen(buf), len-x);
+            x = MIN(strlen(buf), w-x);
             buf[x-1] = '\n';
             buf[x] = '\0';
             firsttab = TRUE;
-            for (x=0; x<len; x++)
+            for (x=0; x<w; x++)
             {
                if (buf[x] == csep)
                {
@@ -3196,7 +3196,7 @@ void fltls(void)
 {
     int i, j, k;
     int x = reccnt-1;
-    int len=bodywidth()-9;
+    int w=bodywidth()-9;
     bool quit = FALSE;
     BUFDEF;
 
@@ -3217,12 +3217,12 @@ void fltls(void)
                (void)itoa(i+1, buf, 10);
                strcat(buf, ssep);
                strcat(buf, rows[i]);
-               if (strlen(buf) > len)
+               if (strlen(buf) > w)
                {
-                  buf[len] = '\n';
-                  buf[len+1] = '\0';
+                  buf[w] = '\n';
+                  buf[w+1] = '\0';
                }
-               for (k=10; k<len; k++)
+               for (k=10; k<w; k++)
                   if (buf[k] == csep)
                       buf[k] = '|';
                bodymsg(buf);
@@ -5300,7 +5300,9 @@ void gominmax(bool ismax)
 {
     register int i, j, k;
     int l;
+    unsigned int width;
     int x = curr;
+    int y = curr;
     double n;
     double minmax;
     char s[MAXSTRLEN+1];
@@ -5309,7 +5311,7 @@ void gominmax(bool ismax)
     char *bp;
 
     minmax = ismax ? -INFINITY : INFINITY;
-
+    width = ismax ? 0 : MAXSTRLEN;
     for (i=0; i<reccnt; i++)
     {
         strcpy(buf, rows[i]);
@@ -5336,6 +5338,13 @@ void gominmax(bool ismax)
             }
             else
                 strcpy(s, " ");
+        }
+        k = width;
+        l = strlen(s);
+        width = ismax ? MAX(width, l) : MIN(width, l);
+        if (width != k)
+        {
+            y = i;
         }
         n = strtod(s, &bp);
         if (bp != NULL)
@@ -5365,7 +5374,7 @@ void gominmax(bool ismax)
             }
         }
     }
-    curr = x;
+    curr = (fabs(minmax) == INFINITY) ? y : x;
 }
 
 
