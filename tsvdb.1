@@ -5,7 +5,7 @@
 
 .SH SYNOPSIS
 .B <tsvdb>
-.RI [-r|x|y|t|b|n<recno>|s<fstr>|d<[,|;]>|h|v] 
+.RI [-r|x|y|z|t|b|n{recno}|[[s|S]|[l|L]]{fstr}|d{[,|;]}|e|h|v] 
 .RI [tsvdatafile]
 .br
 
@@ -22,16 +22,28 @@ Open in read-only.
 Readonly, but swiched back with Ctrl-X key.
 .IP \fB\-y\fP
 Locked mode.
+.IP \fB\-z\fP
+Set safety on.
 .IP \fB\-t\fP
 Go to first record.
 .IP \fB\-b\fP
 Go bottom.
-.IP \fB\-n	recno\fP
+.IP \fB\-n\ recno\fP
 Go to the nth row.
-.IP \fB\-s	fstr\fP
+.IP \fB\-s\ fstr\fP
 Go to the first occurence of fstr.
-.IP \fB\-d	delim\fP
+.IP 	or	\fB\-s\ (fstr)\fP
+	Search with Regular Expression.
+.IP 	or	\fB\-S\ (fstr)\fP
+	Search regexp to extract.
+.IP \fB\-l\ str\fP
+List of occurrences.
+.IP 	or	\fB\-L\ str\fP
+	List with header.
+.IP \fB\-d\ delim\fP
 Use delimiter (, or ;) char to CSV.
+.IP \fB\-e\fP
+Edit file as text.
 .IP \fB\-h\fP
 Syntax help.
 .IP \fB\-v\fP
@@ -40,4 +52,4 @@ Print version.
 .SH "SEE ALSO"
 .SM
 .IP http://tsvdb.sf.net/
-.IP http://en.wikipedia.org/wiki/Tab-separated_values 
+.IP http://en.wikipedia.org/wiki/Tab-separated_values
