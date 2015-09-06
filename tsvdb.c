@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.37 2015/09/03 $
+ * $Id: tcsvdb.c,v 0.9.38 2015/09/06 $
  */
 
-#define VERSION "0.9.37"
+#define VERSION "0.9.38"
 #define URL "http://tsvdb.sf.net"
 /*#define __MINGW_VERSION 1*/
 
@@ -5804,11 +5804,11 @@ void edit(void)
         case ALT_O:
             count(TRUE);
             break;
-        case SHF_PADMINUS:
+        case CTL_END:
             gominmax(FALSE);
             ctop = topset(curr, r);
             break;
-        case SHF_PADPLUS:
+        case CTL_HOME:
             gominmax(TRUE);
             ctop = topset(curr, r);
             break;
@@ -6013,7 +6013,7 @@ void subfunc1(void)
         "   Ctrl-G:  goto line      \t\t Ctrl-Down:  move forward",
         "Ctl/Alt-S:  replace/change \t\t   Alt-I/D:  ins/remove fld",
         "    Alt-C:  calculate      \t\tCtrl/Alt-O:  count subs/fld",
-        "  Alt-X/Y:  calc fld/cols  \t\t  Shft_+/-:  go max/min"
+        "  Alt-X/Y:  calc fld/cols  \t\tC-Home/End:  go max/min"
     };
     int i;
     int j=15;
