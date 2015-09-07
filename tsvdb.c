@@ -5381,13 +5381,11 @@ void golen(bool ismax)
     register int i, j, k;
     unsigned int width;
     int x = curr;
-    BUFDEF;
-
+ 
     width = ismax ? 0 : MAXSTRLEN;
     for (i=0; i<reccnt; i++)
     {
-        strcpy(buf, rows[i]);
-        j = strlen(buf);
+        j = strlen(rows[i]);
         k = width;
         width = ismax ? MAX(width, j) : MIN(width, j);
         if (width != k)
