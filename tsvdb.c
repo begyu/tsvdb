@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.38 2015/09/06 $
+ * $Id: tcsvdb.c,v 0.9.39 2015/09/07 $
  */
 
-#define VERSION "0.9.38"
+#define VERSION "0.9.39"
 #define URL "http://tsvdb.sf.net"
 /*#define __MINGW_VERSION 1*/
 
@@ -5333,7 +5333,6 @@ void gominmax(bool ismax)
             if (p != NULL)
             {
                 strcpy(s, p);
-                s[len[j]] = '\0';
                 p = strtok( 0, ssep );
             }
             else
@@ -5375,6 +5374,28 @@ void gominmax(bool ismax)
         }
     }
     curr = (fabs(minmax) == INFINITY) ? y : x;
+}
+
+void golen(bool ismax)
+{
+    register int i, j, k;
+    unsigned int width;
+    int x = curr;
+    BUFDEF;
+
+    width = ismax ? 0 : MAXSTRLEN;
+    for (i=0; i<reccnt; i++)
+    {
+        strcpy(buf, rows[i]);
+        j = strlen(buf);
+        k = width;
+        width = ismax ? MAX(width, j) : MIN(width, j);
+        if (width != k)
+        {
+            x = i;
+        }
+    }
+    curr = x;
 }
 
 
@@ -5812,6 +5833,14 @@ void edit(void)
             gominmax(TRUE);
             ctop = topset(curr, r);
             break;
+        case ALT_END:
+            golen(FALSE);
+            ctop = topset(curr, r);
+            break;
+        case ALT_HOME:
+            golen(TRUE);
+            ctop = topset(curr, r);
+            break;
         default:
             if ((c == 0x81) || (c == 0xEB) || (c == 0x1FB))
                c = 0x55; /* U */
@@ -5999,26 +6028,26 @@ void subfunc1(void)
     WINDOW *wmsg;
     char *s[] =
     {
-        " Ctrl-Ins:  insert line (C-+)\t\t    Ctrl-A:  mark all",
-        "  Alt-Ins:  duplicate   (A-+)\t\t     Alt-A:  filter all",
-        " Ctrl-Del:  delete line    \t\t    Ctrl-C:  copy",
-        "    Enter:  edit fields    \t\t    Ctrl-V:  paste",
-        "   Letter:  search (? mask)\t\tCtrl/Alt-U:  uppercase",
-        " Ctrl-F/D:  regexp search  \t\tCtrl/Alt-L:  lowercase",
-        "    Alt-F:  seek curr field\t\tC/A-arrows:  reorder fields",
-        "Tab/C-Tab:  find next      \t\t Shft-left:  align left",
-        " Shft-Tab:  previous       \t\tShft-right:  align right",
-        "     Bksp:  del fstr back  \t\t Shft-Home:  center",
-        " Del/Home:  clear fstr     \t\t   Ctrl-Up:  move backward",
-        "   Ctrl-G:  goto line      \t\t Ctrl-Down:  move forward",
-        "Ctl/Alt-S:  replace/change \t\t   Alt-I/D:  ins/remove fld",
-        "    Alt-C:  calculate      \t\tCtrl/Alt-O:  count subs/fld",
-        "  Alt-X/Y:  calc fld/cols  \t\tC-Home/End:  go max/min"
+        " Ctrl-Ins:  insert line (C-+)\t\tCtrl/Alt-A:  mark/filter all",
+        "  Alt-Ins:  duplicate   (A-+)\t\t    Ctrl-C:  copy",
+        " Ctrl-Del:  delete line    \t\t    Ctrl-V:  paste",
+        "    Enter:  edit fields    \t\tCtrl/Alt-U:  uppercase/init",
+        "   Letter:  search (? mask)\t\tCtrl/Alt-L:  lower/initial",
+        " Ctrl-F/D:  regexp search  \t\tC/A-arrows:  reorder fields",
+        "    Alt-F:  seek curr field\t\t Shft-left:  align left",
+        "Tab/C-Tab:  find next      \t\tShft-right:  align right",
+        " Shft-Tab:  previous       \t\t Shft-Home:  center",
+        "     Bksp:  del fstr back  \t\t   Ctrl-Up:  move backward",
+        " Del/Home:  clear fstr     \t\t Ctrl-Down:  move forward",
+        "   Ctrl-G:  goto line      \t\t   Alt-I/D:  ins/remove field",
+        "Ctl/Alt-S:  replace/change \t\tCtrl/Alt-O:  count subs/field",
+        "    Alt-C:  calculate      \t\t  C/A-Home:  go max/longest",
+        "  Alt-X/Y:  calc fld/cols  \t\t   C/A-End:  go min/shortest"
     };
     int i;
     int j=15;
     
-    wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-68)/2, j+2, 68);
+    wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-70)/2, j+2, 70);
 #ifndef __MINGW_VERSION
     wborder(wmsg, '|', '|', '-', '-', '+', '+', '+', '+');
 #endif
