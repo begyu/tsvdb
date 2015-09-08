@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.39 2015/09/07 $
+ * $Id: tcsvdb.c,v 0.9.40 2015/09/08 $
  */
 
-#define VERSION "0.9.39"
+#define VERSION "0.9.40"
 #define URL "http://tsvdb.sf.net"
 /*#define __MINGW_VERSION 1*/
 
@@ -200,6 +200,7 @@ static char *slre_replace(const char *regex, const char *buf,
 #define CTRL_L 0x0C
 #define CTRL_O 0x0F
 #define CTRL_Q 0x11
+#define CTRL_R 0x12
 #define CTRL_S 0x13
 #define CTRL_U 0x15
 #define CTRL_V 0x16
@@ -2450,6 +2451,85 @@ void statusln(void)
 }
 
 
+int RLEC(const char *in, char *out)
+{
+    unsigned char cur = 0;
+    unsigned char count = 0;
+    int inpos = 0;
+    int outpos = 0;
+    int i = 0;
+    int inlen = strlen(in);
+
+    while(inpos < inlen)
+    {
+        cur = in[inpos];
+        count = 1;
+        for(i = inpos + 1; i < inlen; i++)
+        {
+            if(in[i] == cur)
+            {
+                count++;
+                if(count > 80)
+                    break;
+            }
+            else
+                break;
+        }
+        inpos += count;
+        if (count > 3)
+        {
+            out[outpos] = 6;
+            out[outpos + 1] = count + '0';
+            out[outpos + 2] = cur;
+            outpos += 3;
+        }
+        else
+        {
+            for (i=0; i<count; i++)
+            {
+                out[outpos] = cur;
+                outpos++;
+            }
+        }
+    }
+    out[outpos] = 0;
+    return outpos;
+}
+
+int RLED(const char *in, char *out, int outlen)
+{
+    unsigned char cur = 0;
+    unsigned char count = 0;
+    int inpos = 0;
+    int outpos = 0;
+    int i = 0;
+    int inlen = strlen(in);
+
+    while(inpos < inlen)
+    {
+        cur = in[inpos];
+        if (cur == 6)
+        {
+            count = in[inpos + 1] - '0';
+            cur = in[inpos + 2];
+            for(i = 1; i < count; i++)
+            {
+                out[outpos] = cur;
+                outpos++;
+                if((outpos + i) >= outlen)
+                    break;
+            }
+            inpos += 2;
+        }
+        out[outpos] = cur;
+        inpos++;
+        outpos++;
+    }
+    out[outpos] = 0;
+    return outpos;
+}
+
+
 int numcompr(const char *s3, char *s2)
 {
     unsigned int i;
@@ -2560,16 +2640,23 @@ void compress(bool rev)
 {
     register int i, j;
     char s[MAXSTRLEN+1];
+    BUFDEF;
 
     for (i=0; i<reccnt; i++)
     {
         if (rev)
-           	numextr(rows[i], s);
+        {
+            RLED(rows[i], buf, MAXSTRLEN);
+            numextr(buf, s);
+        }
         else
-           	strcompr(rows[i], s);
+        {
+            strcompr(rows[i], buf);
+            RLEC(buf, s);
+        }
         j = strlen(s);
         if (rows[i] != NULL)
-           	free(rows[i]);
+            	free(rows[i]);
         rows[i] = (char *)malloc(j+1);
         strcpy(rows[i], s);
     }
@@ -5381,7 +5468,7 @@ void golen(bool ismax)
     register int i, j, k;
     unsigned int width;
     int x = curr;
- 
+
     width = ismax ? 0 : MAXSTRLEN;
     for (i=0; i<reccnt; i++)
     {
