@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.40 2015/09/08 $
+ * $Id: tcsvdb.c,v 0.9.41 2015/09/09 $
  */
 
-#define VERSION "0.9.40"
+#define VERSION "0.9.41"
 #define URL "http://tsvdb.sf.net"
 /*#define __MINGW_VERSION 1*/
 
@@ -24,6 +24,7 @@
 #include <wchar.h>
 #include <getopt.h>
 #include <sys/stat.h>
+#include <dirent.h>
 
 #ifndef MSDOS
   #include <libgen.h>
@@ -1718,6 +1719,13 @@ int getstrings(char *desc[], char *buf[], int field, int length, int lim[])
     int oldy, oldx, maxy, maxx, nlines, ncols, i, n, l, mmax = 0;
     int c = 0;
     bool stop = FALSE;
+    bool fsel = FALSE;
+
+    if (field == -1)
+    {
+        field = 0;
+        fsel = TRUE;
+    }
 
     getyx(wbody, oldy, oldx);
     getmaxyx(wbody, maxy, maxx);
@@ -1774,6 +1782,8 @@ int getstrings(char *desc[], char *buf[], int field, int length, int lim[])
 
         case KEY_UP:
             i = (i + n - 1) % n;
+            if (fsel)
+                stop = TRUE;
             break;
 
         case '\n':
@@ -1784,6 +1794,9 @@ int getstrings(char *desc[], char *buf[], int field, int length, int lim[])
         case KEY_DOWN:
             if (++i == n)
                 i = 0;
+            if (fsel)
+                stop = TRUE;
+            break;
         }
     }
 
@@ -1800,16 +1813,36 @@ int getstrings(char *desc[], char *buf[], int field, int length, int lim[])
 
 char *getfname(char *desc, char *fname, int length)
 {
+    int ret;
     char *fieldname[2];
     char *fieldbuf[2];
-
     fieldname[0] = desc;
     fieldname[1] = 0;
     fieldbuf[0] = fname;
     fieldbuf[1] = 0;
+    struct dirent *de = NULL;
+    DIR *d = opendir(".");
 
-    return (getstrings(fieldname, fieldbuf, 0, length, NULL) == KEY_ESC) ? 
-           NULL : fname;
+    while (1)
+    {
+        ret = getstrings(fieldname, fieldbuf, -1, length, NULL);
+        if ((ret == KEY_UP) || (ret == KEY_DOWN))
+        {
+            while ((de = readdir(d)) != NULL)
+            {
+               if (de->d_type == DT_REG)
+               {
+                  strcpy(fname, de->d_name);
+                  break;
+               }
+            }
+        }
+        else
+            	break;
+        if (de == NULL)
+            	rewinddir(d);
+    }
+    return (ret == KEY_ESC) ? NULL : fname;
 }
 
 
