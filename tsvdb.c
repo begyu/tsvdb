@@ -294,6 +294,7 @@ static long int filesize = 0L;
 #define DISABLEDHOT ("aCcDFfNnSsT")
 #define FROMSTR ("From:")
 #define TOSTR   ("  To:")
+#define HEADSTR ("Head:")
 
 static char csep = TABCSEP;
 static char ssep[] = TABSSEP;
@@ -1918,6 +1919,10 @@ char *getfname(char *desc, char *fname, int length)
     struct dirent *de = NULL;
     DIR *d = opendir(".");
 
+    if (strcmp(desc, HEADSTR) == 0)
+        return (getstrings(fieldname, fieldbuf, 0, length, NULL)
+                == KEY_ESC) ? NULL : fname;
+
     chdir(wdname);
     while (1)
     {
@@ -3065,6 +3070,7 @@ int loadfile(char *fname)
            displn(i, j+1);
         j++;
     }
+    strcpy(datfname, fname);
     return 0;
 }
 
@@ -3193,6 +3199,7 @@ int savefile(char *fname, int force)
         return -1;
     }
     (void)chmod(fname, S_IRUSR);
+    strcpy(datfname, fname);
     modified = FALSE;
     flagmsg();
     return 0;
@@ -3280,7 +3287,7 @@ int create(char *fn)
        new = FALSE;
     }
     putmsg("", "To create a new database, enter the field names!", "");
-    if (getfname("Head:", buf, 68))
+    if (getfname(HEADSTR, buf, 68))
     {
         strcat(buf, "\n");
         j = strlen(buf);
