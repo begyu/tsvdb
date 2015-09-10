@@ -818,6 +818,7 @@ static void cleanup(void)   /* cleanup curses settings */
         PDC_return_key_modifiers(FALSE);
 #endif
     }
+    chdir(wdname);
 }
 
 
