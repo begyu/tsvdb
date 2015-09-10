@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.41 2015/09/09 $
+ * $Id: tcsvdb.c,v 0.9.42 2015/09/10 $
  */
 
-#define VERSION "0.9.41"
+#define VERSION "0.9.42"
 #define URL "http://tsvdb.sf.net"
 /*#define __MINGW_VERSION 1*/
 
@@ -24,6 +24,7 @@
 #include <wchar.h>
 #include <getopt.h>
 #include <sys/stat.h>
+/*#include <fcntl.h>*/
 #include <dirent.h>
 
 #ifndef MSDOS
@@ -242,6 +243,7 @@ void opthelp(void);
 #define CTRL(x) ((x) & 0x1f)
 
 static char progname[MAXSTRLEN] = "";
+static char wdname[MAXSTRLEN+1] = "";
 static char datfname[MAXSTRLEN] = "";
 static char fstr[MAXSTRLEN] = "";
 static char regstr[MAXFLEN] = "(?i)";
@@ -1163,6 +1165,8 @@ void init()
     newterm(getenv("TERM"), stderr, stdin);
     keypad(stdscr,  TRUE);
     refresh();
+    if (getcwd(wdname, MAXSTRLEN) == NULL)
+        strcpy(wdname, ".");
 }
 
 void startmenu(menu *mp, char *mtitle)
@@ -1809,11 +1813,101 @@ int getstrings(char *desc[], char *buf[], int field, int length, int lim[])
 }
 
 
-/**************************** string entry box ****************************/
+int getdir(char *fname, int length)
+{
+    int i, ret;
+    int fcnt = 0;
+    char *fieldname[2];
+    char *fieldbuf[2];
+    fieldname[0] = "Open directory:";
+    fieldname[1] = 0;
+    fieldbuf[0] = fname;
+    fieldbuf[1] = 0;
+    struct dirent *de = NULL;
+    DIR *d = opendir(".");
+
+    if (((de = readdir(d)) != NULL)
+       && (de->d_type == DT_DIR)
+       && (strcmp(de->d_name, ".") == 0))
+    {
+       if (((de = readdir(d)) != NULL)
+          && (de->d_type == DT_DIR))
+       {
+           fcnt++;
+           strcpy(fname, de->d_name);
+       }
+    }
+    while (1)
+    {
+        statusmsg("Use down/up keys to select next/previous directory");
+        ret = getstrings(fieldname, fieldbuf, -1, length, NULL);
+        if ((ret == KEY_UP) || (ret == KEY_DOWN))
+        {
+            if (ret == KEY_UP)
+            {
+                rewinddir(d);
+                fcnt = fcnt > 0 ? fcnt-2 : 0;
+                if (fcnt > 0)
+                {
+                    i = fcnt;
+                    while ((de = readdir(d)) != NULL)
+                    {
+                        if (de->d_type == DT_DIR)
+                        {
+                           i--;
+                           if (i == 0)
+                              	break;
+                        }
+                    }
+                }
+            }
+            while ((de = readdir(d)) != NULL)
+            {
+                if (de->d_type == DT_DIR)
+                {
+                    fcnt++;
+                    strcpy(fname, de->d_name);
+                    break;
+                }
+            }
+        }
+        else
+            	break;
+    }
+    return (ret == KEY_ESC) ? -1 : 0;
+}
+
+
+void putfselhlp(int i)
+{
+    BUFDEF;
+
+    strcpy(buf, "Use ");
+    if (i != 2)
+        	strcat(buf, "down");
+    if (i == 1)
+        	strcat(buf, "/");
+    if (i != 0)
+        	strcat(buf, "up");
+    strcat(buf, " key");
+    if (i == 1)
+        	strcat(buf, "s");
+    strcat(buf, " to select ");
+    if (i != 2)
+        	strcat(buf, "next");
+    if (i == 1)
+        	strcat(buf, "/");
+    if (i != 0)
+        	strcat(buf, "previous");
+    strcat(buf, " file or dot ('.') to directory");
+    statusmsg(buf);
+}
 
 char *getfname(char *desc, char *fname, int length)
 {
-    int ret;
+    int i, ret;
+    int fcnt = 0;
+    int fpos = 0;
     char *fieldname[2];
     char *fieldbuf[2];
     fieldname[0] = desc;
@@ -1823,24 +1917,66 @@ char *getfname(char *desc, char *fname, int length)
     struct dirent *de = NULL;
     DIR *d = opendir(".");
 
+    chdir(wdname);
     while (1)
     {
+        putfselhlp(fpos);
         ret = getstrings(fieldname, fieldbuf, -1, length, NULL);
+        if (strcmp(fname, ".") == 0)
+        {
+            ret = getdir(fname, length-1);
+            if (ret == 0)
+            {
+                chdir(fname);
+                d = opendir(".");
+                fcnt = fpos = 0;
+                ret = KEY_DOWN;
+            }
+        }
+        else if ((strcmp(fname, "..") == 0)
+             || (strcmp(fname, "/") == 0))
+             {
+                 chdir(fname);
+                 d = opendir(".");
+                 fcnt = fpos = 0;
+                 ret = KEY_DOWN;
+             }
         if ((ret == KEY_UP) || (ret == KEY_DOWN))
         {
+            fpos = 1;
+            if (ret == KEY_UP)
+            {
+                rewinddir(d);
+                fcnt = fcnt > 0 ? fcnt-2 : 0;
+                if (fcnt > 0)
+                {
+                    i = fcnt;
+                    while ((de = readdir(d)) != NULL)
+                    {
+                        if (de->d_type == DT_REG)
+                        {
+                            i--;
+                            if (i == 0)
+                               	break;
+                        }
+                    }
+                }
+                fpos = (fcnt > 0) ? 1 : 0;
+            }
             while ((de = readdir(d)) != NULL)
             {
-               if (de->d_type == DT_REG)
-               {
-                  strcpy(fname, de->d_name);
-                  break;
-               }
+                if (de->d_type == DT_REG)
+                {
+                    fcnt++;
+                    strcpy(fname, de->d_name);
+                    break;
+                }
             }
+            if (de == NULL)
+                	fpos = 2;
         }
         else
             	break;
-        if (de == NULL)
-            	rewinddir(d);
     }
     return (ret == KEY_ESC) ? NULL : fname;
 }
