@@ -1868,8 +1868,11 @@ int getdir(char *fname, int length)
                 if (de->d_type == DT_DIR)
                 {
                     fcnt++;
-                    strcpy(fname, de->d_name);
-                    break;
+                    if(strlen(de->d_name) < length)
+                    {
+                        strcpy(fname, de->d_name);
+                        break;
+                    }
                 }
             }
         }
@@ -1905,7 +1908,7 @@ void putfselhlp(int i)
     statusmsg(buf);
 }
 
-char *getfname(char *desc, char *fname, int length)
+char *getfname(bool fn, char *desc, char *fname, int length)
 {
     int i, ret;
     int fcnt = 0;
@@ -1919,7 +1922,7 @@ char *getfname(char *desc, char *fname, int length)
     struct dirent *de = NULL;
     DIR *d = opendir(".");
 
-    if (strcmp(desc, HEADSTR) == 0)
+    if (!fn)
         return (getstrings(fieldname, fieldbuf, 0, length, NULL)
                 == KEY_ESC) ? NULL : fname;
 
@@ -1974,8 +1977,11 @@ char *getfname(char *desc, char *fname, int length)
                 if (de->d_type == DT_REG)
                 {
                     fcnt++;
-                    strcpy(fname, de->d_name);
-                    break;
+                    if(strlen(de->d_name) < length)
+                    {
+                        strcpy(fname, de->d_name);
+                        break;
+                    }
                 }
             }
             if (de == NULL)
@@ -2261,6 +2267,7 @@ int hstrcmp(const char *s1, const char *s2)
                     c++;
                 }
            break;
+
         case 'L':
            if (c2 == 'Y')
            {
@@ -3287,7 +3294,7 @@ int create(char *fn)
        new = FALSE;
     }
     putmsg("", "To create a new database, enter the field names!", "");
-    if (getfname(HEADSTR, buf, 68))
+    if (getfname(FALSE, HEADSTR, buf, 68))
     {
         strcat(buf, "\n");
         j = strlen(buf);
@@ -5355,7 +5362,7 @@ void insfield(void)
     if ((i = strlen(head)) > 66)
         return;
 
-    if (getfname("Enter new field name:", fldname, MAXFLEN))
+    if (getfname(FALSE, "Enter new field name:", fldname, MAXFLEN))
     {
         if (fldname[0] == '\0')
             return;
@@ -5501,7 +5508,7 @@ void count(bool column)
     char s[MAXSTRLEN+1];
 
     getregexp = TRUE;
-    if (getfname("Count for:", regstr, MAXFLEN))
+    if (getfname(FALSE, "Count for:", regstr, MAXFLEN))
     {
         if (column)
         {
@@ -6134,7 +6141,7 @@ void DoOpen(void)
                return;
     }
     strcpy(fname, datfname);
-    if (getfname("File to open:", fname, 50))
+    if (getfname(TRUE, "File to open:", fname, 50))
     {
         if (loadfile(fname) == 0)
             titlemsg(fname);
@@ -6148,7 +6155,7 @@ void DoSave(void)
     if (ro && !cry)
         return;
     strcpy(fname, datfname);
-    if (getfname("Save to file:", fname, 50))
+    if (getfname(TRUE, "Save to file:", fname, 50))
     {
         if (savefile(fname, 0) == 0)
             titlemsg(fname);
