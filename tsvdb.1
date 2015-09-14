@@ -1,12 +1,13 @@
 .TH <tsvdb> 1 "<2011.07.21>" "" "Linux User's Manual"
 
 .SH NAME
-\fBtsvdb\fP \- Tab separated values database 
+tsvdb \- Tab separated values database
 
 .SH SYNOPSIS
-.B <tsvdb>
-.RI [-r|x|y|z|t|b|n{recno}|[[s|S]|[l|L]]{fstr}|d{[,|;]}|e|h|v] 
-.RI [tsvdatafile]
+.B tsvdb
+[\fI-r|x|y|z|t|b|h|v\fR] [\fI-n{recno}\fR]
+[\fI-\fR[[\fIs|S\fR]|[\fIl|L\fR]]\fI{fstr}\fR]
+[\fI-d{[,|;]}\fR] [\fI-e\fR] [\fItsvdatafile\fR]
 .br
 
 .SH DESCRIPTION
@@ -16,40 +17,40 @@ Each tab-delimited word in the first line, defines a data field name and its len
 The number of lines up to one million, and a maximum number of fields is 16.
 
 .SH OPTIONS
-.IP \fB\-r\fP
+.IP \fB\-r\fR
 Open in read-only.
-.IP \fB\-x\fP
+.IP \fB\-x\fR
 Readonly, but swiched back with Ctrl-X key.
-.IP \fB\-y\fP
+.IP \fB\-y\fR
 Locked mode.
-.IP \fB\-z\fP
+.IP \fB\-z\fR
 Set safety on.
-.IP \fB\-t\fP
+.IP \fB\-t\fR
 Go to first record.
-.IP \fB\-b\fP
+.IP \fB\-b\fR
 Go bottom.
-.IP \fB\-n\ recno\fP
+.IP \fB\-n\ recno\fR
 Go to the nth row.
-.IP \fB\-s\ fstr\fP
+.IP \fB\-s\ fstr\fR
 Go to the first occurence of fstr.
-.IP 	or	\fB\-s\ (fstr)\fP
+.IP 	or	\fB\-s\ (fstr)\fR
 	Search with Regular Expression.
-.IP 	or	\fB\-S\ (fstr)\fP
+.IP 	or	\fB\-S\ (fstr)\fR
 	Search regexp to extract.
-.IP \fB\-l\ str\fP
+.IP \fB\-l\ str\fR
 List of occurrences.
-.IP 	or	\fB\-L\ str\fP
+.IP 	or	\fB\-L\ str\fR
 	List with header.
-.IP \fB\-d\ delim\fP
+.IP \fB\-d\ delim\fR
 Use delimiter (, or ;) char to CSV.
-.IP \fB\-e\fP
+.IP \fB\-e\fR
 Edit file as text.
-.IP \fB\-h\fP
+.IP \fB\-h\fR
 Syntax help.
-.IP \fB\-v\fP
+.IP \fB\-v\fR
 Print version.
 
 .SH "SEE ALSO"
 .SM
 .IP http://tsvdb.sf.net/
-.IP http://en.wikipedia.org/wiki/Tab-separated_values
+.IP http://en.wikipedia.org/wiki/Tab-separated_values 
