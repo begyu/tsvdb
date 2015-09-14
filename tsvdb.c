@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.42 2015/09/10 $
+ * $Id: tcsvdb.c,v 0.9.43 2015/09/14 $
  */
 
-#define VERSION "0.9.42"
+#define VERSION "0.9.43"
 #define URL "http://tsvdb.sf.net"
 /*#define __MINGW_VERSION 1*/
 
@@ -3722,6 +3722,142 @@ void modify(int y)
     strcpy(rows[y], buf);
 }
 
+void strtrim(char *s)
+{
+    int i = strlen(s);
+
+    if (i == 0)
+        return;
+    i--;
+    while (isspace(s[i]))
+    {
+        s[i] = '\0';
+        i--;
+    }
+}
+
+void modfield(int y)
+{
+    int i, j, k, l;
+    char s[MAXCOLS][MAXSTRLEN+1];
+    BUFDEF;
+    char *p=NULL;
+    char *fieldbuf[MAXCOLS+1];
+    int flen = 0;
+    int maxx;
+
+    if (ro)
+        return;
+    strcpy(buf, rows[y]);
+    if (strlen(buf) == 1)
+    {
+        strcpy(buf, " ");
+        for (i=0; i<cols; i++)
+        {
+            strcat(buf, " ");
+            strcat(buf, ssep);
+        }
+        strcat(buf, " \n");
+    }
+    else
+    {
+        k = strlen(buf);
+        for (i=0; i<k; i++)
+        {
+            if ((buf[i] == csep) && (buf[i+1] == csep))
+            {
+                k++;
+                for (j=k; j>i; j--)
+                    buf[j] = buf[j-1];
+                i++;
+                buf[i] = ' ';
+            }
+        }
+    }
+    p = strtok(buf, ssep );
+    for (i=0; i<=cols; i++)
+    {
+        if (p != NULL)
+        {
+            strcpy(s[i], p);
+            k = strlen(s[i]);
+            l = k;
+            for (j=0; j<l; j++)
+            {
+               if ((s[i][j] == csep)
+               ||  (s[i][j] == '\n'))
+                  k = j;
+               if (j >= k)
+                  s[i][j] = ' ';
+            }
+            for (; j<l; j++)
+               s[i][j] = ' ';
+            s[i][l] = '\0';
+            p = strtok( 0, ssep );
+        }
+        else
+        {
+            strcpy(s[i], " ");
+            for (k=1; k<len[i]; k++)
+               strcat(s[i], " ");
+        }
+    }
+    for (i = 0; i <= cols; i++)
+    {
+        fieldbuf[i] = s[i];
+    }
+    getmaxyx(wbody, k, maxx);
+    flen = (maxx)-9;
+    fieldbuf[cols+1] = NULL;
+    if (getfname(FALSE, ">", fieldbuf[field], flen) == NULL)
+        	return;
+    strtrim(fieldbuf[field]);
+    modified = TRUE;
+    flagmsg();
+    for (i = 0; i <= cols; i++)
+    {
+        l = len[i];
+        k = strlen(fieldbuf[i]);
+        while (k >= l)
+        {
+            if (fieldbuf[i][k-1] == ' ')
+                k--;
+            else
+                break;
+        }
+        fieldbuf[i][k] = '\0';
+        k--;
+        for (j=k; j>0; j--)
+        {
+            if (fieldbuf[i][j] == ' ')
+                fieldbuf[i][j] = '\0';
+            else
+                j = 0;
+        }
+    }
+    strcpy(buf, fieldbuf[0]);
+    for (i = 1; i <= cols; i++)
+    {
+        if ((fieldbuf[i] != NULL)
+        && (fieldbuf[i][0] != '\0'))
+        {
+           strcat(buf, ssep);
+           strcat(buf, fieldbuf[i]);
+        }
+        else
+        {
+           strcat(buf, ssep);
+           strcat(buf, " ");
+        }
+    }
+    strcat(buf, "\n");
+    i = strlen(buf);
+    if (rows[y] != NULL)
+       free(rows[y]);
+    rows[y] = (char *)malloc(i+1);
+    strcpy(rows[y], buf);
+}
+
 void newrec(int y, bool dupl)
 {
     register int i;
@@ -5819,6 +5955,13 @@ void edit(void)
                curs_set(1);
             }
             break;
+        case CTL_ENTER:
+            if (curr < reccnt)
+            {
+               modfield(curr);
+               curs_set(1);
+            }
+            break;
         case CTL_PADPLUS:
         case CTL_INS:
             newrec(curr, FALSE);
@@ -6300,7 +6443,7 @@ void subfunc1(void)
         " Ctrl-Ins:  insert line (C-+)\t\tCtrl/Alt-A:  mark/filter all",
         "  Alt-Ins:  duplicate   (A-+)\t\t    Ctrl-C:  copy",
         " Ctrl-Del:  delete line    \t\t    Ctrl-V:  paste",
-        "    Enter:  edit fields    \t\tCtrl/Alt-U:  uppercase/init",
+        "(C-)Enter:  edit field/s    \t\tCtrl/Alt-U:  uppercase/init",
         "   Letter:  search (? mask)\t\tCtrl/Alt-L:  lower/initial",
         " Ctrl-F/D:  regexp search  \t\tC/A-arrows:  reorder fields",
         "    Alt-F:  seek curr field\t\t Shft-left:  align left",
