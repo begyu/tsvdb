@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.43 2015/09/14 $
+ * $Id: tcsvdb.c,v 0.9.44 2015/09/16 $
  */
 
-#define VERSION "0.9.43"
+#define VERSION "0.9.44"
 #define URL "http://tsvdb.sf.net"
 /*#define __MINGW_VERSION 1*/
 
@@ -227,6 +227,8 @@ void reghelp(void);
 #define REGHLP reghelp()
 void opthelp(void);
 
+void changecolor(void);
+
 
 /****DAT****/
 
@@ -279,6 +281,7 @@ static bool filtered = FALSE;
 static bool headspac = FALSE;
 static bool hunsort = FALSE;
 static bool insert = FALSE;
+static bool colorset = FALSE;
 static long int filesize = 0L;
 
 #define TABCSEP '\t'
@@ -490,6 +493,28 @@ static void initcolor(void)
 #endif
 }
 
+static void initcolo2(void)
+{
+#ifdef A_COLOR
+    if (has_colors())
+        start_color();
+    init_pair(TITLECOLOR       & ~A_ATTR, COLOR_MAGENTA, COLOR_CYAN);      
+    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_GREEN, COLOR_CYAN);    
+    init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
+    init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_BLUE, COLOR_YELLOW);    
+    init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);   
+    init_pair(BODYCOLOR        & ~A_ATTR, COLOR_BLACK, COLOR_WHITE);      
+    init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_BLUE, COLOR_CYAN);   
+    init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_BLUE, COLOR_YELLOW);
+    init_pair(EDITBOXCOLOR     & ~A_ATTR, COLOR_RED, COLOR_WHITE);
+    init_pair(CURRCOLOR        & ~A_ATTR, COLOR_CYAN, COLOR_BLUE);
+    init_pair(CURRREVCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);
+    init_pair(MARKCOLOR        & ~A_ATTR, COLOR_MAGENTA, COLOR_WHITE);
+    init_pair(FSTRCOLOR        & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
+    init_pair(EDITBOXTOOCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
+#endif
+}
+
 static void setcolor(WINDOW *win, chtype color)
 {
     chtype attr = color & A_ATTR;  /* extract Bold, Reverse, Blink bits */
@@ -616,6 +641,11 @@ static void repaintmenu(WINDOW *wmenu, menu *mp)
                 setcolor(wmenu, SUBMENUCOLOR);
             if (safe && strstr(p->name, "Tex"))
                 setcolor(wmenu, INPUTBOXCOLOR);
+        }
+        if (!has_colors())
+        {
+            if (strstr(p->name, "Col"))
+                	setcolor(wmenu, INPUTBOXCOLOR);
         }
         mvwaddstr(wmenu, i + 1, 2, p->name);
     }
@@ -1634,6 +1664,9 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
             }
             break;
 /*#endif //DJGPP*/
+        case ALT_P:
+            stop = TRUE;
+            break;
         default:
             if (c == erasechar())       /* backspace, ^H */
             {
@@ -1768,8 +1801,15 @@ int getstrings(char *desc[], char *buf[], int field, int length, int lim[])
     winput = mvwinputbox(wbody, (maxy - nlines) / 2, (maxx - ncols) / 2, 
         nlines, ncols);
 
+restart:
     for (i = 0; i < n; i++)
+    {
+        setcolor(winput, INPUTBOXCOLOR);
         mvwprintw(winput, i + 1, 2, "%s", desc[i]);
+        setcolor(winput, SUBMENUCOLOR);
+        mvwprintw(winput, i + 1, mmax + 3, "%s", padstr(buf[i], length));
+    }
+    setcolor(winput, INPUTBOXCOLOR);
 
     i = field;
 
@@ -1803,6 +1843,10 @@ int getstrings(char *desc[], char *buf[], int field, int length, int lim[])
             if (fsel)
                 stop = TRUE;
             break;
+        case ALT_P:
+            changecolor();
+            colorbox(winput, INPUTBOXCOLOR, 1);
+            goto restart;
         }
     }
 
@@ -6253,6 +6297,9 @@ void edit(void)
             golen(TRUE);
             ctop = topset(curr, r);
             break;
+        case ALT_P:
+            changecolor();
+            break;
         default:
             if ((c == 0x81) || (c == 0xEB) || (c == 0x1FB))
                c = 0x55; /* U */
@@ -6412,6 +6459,7 @@ menu SubMenu2[] =
     { "Regexp", reghelp, "Regular expression help" },
     { "Options", opthelp, "Command line options" },
     { "Limits", limits, "Maximums & conditions" },
+    { "Colors", changecolor, "Change color set" },
     { "About", subfunc2, "Info" },
     { "", (FUNC)0, "" }
 };
@@ -6441,9 +6489,9 @@ void subfunc1(void)
     char *s[] =
     {
         " Ctrl-Ins:  insert line (C-+)\t\tCtrl/Alt-A:  mark/filter all",
-        "  Alt-Ins:  duplicate   (A-+)\t\t    Ctrl-C:  copy",
-        " Ctrl-Del:  delete line    \t\t    Ctrl-V:  paste",
-        "(C-)Enter:  edit field/s    \t\tCtrl/Alt-U:  uppercase/init",
+        "  Alt-Ins:  duplicate   (A-+)\t\t  Ctrl-C/V:  copy/paste",
+        " Ctrl-Del:  delete line    \t\t     Alt-P:  change colours",
+        "(C-)Enter:  edit field/s   \t\tCtrl/Alt-U:  uppercase/init",
         "   Letter:  search (? mask)\t\tCtrl/Alt-L:  lower/initial",
         " Ctrl-F/D:  regexp search  \t\tC/A-arrows:  reorder fields",
         "    Alt-F:  seek curr field\t\t Shft-left:  align left",
@@ -6479,8 +6527,7 @@ void edithelp(void)
     {
         "  Home/End:\tgo to 1'st char/EOL",
         "   Up/Down:\tprevious/next field",
-        "       Del:\tdelete char",
-        "      Bksp:\tdelete back",
+        "  Del/Bksp:\tdelete char/backward",
         "  Ctrl-End:\tdelete from cursor",
         "    Ctrl-W:\tdelete word back",
         "Ctl-arrows:\tskip word",
@@ -6493,12 +6540,13 @@ void edithelp(void)
         "     Alt-D:\tchange dot & colon",
         "  Ctrl-X/Y:\taccent/punctuation",
         "       Esc:\tundo/cancel",
+        "     Alt-P:\tchange colorset",
         "     Enter:\tmodify record"
     };
     int i;
     int j=17;
     
-    wmsg = mvwinputbox(wbody, (bodylen()-j)/4, (bodywidth()-36)/2, j+2, 36);
+    wmsg = mvwinputbox(wbody, (bodylen()-j)/4, (bodywidth()-38)/2, j+2, 38);
 #ifndef __MINGW_VERSION
     wborder(wmsg, '|', '|', '-', '-', '+', '+', '+', '+');
 #endif
@@ -6761,6 +6809,41 @@ void subfunc2(void)
     delwin(wmsg);
     touchwin(wbody);
     wrefresh(wbody);
+}
+
+void changecolor(void)
+{
+    int i, j;
+    menu *mp = MainMenu;
+
+    if (!has_colors())
+        	return;
+
+    if (colorset)
+        	initcolor();
+    else
+        	initcolo2();
+    colorset = !colorset;
+    colorbox(wtitl, TITLECOLOR, 0);
+    colorbox(wmain, MAINMENUCOLOR, 0);
+    colorbox(wbody, BODYCOLOR, 0);
+    colorbox(wstat, STATUSCOLOR, 0);
+    for (i=0; i<bh; i++)
+    {
+        for (j=0; j<bw; j++)
+             	mvwaddstr(wbody, i, j, "x");
+    }
+    wmove(wbody, bh, 1);
+    for (j=0; j<(bw-1); j++)
+         	waddch(wbody, 'x');
+    touchwin(wbody);
+    wrefresh(wbody);
+    idle();
+    titlemsg(datfname);
+    flagmsg();
+    menudim(mp, &i, &j);
+    repaintmainmenu(j, mp);
+    redraw();
 }
 
 /*** start main ***/
