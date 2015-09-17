@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.44 2015/09/16 $
+ * $Id: tcsvdb.c,v 0.9.45 2015/09/17 $
  */
 
-#define VERSION "0.9.44"
+#define VERSION "0.9.45"
 #define URL "http://tsvdb.sf.net"
 /*#define __MINGW_VERSION 1*/
 
@@ -505,7 +505,7 @@ static void initcolo2(void)
     init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);   
     init_pair(BODYCOLOR        & ~A_ATTR, COLOR_BLACK, COLOR_WHITE);      
     init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_BLUE, COLOR_CYAN);   
-    init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_BLUE, COLOR_YELLOW);
+    init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_BLUE, COLOR_GREEN);
     init_pair(EDITBOXCOLOR     & ~A_ATTR, COLOR_RED, COLOR_WHITE);
     init_pair(CURRCOLOR        & ~A_ATTR, COLOR_CYAN, COLOR_BLUE);
     init_pair(CURRREVCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);
