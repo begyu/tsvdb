@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.45 2015/09/17 $
+ * $Id: tcsvdb.c,v 0.9.46 2015/09/19 $
  */
 
-#define VERSION "0.9.45"
+#define VERSION "0.9.46"
 #define URL "http://tsvdb.sf.net"
 /*#define __MINGW_VERSION 1*/
 
@@ -422,7 +422,7 @@ void rmerror(void);
 
 /******************************* STATIC ************************************/
 
-static WINDOW *wtitl, *wmain, *wbody, *wstat; /* title, menu, body, status win*/
+static WINDOW *wtitl, *wmain, *wbody, *wstatus; /* title, menu, body, status win*/
 static int nexty, nextx;
 static int key = ERR, ch = ERR;
 static bool quit = FALSE;
@@ -839,7 +839,7 @@ static void cleanup(void)   /* cleanup curses settings */
         delwin(wtitl);
         delwin(wmain);
         delwin(wbody);
-        delwin(wstat);
+        delwin(wstatus);
         curs_set(1);
         endwin();
         incurses = FALSE;
@@ -880,12 +880,12 @@ int bodylen(void)
 
 void rmerror(void)
 {
-    rmline(wstat, 0);
+    rmline(wstatus, 0);
 }
 
 //void rmstatus(void)
 //{
-//    rmline(wstat, 1);
+//    rmline(wstatus, 1);
 //}
 
 void titlemsg(char *msg)
@@ -913,14 +913,14 @@ void bodymsg(char *msg)
 void errormsg(char *msg)
 {
     beep();
-    mvwaddstr(wstat, 0, 2, padstr(msg, bw - 3));
-    wrefresh(wstat);
+    mvwaddstr(wstatus, 0, 2, padstr(msg, bw - 3));
+    wrefresh(wstatus);
 }
 
 void statusmsg(char *msg)
 {
-    mvwaddstr(wstat, 1, 2, padstr(msg, bw - 3));
-    wrefresh(wstat);
+    mvwaddstr(wstatus, 1, 2, padstr(msg, bw - 3));
+    wrefresh(wstatus);
 }
 
 bool keypressed(void)
@@ -1170,12 +1170,12 @@ void init()
     wtitl = subwin(stdscr, th, bw, 0, 0);
     wmain = subwin(stdscr, mh, bw, th, 0);
     wbody = subwin(stdscr, bh, bw, th + mh, 0);
-    wstat = subwin(stdscr, sh, bw, th + mh + bh, 0);
+    wstatus = subwin(stdscr, sh, bw, th + mh + bh, 0);
 
     colorbox(wtitl, TITLECOLOR, 0);
     colorbox(wmain, MAINMENUCOLOR, 0);
     colorbox(wbody, BODYCOLOR, 0);
-    colorbox(wstat, STATUSCOLOR, 0);
+    colorbox(wstatus, STATUSCOLOR, 0);
 
     cbreak();              /* direct input (no newline required)... */
     noecho();              /* ... without echoing */
@@ -1188,7 +1188,7 @@ void init()
     leaveok(stdscr, TRUE);
     leaveok(wtitl, TRUE);
     leaveok(wmain, TRUE);
-    leaveok(wstat, TRUE);
+    leaveok(wstatus, TRUE);
 #ifdef PDCURSES
     mouse_set(ALL_MOUSE_EVENTS);
     PDC_save_key_modifiers(TRUE);
@@ -2671,8 +2671,8 @@ void statusln(void)
 
     sprintf(buf, "%5u/%u (%u/%u) ", curr+1, reccnt, field+1, cols+1);
     setcolor(wbody, STATUSCOLOR);
-    mvwaddstr(wstat, 0, 0, buf);
-    mvwaddstr(wstat, 1, 0, ">");
+    mvwaddstr(wstatus, 0, 0, buf);
+    mvwaddstr(wstatus, 1, 0, ">");
     statusmsg(rows[curr]);
 }
 
@@ -3516,8 +3516,8 @@ void fltls(void)
     BUFDEF;
 
     setcolor(wbody, BODYCOLOR);
-    wclear(wstat);
-    wrefresh(wstat);
+    wclear(wstatus);
+    wrefresh(wstatus);
     curr = 0;
     while (!quit)
     {
@@ -4110,13 +4110,13 @@ void search(int y, int c)
             }
         }
     }
-    setcolor(wstat, MAINMENUCOLOR);
-    mvwaddstr(wstat, 0, 20, (j!=0) ? "*" : " ");
-    setcolor(wstat, FSTRCOLOR);
-    mvwaddstr(wstat, 0, 21, fstr);
-    setcolor(wstat, STATUSCOLOR);
-    wclrtoeol(wstat);
-    wrefresh(wstat);
+    setcolor(wstatus, MAINMENUCOLOR);
+    mvwaddstr(wstatus, 0, 20, (j!=0) ? "*" : " ");
+    setcolor(wstatus, FSTRCOLOR);
+    mvwaddstr(wstatus, 0, 21, fstr);
+    setcolor(wstatus, STATUSCOLOR);
+    wclrtoeol(wstatus);
+    wrefresh(wstatus);
 }
 
 void searchfield(int y, int x)
@@ -4159,13 +4159,13 @@ void searchfield(int y, int x)
         regerr(k, s);
     }
     j = strlen(fstr);
-    setcolor(wstat, MAINMENUCOLOR);
-    mvwaddstr(wstat, 0, 20, (j!=0) ? "*" : " ");
-    setcolor(wstat, FSTRCOLOR);
-    mvwaddstr(wstat, 0, 21, fstr);
-    setcolor(wstat, STATUSCOLOR);
-    wclrtoeol(wstat);
-    wrefresh(wstat);
+    setcolor(wstatus, MAINMENUCOLOR);
+    mvwaddstr(wstatus, 0, 20, (j!=0) ? "*" : " ");
+    setcolor(wstatus, FSTRCOLOR);
+    mvwaddstr(wstatus, 0, 21, fstr);
+    setcolor(wstatus, STATUSCOLOR);
+    wclrtoeol(wstatus);
+    wrefresh(wstatus);
 }
 
 void getfstr(void)
@@ -4750,7 +4750,7 @@ void selected(void)
     return;
 }
 
-void filter(void)
+void tsv_filter(void)
 {
     int i, j;
 
@@ -5977,9 +5977,9 @@ void edit(void)
             fstr[0] = '\0';
             regex = FALSE;
             memset(flags, 0, MAXROWS);
-            wmove(wstat, 0, 20);
-            wclrtoeol(wstat);
-            wrefresh(wstat);
+            wmove(wstatus, 0, 20);
+            wclrtoeol(wstatus);
+            wrefresh(wstatus);
             break;
         case KEY_END:
             curr = reccnt;
@@ -6068,9 +6068,9 @@ void edit(void)
         case KEY_DC:
             fchr = fstr[0];
             fstr[0] = '\0';
-            wmove(wstat, 0, 20);
-            wclrtoeol(wstat);
-            wrefresh(wstat);
+            wmove(wstatus, 0, 20);
+            wclrtoeol(wstatus);
+            wrefresh(wstatus);
             break;
 #ifdef PDCURSES
         case KEY_MOUSE:
@@ -6317,7 +6317,7 @@ void edit(void)
     setcolor(wbody, BODYCOLOR);
     clsbody();
     wrefresh(wbody);
-    werase(wstat);
+    werase(wstatus);
 }
 
 void DoOpen(void)
@@ -6437,7 +6437,7 @@ menu SubMenu1[] =
     { "Go", gorec, "Go to record" },
     { "Change", change, "Replace string" },
     { "scHange", schange, "Selectively change" },
-    { "fiLter", filter, "Choose records" },
+    { "fiLter", tsv_filter, "Choose records" },
     { "Delimit", unlimit, "Remove delimiters" },
     { "Terminate", delimit, "Add delimiters" },
     { "seParate", dosep, "Set field separator" },
@@ -6596,8 +6596,8 @@ void txthelp(void)
     wrefresh(wmsg);
     (void)toupper(waitforkey());
     delwin(wmsg);
-    touchwin(wstat);
-    wrefresh(wstat);
+    touchwin(wstatus);
+    wrefresh(wstatus);
     touchwin(wbody);
     wrefresh(wbody);
 }
@@ -6827,7 +6827,7 @@ void changecolor(void)
     colorbox(wtitl, TITLECOLOR, 0);
     colorbox(wmain, MAINMENUCOLOR, 0);
     colorbox(wbody, BODYCOLOR, 0);
-    colorbox(wstat, STATUSCOLOR, 0);
+    colorbox(wstatus, STATUSCOLOR, 0);
     for (i=0; i<bh; i++)
     {
         for (j=0; j<bw; j++)
