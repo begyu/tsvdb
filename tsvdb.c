@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.46 2015/09/19 $
+ * $Id: tcsvdb.c,v 0.9.47 2015/09/22 $
  */
 
-#define VERSION "0.9.46"
+#define VERSION "0.9.47"
 #define URL "http://tsvdb.sf.net"
 /*#define __MINGW_VERSION 1*/
 
@@ -621,7 +621,8 @@ static void repaintmenu(WINDOW *wmenu, menu *mp)
     {
         if (ro)
         {
-            if ((c = strchr(DISABLEDHOT, (char)(p->name[0]))) != NULL)
+            if (((c = strchr(DISABLEDHOT, (char)(p->name[0]))) != NULL)
+               && (!strstr(p->name, "Col")))
                 setcolor(wmenu, INPUTBOXCOLOR);
             else
                 setcolor(wmenu, SUBMENUCOLOR);
@@ -6363,7 +6364,7 @@ void txted(void)
 
     if (!ro && !safe)
     {
-        if ((i=yesno("Directly editing! Are You sure? (Y/N):")) == 0)
+        if ((yesno("Directly editing! Are You sure? (Y/N):")) == 0)
             return;
         if (modified == TRUE)
             if (savefile(datfname, 0) != 0)
@@ -6652,6 +6653,7 @@ void limits(void)
         "   Number of records: ",
         "    Number of fields: ",
         "Length of field name: ",
+        "     Field separator: ",
         "           Read only: ",
         "              Safety: ",
         "              Locked: ",
@@ -6663,22 +6665,37 @@ void limits(void)
         MAXROWS,
         MAXCOLS,
         MAXFLEN,
+        csep,
         ro,
         safe,
         locked,
         cry
     };
     int i;
-    int j=8;
+    int j=9;
     
-    wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-33)/2, j+2, 33);
+    wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-34)/2, j+2, 34);
 #ifndef __MINGW_VERSION
     wborder(wmsg, '|', '|', '-', '-', '+', '+', '+', '+');
 #endif
     for (i=0; i<j; i++)
     {
         strcpy(buf, s[i]);
-        itoa(n[i], buf+strlen(buf), 10);
+        if (i == 4)
+        {
+            switch (csep)
+            {
+                case '\t':
+                    strcat(buf, "TAB");
+                    break;
+                case ';':
+                    strcat(buf, "SEMI");
+                case ',':
+                    strcat(buf, "COLON");
+            }
+        }
+        else
+            itoa(n[i], buf+strlen(buf), 10);
         mvwaddstr(wmsg, i+1, 2, buf);
     }
     wrefresh(wmsg);
