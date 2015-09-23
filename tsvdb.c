@@ -6081,18 +6081,20 @@ void edit(void)
                curs_set(1);
             }
             break;
-#ifndef __MINGW_VERSION
-        case ALT_ENTER:
-#endif
         case CTRL_E:
         case CTL_ENTER:
+        case CTL_PADENTER:
             if (curr < reccnt)
             {
                modfield(curr);
                curs_set(1);
             }
             break;
+#ifndef __MINGW_VERSION
+        case ALT_ENTER:
+#endif
         case ALT_E:
+        case ALT_PADENTER:
             if (curr < reccnt)
             {
                modallf(curr);
