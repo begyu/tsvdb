@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.47 2015/09/22 $
+ * $Id: tcsvdb.c,v 0.9.48 2015/09/23 $
  */
 
-#define VERSION "0.9.47"
+#define VERSION "0.9.48"
 #define URL "http://tsvdb.sf.net"
 /*#define __MINGW_VERSION 1*/
 
@@ -197,6 +197,7 @@ static char *slre_replace(const char *regex, const char *buf,
 #define CTRL_B 0x02
 #define CTRL_C 0x03
 #define CTRL_D 0x04
+#define CTRL_E 0x05
 #define CTRL_F 0x06
 #define CTRL_G 0x07
 #define CTRL_L 0x0C
@@ -1001,7 +1002,8 @@ void domenu(menu *mp)
             {
                 if (ro)
                 {
-                    if ((c = strchr(DISABLEDHOT, (char)(mp[old].name[0]))) != NULL)
+                    if (((c = strchr(DISABLEDHOT, (char)(mp[old].name[0]))) != NULL)
+                       && (!strstr(mp[old].name, "Col")))
                         setcolor(wmenu, INPUTBOXCOLOR);
                     else
                         setcolor(wmenu, SUBMENUCOLOR);
@@ -3727,6 +3729,11 @@ void modify(int y)
     {
         l = len[i];
         k = strlen(fieldbuf[i]);
+        if (k < 2)
+        {
+            strcat(fieldbuf[i], " ");
+            k++;
+        }
         while (k >= l)
         {
             if (fieldbuf[i][k-1] == ' ')
@@ -3767,6 +3774,27 @@ void modify(int y)
     strcpy(rows[y], buf);
 }
 
+int strsplit(const char *str, char *parts[], const char *delimiter)
+{
+    char *pch;
+    int i = 0;
+    char *tmp = strdup(str);
+    pch = strtok(tmp, delimiter);
+  
+    parts[i++] = strdup(pch);
+    while (pch)
+    {
+        pch = strtok(NULL, delimiter);
+        if (NULL == pch) break;
+        parts[i++] = strdup(pch);
+    }
+    if (NULL == pch)
+        parts[i++] = strdup(" ");
+    free(tmp);
+    free(pch);
+    return i;
+}
+
 void strtrim(char *s)
 {
     int i = strlen(s);
@@ -3781,76 +3809,113 @@ void strtrim(char *s)
     }
 }
 
-void modfield(int y)
+void modallf(int y)
 {
     int i, j, k, l;
-    char s[MAXCOLS][MAXSTRLEN+1];
     BUFDEF;
-    char *p=NULL;
+    char *fieldnam[MAXCOLS+1];
     char *fieldbuf[MAXCOLS+1];
     int flen = 0;
     int maxx;
 
     if (ro)
         return;
+
     strcpy(buf, rows[y]);
-    if (strlen(buf) == 1)
+    i = strlen(buf);
+    if (i < 2)
     {
-        strcpy(buf, " ");
-        for (i=0; i<cols; i++)
-        {
-            strcat(buf, " ");
-            strcat(buf, ssep);
-        }
-        strcat(buf, " \n");
+        modify(y);
+        return;
     }
+    buf[i-1] = csep;
+    buf[i] = '\0';
+    strsplit(buf, fieldbuf, ssep);
+    for (i = 0; i <= cols; i++)
+    {
+        fieldnam[i] = ">";
+    }
+    getmaxyx(wbody, k, maxx);
+    flen = (maxx)-9;
+    fieldnam[cols+1] = (char *)0;
+    fieldbuf[cols+1] = NULL;
+    if (getstrings(fieldnam, fieldbuf, 0, flen, NULL) == KEY_ESC)
+        return;
     else
     {
-        k = strlen(buf);
-        for (i=0; i<k; i++)
-        {
-            if ((buf[i] == csep) && (buf[i+1] == csep))
-            {
-                k++;
-                for (j=k; j>i; j--)
-                    buf[j] = buf[j-1];
-                i++;
-                buf[i] = ' ';
-            }
-        }
-    }
-    p = strtok(buf, ssep );
-    for (i=0; i<=cols; i++)
-    {
-        if (p != NULL)
-        {
-            strcpy(s[i], p);
-            k = strlen(s[i]);
-            l = k;
-            for (j=0; j<l; j++)
-            {
-               if ((s[i][j] == csep)
-               ||  (s[i][j] == '\n'))
-                  k = j;
-               if (j >= k)
-                  s[i][j] = ' ';
-            }
-            for (; j<l; j++)
-               s[i][j] = ' ';
-            s[i][l] = '\0';
-            p = strtok( 0, ssep );
-        }
-        else
-        {
-            strcpy(s[i], " ");
-            for (k=1; k<len[i]; k++)
-               strcat(s[i], " ");
-        }
+        modified = TRUE;
+        flagmsg();
     }
     for (i = 0; i <= cols; i++)
     {
-        fieldbuf[i] = s[i];
+        l = len[i];
+        k = strlen(fieldbuf[i]);
+        if (k < 2)
+        {
+            strcat(fieldbuf[i], " ");
+            k++;
+        }
+        while (k >= l)
+        {
+            if (fieldbuf[i][k-1] == ' ')
+                k--;
+            else
+                break;
+        }
+        fieldbuf[i][k] = '\0';
+        k--;
+        for (j=k; j>0; j--)
+        {
+            if (fieldbuf[i][j] == ' ')
+                fieldbuf[i][j] = '\0';
+            else
+                j = 0;
+        }
     }
+    strcpy(buf, fieldbuf[0]);
+    for (i = 1; i <= cols; i++)
+    {
+        if ((fieldbuf[i] != NULL)
+        && (fieldbuf[i][0] != '\0'))
+        {
+           strcat(buf, ssep);
+           strcat(buf, fieldbuf[i]);
+        }
+        else
+        {
+           strcat(buf, ssep);
+           strcat(buf, " ");
+        }
+    }
+    strcat(buf, "\n");
+    i = strlen(buf);
+    if (rows[y] != NULL)
+       free(rows[y]);
+    rows[y] = (char *)malloc(i+1);
+    strcpy(rows[y], buf);
+}
+
+void modfield(int y)
+{
+    int i, j, k, l;
+    BUFDEF;
+    char *fieldbuf[MAXCOLS+1];
+    int flen = 0;
+    int maxx;
+
+    if (ro)
+        return;
+
+    strcpy(buf, rows[y]);
+    i = strlen(buf);
+    if (i < 2)
+    {
+        buf[0] = ' ';
+        i = 2;
+    }
+    buf[i-1] = csep;
+    buf[i] = '\0';
+    strsplit(buf, fieldbuf, ssep);
     getmaxyx(wbody, k, maxx);
     flen = (maxx)-9;
     fieldbuf[cols+1] = NULL;
@@ -3863,6 +3928,11 @@ void modfield(int y)
     {
         l = len[i];
         k = strlen(fieldbuf[i]);
+        if (k < 2)
+        {
+            strcat(fieldbuf[i], " ");
+            k++;
+        }
         while (k >= l)
         {
             if (fieldbuf[i][k-1] == ' ')
@@ -5451,6 +5521,7 @@ void dosep(void)
 {
     register int i, j;
     char c = csep;
+    char buf[10] = "";
 
     if (ro || crypted)
         return;
@@ -5489,7 +5560,17 @@ void dosep(void)
         }
     }
 
-    putmsg("Field separator is \"", (csep==TABCSEP) ? "\\t" : ssep, "\"");
+    switch (csep)
+    {
+        case '\t':
+            strcpy(buf, "TAB");
+            break;
+        case ';':
+            strcpy(buf, "SEMI");
+        case ',':
+            strcat(buf, "COLON");
+    }
+    putmsg("Field separator is ", buf, "");
 
     modified = TRUE;
     redraw();
@@ -6000,10 +6081,21 @@ void edit(void)
                curs_set(1);
             }
             break;
+#ifndef __MINGW_VERSION
+        case ALT_ENTER:
+#endif
+        case CTRL_E:
         case CTL_ENTER:
             if (curr < reccnt)
             {
                modfield(curr);
+               curs_set(1);
+            }
+            break;
+        case ALT_E:
+            if (curr < reccnt)
+            {
+               modallf(curr);
                curs_set(1);
             }
             break;
@@ -6492,11 +6584,11 @@ void subfunc1(void)
         " Ctrl-Ins:  insert line (C-+)\t\tCtrl/Alt-A:  mark/filter all",
         "  Alt-Ins:  duplicate   (A-+)\t\t  Ctrl-C/V:  copy/paste",
         " Ctrl-Del:  delete line    \t\t     Alt-P:  change colours",
-        "(C-)Enter:  edit field/s   \t\tCtrl/Alt-U:  uppercase/init",
-        "   Letter:  search (? mask)\t\tCtrl/Alt-L:  lower/initial",
-        " Ctrl-F/D:  regexp search  \t\tC/A-arrows:  reorder fields",
-        "    Alt-F:  seek curr field\t\t Shft-left:  align left",
-        "Tab/C-Tab:  find next      \t\tShft-right:  align right",
+        "(C-)Enter:  edit field/s   \t\tCtrl/Alt-E:  modify field/s",
+        "   Letter:  search (? mask)\t\tCtrl/Alt-U:  uppercase/init",
+        " Ctrl-F/D:  regexp search  \t\tCtrl/Alt-L:  lower/initial",
+        "    Alt-F:  seek curr field\t\tC/A-arrows:  reorder fields",
+        "Tab/C-Tab:  find next      \t\tShft-arrow:  align left/right",
         " Shft-Tab:  previous       \t\t Shft-Home:  center",
         "     Bksp:  del fstr back  \t\t   Ctrl-Up:  move backward",
         " Del/Home:  clear fstr     \t\t Ctrl-Down:  move forward",
