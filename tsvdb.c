@@ -6489,7 +6489,7 @@ void txted(void)
     }
 }
 
-void select(void)
+void tsv_select(void)
 {
     int i, j;
 
@@ -6597,7 +6597,7 @@ menu SubMenu1[] =
     { "Go", gorec, "Go to record" },
     { "Change", change, "Replace string" },
     { "scHange", schange, "Selectively change" },
-    { "seLect", select, "Collated rows (with previous set)" },
+    { "seLect", tsv_select, "Collated rows (with previous set)" },
     { "filteR", tsv_filter, "Choose records (restart with new file)" },
     { "Delimit", unlimit, "Remove delimiters" },
     { "Terminate", delimit, "Add delimiters" },
