@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.48 2015/09/23 $
+ * $Id: tcsvdb.c,v 0.9.49 2015/09/25 $
  */
 
-#define VERSION "0.9.48"
+#define VERSION "0.9.49"
 #define URL "http://tsvdb.sf.net"
 /*#define __MINGW_VERSION 1*/
 
@@ -244,6 +244,16 @@ void changecolor(void);
 #define MAX(a, b)  (((a) > (b)) ? (a) : (b))
 
 #define CTRL(x) ((x) & 0x1f)
+
+typedef struct
+{
+    int  total;
+    char *ptr[MAXROWS+1];
+    char flag[MAXROWS+1];
+    int idx[MAXROWS+1];
+} tmprows;
+
+static tmprows tmpdat;
 
 static char progname[MAXSTRLEN] = "";
 static char wdname[MAXSTRLEN+1] = "";
@@ -623,13 +633,14 @@ static void repaintmenu(WINDOW *wmenu, menu *mp)
         if (ro)
         {
             if (((c = strchr(DISABLEDHOT, (char)(p->name[0]))) != NULL)
-               && (!strstr(p->name, "Col")))
+               && (!strstr(p->name, "Col")) && (!strstr(p->name, "seL")))
                 setcolor(wmenu, INPUTBOXCOLOR);
             else
                 setcolor(wmenu, SUBMENUCOLOR);
             if (locked)
             {
-                if (strstr(p->name, "Sor")
+                if (strstr(p->name, "seL")
+                ||  strstr(p->name, "Sor")
                 ||  strstr(p->name, "Fie")
                 ||  strstr(p->name, "nUm"))
                     	setcolor(wmenu, SUBMENUCOLOR);
@@ -1003,13 +1014,15 @@ void domenu(menu *mp)
                 if (ro)
                 {
                     if (((c = strchr(DISABLEDHOT, (char)(mp[old].name[0]))) != NULL)
-                       && (!strstr(mp[old].name, "Col")))
+                       && (!strstr(mp[old].name, "Col"))
+                       && (!strstr(mp[old].name, "seL")))
                         setcolor(wmenu, INPUTBOXCOLOR);
                     else
                         setcolor(wmenu, SUBMENUCOLOR);
                     if (locked)
                     {
-                        if (strstr(mp[old].name, "Sor")
+                        if (strstr(mp[old].name, "seL")
+                        ||  strstr(mp[old].name, "Sor")
                         ||  strstr(mp[old].name, "Fie")
                         ||  strstr(mp[old].name, "nUm"))
                             	setcolor(wmenu, SUBMENUCOLOR);
@@ -3078,8 +3091,7 @@ int loadfile(char *fname)
                 p = (char *)malloc(j+1);
                 if (p == NULL)
                 {
-                    sprintf(buf, "ERROR: Memory full!");
-                    errormsg(buf);
+                    errormsg("ERROR: Memory full!");
                     ateof = TRUE;
                     break;
                 }
@@ -3088,8 +3100,7 @@ int loadfile(char *fname)
                 i++;
                 if (i >= MAXROWS)
                 {
-                    sprintf(buf, "ERROR: File too big, truncated!");
-                    errormsg(buf);
+                    errormsg("ERROR: File too big, truncated!");
                     ateof = TRUE;
                 }
             }
@@ -6478,6 +6489,60 @@ void txted(void)
     }
 }
 
+void select(void)
+{
+    int i, j;
+
+    if (cry)
+        	return;
+
+    getfstr();
+    if (strlen(fstr))
+    {
+        curr = -1;
+        do
+        {
+           j = curr;
+           search(curr, regex ? RXFORW : 0);
+           if (curr != j)
+              flags[curr] = 1;
+           else
+              break;
+        } while (j < reccnt);
+        filtered = TRUE;
+    }
+    if (filtered)
+    {
+        tmpdat.total = reccnt;
+        for (i=0, j=0; i<=reccnt; i++)
+        {
+            tmpdat.ptr[i] = rows[i];
+            tmpdat.idx[i] = -1;
+            tmpdat.flag[i] = flags[i];
+            if (flags[i])
+            {
+                rows[j] = rows[i];
+                tmpdat.idx[j] = i;
+                flags[j] = 1;
+                j++;
+            }
+        }
+        rows[j] = rows[reccnt];
+        reccnt = j;
+        curr = 0;
+        edit();
+        reccnt = tmpdat.total;
+        for (i=0; i<j; i++)
+            	tmpdat.ptr[tmpdat.idx[i]] = rows[i];
+        for (i=0; i<=reccnt; i++)
+        {
+            rows[i] = tmpdat.ptr[i];
+            flags[i] = tmpdat.flag[i];
+        }
+        curr = 0;
+    }
+}
+
 void bye(void)
 {
     quit = FALSE;
@@ -6532,7 +6597,8 @@ menu SubMenu1[] =
     { "Go", gorec, "Go to record" },
     { "Change", change, "Replace string" },
     { "scHange", schange, "Selectively change" },
-    { "fiLter", tsv_filter, "Choose records" },
+    { "seLect", select, "Collated rows (with previous set)" },
+    { "filteR", tsv_filter, "Choose records (restart with new file)" },
     { "Delimit", unlimit, "Remove delimiters" },
     { "Terminate", delimit, "Add delimiters" },
     { "seParate", dosep, "Set field separator" },
@@ -6540,9 +6606,9 @@ menu SubMenu1[] =
     { "Sort", dosort, "Sort the whole file" },
     { "Field", dosortby, "Sort by other field" },
     { "nUm", dosortnum, "Sort natural order" },
-    { "cRypt", docrypt, "Code/decode" },
+    { "crYpt", docrypt, "Code/decode" },
     { "tOtal", dosum, "Aggregate" },
-    { "eXport", selected, "Restricted set" },
+    { "eXport", selected, "Restricted set (restart)" },
     { "", (FUNC)0, "" }
 };
 
