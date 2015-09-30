@@ -955,7 +955,7 @@ double calcExpression(char *str)
 			break;
 		}
 /*		printf("Calculation error %d (%s)\n", r, buf);*/
-		sprintf(str, "Calculation error %d (%s)\n", (int)r, buf);
+		sprintf(str, "Calculation error %d (%s)", (int)r, buf);
 	}else
 /*		printf("%s =  %lf\n", expr, res);*/
 		sprintf(str, "%s = %lf %c", expr, res, '\0');
