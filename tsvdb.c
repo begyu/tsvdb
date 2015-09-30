@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.49 2015/09/25 $
+ * $Id: tcsvdb.c,v 0.9.50 2015/09/30 $
  */
 
-#define VERSION "0.9.49"
+#define VERSION "0.9.50"
 #define URL "http://tsvdb.sf.net"
 /*#define __MINGW_VERSION 1*/
 
@@ -31,9 +31,9 @@
   #include <libgen.h>
 #endif
 
-//#ifdef __MINGW_VERSION
-//  #include <windows.h>
-//#endif
+#ifdef __MINGW_VERSION
+  #include <windows.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -233,7 +233,7 @@ void changecolor(void);
 
 /****DAT****/
 
-#define MAXROWS  1000000
+#define MAXROWS  1048576
 #define MAXCOLS  16
 #define MAXNLEN  19
 #define MAXFLEN  33
@@ -3136,6 +3136,9 @@ int loadfile(char *fname)
         j++;
     }
     strcpy(datfname, fname);
+#ifdef __MINGW_VERSION
+    SetConsoleTitle(datfname);
+#endif
     return 0;
 }
 
@@ -3166,6 +3169,11 @@ int yesno(char *msg)
     WINDOW *wmsg;
     int i;
 
+#ifdef __MINGW_VERSION
+    pause(1);
+#else
+    sleep(1);
+#endif
     i = strlen(msg)+4;
     wmsg = mvwinputbox(wbody, (bodylen()-1)/3, (bodywidth()-i)/2, 3, i);
     mvwaddstr(wmsg, 1, 2, msg);
@@ -4716,8 +4724,113 @@ void paste()
     flagmsg();
 }    
 
+int selectfield(int n)
+{
+    WINDOW *wmsg;
+    register int i, j;
+    int k =0;
+    int sx, sy;
+    bool exit=FALSE;
+    
+    for (i=0; i<=n; i++)
+    {
+        j = len[i];
+        if (j > k)
+            k = j;
+    }
+    sx = (bodywidth()-k)/6;
+    sy = (bodylen()-(n+2))/2;
+    wmsg = mvwinputbox(wbody, sy, sx, n+3, k+2);
+    sy += 2;
+
+    i = field;
+
+    while (!exit)
+    {
+        setcolor(wmsg, SUBMENUCOLOR);
+        for (j=0; j<=n; j++)
+            mvwaddstr(wmsg, j+1, 1, stru[j]);
+        setcolor(wmsg, SUBMENUREVCOLOR);
+        mvwaddstr(wmsg, i+1, 1, stru[i]);
+        wrefresh(wmsg);
+        j = i;
+        switch (waitforkey())
+        {
+        case KEY_HOME:
+        case KEY_PPAGE:
+            i = 0;
+            break;
+        case KEY_UP:
+            i = i>0 ? i-1 : n;
+            break;
+        case KEY_END:
+        case KEY_NPAGE:
+            i = n;
+            break;
+        case KEY_DOWN:
+            i = i<n ? i+1 : 0;
+            break;
+        case 'Q':
+        case 'q':
+        case KEY_ESC:
+            i = -1;
+/*        case KEY_ENTER:*/
+        case '\n':
+            exit = TRUE;
+            break;
+#ifdef PDCURSES
+        case KEY_MOUSE:
+            getmouse();
+            button = 0;
+            request_mouse_pos();
+            if (BUTTON_CHANGED(1))
+                button = 1;
+            else if (BUTTON_CHANGED(2))
+                button = 2;
+            else if (BUTTON_CHANGED(3))
+                button = 3;
+            if ((BUTTON_STATUS(button) &
+                BUTTON_ACTION_MASK) == BUTTON_PRESSED)
+            {
+                if (((MOUSE_Y_POS < sy) || (MOUSE_Y_POS > (sy+n+2)))
+                || ((MOUSE_X_POS < sx) || (MOUSE_X_POS >= (sx+k))))
+                {
+                    i = -1;
+                    exit = TRUE;
+                }
+                else
+                {
+                    if (MOUSE_Y_POS == sy)
+                        i = i>0 ? i-1 : 0;
+                    else if (MOUSE_Y_POS == (sy+n+2))
+                        i = i<n ? i+1 : n;
+                    else
+                    {
+                        i = MOUSE_Y_POS-(sy+1);
+                        if (i == j)
+                            exit = TRUE;
+                    }
+                }
+            }
+            if (MOUSE_WHEEL_UP)
+                i = i>0 ? i-1 : n;
+            else if (MOUSE_WHEEL_DOWN)
+                i = i<n ? i+1 : 0;
+            break;
+#endif
+        }
+    }
+
+    delwin(wmsg);
+    touchwin(wbody);
+    wrefresh(wbody);
+    return i;
+}
+
 void calc(bool repl)
 {
+    double sx, dx;
+
     clp[0] = '\0';
     copy();
     if (clp[0] == '\0')
@@ -4726,10 +4839,13 @@ void calc(bool repl)
     {
         if (ro)
             return;
+        sx = atof(clp);
         calcexp(clp);
         if (calcerr)
             return;
-        paste();
+        dx = atof(clp);
+        if (dx != sx)
+            paste();
     }
     else
     {
@@ -4754,6 +4870,21 @@ void evalall()
         calc(TRUE);
     }
     curr = i;
+}
+
+void calcall()
+{
+    int i;
+
+    if (ro)
+        return;
+
+    i = selectfield(cols);
+    if (i != -1)
+    {
+        field = i;
+        evalall();
+    }
 }
 
 
@@ -5069,109 +5200,6 @@ void gorec()
         curr = i-1;
 }
 
-int selectfield(int n)
-{
-    WINDOW *wmsg;
-    register int i, j;
-    int k =0;
-    int sx, sy;
-    bool exit=FALSE;
-    
-    for (i=0; i<=n; i++)
-    {
-        j = len[i];
-        if (j > k)
-            k = j;
-    }
-    sx = (bodywidth()-k)/6;
-    sy = (bodylen()-(n+2))/2;
-    wmsg = mvwinputbox(wbody, sy, sx, n+3, k+2);
-    sy += 2;
-
-    i = field;
-
-    while (!exit)
-    {
-        setcolor(wmsg, SUBMENUCOLOR);
-        for (j=0; j<=n; j++)
-            mvwaddstr(wmsg, j+1, 1, stru[j]);
-        setcolor(wmsg, SUBMENUREVCOLOR);
-        mvwaddstr(wmsg, i+1, 1, stru[i]);
-        wrefresh(wmsg);
-        j = i;
-        switch (waitforkey())
-        {
-        case KEY_HOME:
-        case KEY_PPAGE:
-            i = 0;
-            break;
-        case KEY_UP:
-            i = i>0 ? i-1 : n;
-            break;
-        case KEY_END:
-        case KEY_NPAGE:
-            i = n;
-            break;
-        case KEY_DOWN:
-            i = i<n ? i+1 : 0;
-            break;
-        case 'Q':
-        case 'q':
-        case KEY_ESC:
-            i = -1;
-/*        case KEY_ENTER:*/
-        case '\n':
-            exit = TRUE;
-            break;
-#ifdef PDCURSES
-        case KEY_MOUSE:
-            getmouse();
-            button = 0;
-            request_mouse_pos();
-            if (BUTTON_CHANGED(1))
-                button = 1;
-            else if (BUTTON_CHANGED(2))
-                button = 2;
-            else if (BUTTON_CHANGED(3))
-                button = 3;
-            if ((BUTTON_STATUS(button) &
-                BUTTON_ACTION_MASK) == BUTTON_PRESSED)
-            {
-                if (((MOUSE_Y_POS < sy) || (MOUSE_Y_POS > (sy+n+2)))
-                || ((MOUSE_X_POS < sx) || (MOUSE_X_POS >= (sx+k))))
-                {
-                    i = -1;
-                    exit = TRUE;
-                }
-                else
-                {
-                    if (MOUSE_Y_POS == sy)
-                        i = i>0 ? i-1 : 0;
-                    else if (MOUSE_Y_POS == (sy+n+2))
-                        i = i<n ? i+1 : n;
-                    else
-                    {
-                        i = MOUSE_Y_POS-(sy+1);
-                        if (i == j)
-                            exit = TRUE;
-                    }
-                }
-            }
-            if (MOUSE_WHEEL_UP)
-                i = i>0 ? i-1 : n;
-            else if (MOUSE_WHEEL_DOWN)
-                i = i<n ? i+1 : 0;
-            break;
-#endif
-        }
-    }
-
-    delwin(wmsg);
-    touchwin(wbody);
-    wrefresh(wbody);
-    return i;
-}
-
 void dosortby(void)
 {
     register int i, j;
@@ -5183,11 +5211,6 @@ void dosortby(void)
     if (i != -1)
     {
         putmsg("Sorted by ", stru[i], " field.");
-#ifdef __MINGW_VERSION
-        pause(1);
-#else
-        sleep(1);
-#endif
         sortpos = i;
         hunsort = FALSE;
         if (numsort == FALSE)
@@ -5332,6 +5355,8 @@ void doindent(void)
 #endif
         do {
             j = putmsg("", "Align left, center or right? (1/2/3):", "");
+            if (j == KEY_ESC)
+                	return;
             j -= '0';
         } while (j<1 || j>3);
         if (j == 2)
@@ -6607,6 +6632,7 @@ menu SubMenu1[] =
     { "Field", dosortby, "Sort by other field" },
     { "nUm", dosortnum, "Sort natural order" },
     { "crYpt", docrypt, "Code/decode" },
+    { "Calc", calcall, "Evaluate the whole column" },
     { "tOtal", dosum, "Aggregate" },
     { "eXport", selected, "Restricted set (restart)" },
     { "", (FUNC)0, "" }
@@ -7022,6 +7048,7 @@ void changecolor(void)
     repaintmainmenu(j, mp);
     redraw();
 }
+
 
 /*** start main ***/
 
