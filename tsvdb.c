@@ -6778,7 +6778,7 @@ void edithelp(void)
     };
     int i;
 #ifdef __MINGW_VERSION
-    int j=17;
+    int j=18;
 #else
     int j=17;
 #endif
