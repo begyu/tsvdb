@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.50 2015/09/30 $
+ * $Id: tcsvdb.c,v 0.9.51 2015/10/07 $
  */
 
-#define VERSION "0.9.50"
+#define VERSION "0.9.51"
 #define URL "http://tsvdb.sf.net"
 /*#define __MINGW_VERSION 1*/
 
@@ -169,6 +169,41 @@ static char *slre_replace(const char *regex, const char *buf,
 /*END_REGEXP*/
 
 
+#ifdef __MINGW_VERSION
+void xlate(char *s, int x)
+{
+    char c[4][9] = {{0xA0,0x82,0xA1,0xA2,0x94,0x8B,0xA3,0x81,0xFB},
+                    {0xB5,0x90,0xD6,0xE0,0x99,0x8A,0xE9,0x9A,0xEB},
+                    {0xE1,0xE9,0xED,0xF3,0xF6,0xF5,0xFA,0xFC,0xFB},
+                    {0xC1,0xC9,0xCD,0xD3,0xD6,0xD5,0xDA,0xDC,0xDB}};
+    int i, j;
+    int k = strlen(s);
+   
+    for (i=0; i<k; i++)
+    {
+        for (j=0; j<9; j++)
+        {
+            switch (x)
+            {
+            case 0:
+                if (s[i] == c[0][j])
+                    s[i] = c[2][j];
+                else if (s[i] == c[1][j])
+                    s[i] = c[3][j];
+                break;
+            case 1:
+                if (s[i] == c[2][j])
+                    s[i] = c[0][j];
+                else if (s[i] == c[3][j])
+                    s[i] = c[1][j];
+                break;
+            }         
+        }         
+    }
+}
+#endif
+
+
 // /*ED*/
 // extern int ed(char *);
 // 
@@ -205,6 +240,7 @@ static char *slre_replace(const char *regex, const char *buf,
 #define CTRL_Q 0x11
 #define CTRL_R 0x12
 #define CTRL_S 0x13
+#define CTRL_T 0x14
 #define CTRL_U 0x15
 #define CTRL_V 0x16
 #define CTRL_W 0x17
@@ -1551,6 +1587,14 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
             wrefresh(win);
             wrefresh(wedit);
             break;
+#ifdef __MINGW_VERSION
+        case KEY_SUP:
+            xlate(buf, 0);
+            break;
+        case KEY_SDOWN:
+            xlate(buf, 1);
+            break;
+#endif
 /*#ifdef DJGPP*/
         case CTRL_X:
             i = 0;
@@ -2058,11 +2102,13 @@ char *getfname(bool fn, char *desc, char *fname, int length)
 
 int casestr(char *str, bool upper, bool ascii)
 {
-#define MAXCHS 9
-  char chr_lo[] = " ‚ˇ˘”‹Łű";
-  char chr_hi[] = "µÖŕ™Šéšë";
-  char asc_lo[] = "aeiooouuu";
-  char asc_hi[] = "AEIOOOUUU";
+#define MAXCHS 18
+  char chr_lo[] = {0xA0,0x82,0xA1,0xA2,0x94,0x8B,0xA3,0x81,0xFB,
+                   0xE1,0xE9,0xED,0xF3,0xF6,0xF5,0xFA,0xFC,0xFB};
+  char chr_hi[] = {0xB5,0x90,0xD6,0xE0,0x99,0x8A,0xE9,0x9A,0xEB,
+                   0xC1,0xC9,0xCD,0xD3,0xD6,0xD5,0xDA,0xDC,0xDB};
+  char asc_lo[] = "aeiooouuuaeiooouuu";
+  char asc_hi[] = "AEIOOOUUUAEIOOOUUU";
 /*  char chr_utflo[] = "ĂˇĂ©Ă­ĂłĂ¶Ĺ‘ĂşĂĽĹ±";*/
 /*  char chr_utfhi[] = "ĂĂ‰ĂŤĂ“Ă–ĹĂšĂśĹ°";*/
   register int i, j;
@@ -3136,9 +3182,6 @@ int loadfile(char *fname)
         j++;
     }
     strcpy(datfname, fname);
-#ifdef __MINGW_VERSION
-    SetConsoleTitle(datfname);
-#endif
     return 0;
 }
 
@@ -6722,6 +6765,9 @@ void edithelp(void)
         "    Ctrl-B:\tpaste fstr",
         "Ctrl/Alt-U:\tuppercase",
         "Ctrl/Alt-L:\tlowercase",
+#ifdef __MINGW_VERSION
+        "Shft-Up/Dn:\tchange chars",
+#endif
         "    Ctrl-D:\tformat date",
         "     Alt-C:\tcalculate",
         "     Alt-D:\tchange dot & colon",
@@ -6731,7 +6777,11 @@ void edithelp(void)
         "     Enter:\tmodify record"
     };
     int i;
+#ifdef __MINGW_VERSION
     int j=17;
+#else
+    int j=17;
+#endif
     
     wmsg = mvwinputbox(wbody, (bodylen()-j)/4, (bodywidth()-38)/2, j+2, 38);
 #ifndef __MINGW_VERSION
@@ -7214,6 +7264,9 @@ int main(int argc, char **argv)
           return -1;
        }
     }
+#ifdef __MINGW_VERSION
+    SetConsoleTitle("TSVdb v."VERSION);
+#endif
     signal(SIGINT, siginthandler);
     startmenu(MainMenu, datfname);
     return 0;
