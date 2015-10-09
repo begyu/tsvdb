@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.51 2015/10/07 $
+ * $Id: tcsvdb.c,v 0.9.52 2015/10/09 $
  */
 
-#define VERSION "0.9.51"
+#define VERSION "0.9.52"
 #define URL "http://tsvdb.sf.net"
 /*#define __MINGW_VERSION 1*/
 
@@ -200,6 +200,35 @@ void xlate(char *s, int x)
             }         
         }         
     }
+}
+
+void cpch(char *c)
+{
+  int i = -1;
+  char *p0;
+  char *p1;
+  char c0[] =
+  "\xA0\x82\xA1\xA2\x94\x8B\xA3\x81\xB5\x90\xD6\xE0\x99\x8A\xE9\x9A\xEB\xDA\xCD"
+  "\x27\xE1\x22\x3B\x3A\x5C\x7C\x92\x3D\x2B\x5B\x7B\x30\x29\x5D\x7D\x2D\x5F";
+  char c1[] =
+  "\xE1\xE9\xED\xF3\xF6\xF5\xFA\xFC\xC1\xC9\xCD\xD3\xD6\xD5\xDA\xDC\xDB\x82\x99"
+  "\xA0\x27\xB5\x82\x90\xA1\x92\x7C\xA2\xE0\x8B\x8A\x94\x99\xA3\xE9\x81\x9A";
+
+  p0 = strchr(c0, c[0]);
+  if (p0 == NULL)
+  {
+      p1 = strchr(c1, c[0]);
+      if (p1 != NULL)
+      {
+          i = p1 - c1;
+          c[0] = c0[i];
+      }
+  }
+  else
+  {
+      i = p0 - c0;
+      c[0] = c1[i];
+  }
 }
 #endif
 
@@ -1594,82 +1623,11 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
         case KEY_SDOWN:
             xlate(buf, 1);
             break;
+        case CTRL_X:
+            cpch(bp);
+            break;
 #endif
 /*#ifdef DJGPP*/
-        case CTRL_X:
-            i = 0;
-            tp = buf;
-            while (tp[i] != '\0')
-            {
-                switch (tp[i])
-                {
-                case '\'':
-                    tp[i] = 0xA0;
-                    break;
-                case '"':
-                    tp[i] = 0xB5;
-                    break;
-                case ';':
-                    tp[i] = 0x82;
-                    break;
-                case ':':
-                    tp[i] = 0x90;
-                    break;
-                case '\\':
-                    tp[i] = 0xA1;
-                    break;
-                case '|':
-                    tp[i] = 0x92;
-                    break;
-                case 'ˇ': /*161*/
-                    tp[i] = 0xFB;
-                    break;
-                case '’': /*146*/
-                    tp[i] = 0xEB;
-                    break;
-                case 'ű': /*251*/
-                    tp[i] = 0xA1;
-                    break;
-                case 'ë': /*235*/
-                    tp[i] = 0x92;
-                    break;
-                case '=':
-                    tp[i] = 0xA2;
-                    break;
-                case '+':
-                    tp[i] = 0xE0;
-                    break;
-                case '[':
-                    tp[i] = 0x8B;
-                    break;
-                case '{':
-                    tp[i] = 0x8A;
-                    break;
-                case '0':
-                    tp[i] = 0x94;
-                    break;
-                case '”': /*148*/
-                    tp[i] = 0x30;
-                    break;
-                case ')':
-                    tp[i] = 0x99;
-                    break;
-                case ']':
-                    tp[i] = 0xA3;
-                    break;
-                case '}':
-                    tp[i] = 0xE9;
-                    break;
-                case '-':
-                    tp[i] = 0x81;
-                    break;
-                case '_':
-                    tp[i] = 0x9A;
-                    break;
-                }
-                i++;
-            }
-            break;
         case CTRL_Y:
             i = 0;
             tp = buf;
@@ -7241,7 +7199,7 @@ int main(int argc, char **argv)
         strcpy(s, argv[optind++]);
     else
         strcpy(s, FNAME);
-    setlocale(LC_ALL, "");
+    setlocale(LC_ALL, "C");
     if (i == -1)
     {
        ed(s);
