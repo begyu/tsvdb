@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.52 2015/10/09 $
+ * $Id: tcsvdb.c,v 0.9.53 2015/10/13 $
  */
 
-#define VERSION "0.9.52"
+#define VERSION "0.9.53"
 #define URL "http://tsvdb.sf.net"
 /*#define __MINGW_VERSION 1*/
 
@@ -7058,6 +7058,16 @@ void changecolor(void)
 }
 
 
+#ifdef __MINGW_VERSION
+static void RemoveConsoleCloseButton()
+{
+   HANDLE handle = GetConsoleWindow();
+   HMENU hMenu = GetSystemMenu(handle, FALSE);
+   DeleteMenu(hMenu, SC_CLOSE, MF_GRAYED);
+   DrawMenuBar(handle);
+}
+#endif
+
 /*** start main ***/
 
 int main(int argc, char **argv)
@@ -7224,6 +7234,7 @@ int main(int argc, char **argv)
     }
 #ifdef __MINGW_VERSION
     SetConsoleTitle("TSVdb v."VERSION);
+    RemoveConsoleCloseButton();
 #endif
     signal(SIGINT, siginthandler);
     startmenu(MainMenu, datfname);
