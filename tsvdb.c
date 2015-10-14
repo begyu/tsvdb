@@ -1,10 +1,9 @@
 /*
- * $Id: tcsvdb.c,v 0.9.53 2015/10/13 $
+ * $Id: tcsvdb.c,v 0.9.54 2015/10/14 $
  */
 
-#define VERSION "0.9.53"
+#define VERSION "0.9.54"
 #define URL "http://tsvdb.sf.net"
-/*#define __MINGW_VERSION 1*/
 
 #ifdef XCURSES
 #include <xcurses.h>
@@ -33,6 +32,7 @@
 
 #ifdef __MINGW_VERSION
   #include <windows.h>
+  static bool terminable = TRUE;
 #endif
 
 #ifdef __cplusplus
@@ -170,6 +170,24 @@ static char *slre_replace(const char *regex, const char *buf,
 
 
 #ifdef __MINGW_VERSION
+static void RemoveConsoleCloseButton()
+{
+    HANDLE handle = GetConsoleWindow();
+    HMENU hMenu = GetSystemMenu(handle, FALSE);
+    EnableMenuItem(hMenu, SC_CLOSE, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+    DrawMenuBar(handle);
+}
+
+static void EnableConsoleCloseButton()
+{
+    HANDLE handle = GetConsoleWindow();
+    HMENU hMenu = GetSystemMenu(handle, FALSE);
+    EnableMenuItem(hMenu, SC_CLOSE, MF_BYCOMMAND | MF_ENABLED);
+    DrawMenuBar(handle);
+}
+#endif
+
+#if !defined(__unix) || defined(__DJGPP__)
 void xlate(char *s, int x)
 {
     char c[4][9] = {{0xA0,0x82,0xA1,0xA2,0x94,0x8B,0xA3,0x81,0xFB},
@@ -1616,7 +1634,7 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
             wrefresh(win);
             wrefresh(wedit);
             break;
-#ifdef __MINGW_VERSION
+#if !defined(__unix) || defined(__DJGPP__)
         case KEY_SUP:
             xlate(buf, 0);
             break;
@@ -2550,6 +2568,13 @@ void flagmsg(void)
     {
         setcolor(wtitl, FSTRCOLOR);
         mvwaddstr(wtitl, 0, 0, "*");
+#ifdef __MINGW_VERSION
+        if (terminable)
+        {
+            RemoveConsoleCloseButton();
+            terminable = FALSE;
+        }
+#endif
     }
     else
     {
@@ -3275,6 +3300,11 @@ int savefile(char *fname, int force)
     (void)chmod(fname, S_IRUSR);
     strcpy(datfname, fname);
     modified = FALSE;
+#ifdef __MINGW_VERSION
+    if (terminable == FALSE)
+        	EnableConsoleCloseButton();
+    terminable = TRUE;
+#endif
     flagmsg();
     return 0;
 }
@@ -7058,16 +7088,6 @@ void changecolor(void)
 }
 
 
-#ifdef __MINGW_VERSION
-static void RemoveConsoleCloseButton()
-{
-   HANDLE handle = GetConsoleWindow();
-   HMENU hMenu = GetSystemMenu(handle, FALSE);
-   DeleteMenu(hMenu, SC_CLOSE, MF_GRAYED);
-   DrawMenuBar(handle);
-}
-#endif
-
 /*** start main ***/
 
 int main(int argc, char **argv)
@@ -7234,10 +7254,12 @@ int main(int argc, char **argv)
     }
 #ifdef __MINGW_VERSION
     SetConsoleTitle("TSVdb v."VERSION);
-    RemoveConsoleCloseButton();
 #endif
     signal(SIGINT, siginthandler);
     startmenu(MainMenu, datfname);
+#ifdef __MINGW_VERSION
+    EnableConsoleCloseButton();
+#endif
     return 0;
 }
 
