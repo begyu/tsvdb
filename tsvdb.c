@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.54 2015/10/14 $
+ * $Id: tcsvdb.c,v 0.9.55 2015/10/29 $
  */
 
-#define VERSION "0.9.54"
+#define VERSION "0.9.55"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -388,7 +388,7 @@ static long int filesize = 0L;
 #define RXFORW 0xFF
 #define RXBACK 0xFE
 #define WSTR (" Wait! ")
-#define DISABLEDHOT ("aCcDFfNnSsT")
+#define DISABLEDHOT ("aCcDFfMNnSsT")
 #define FROMSTR ("From:")
 #define TOSTR   ("  To:")
 #define HEADSTR ("Head:")
@@ -735,7 +735,7 @@ static void repaintmenu(WINDOW *wmenu, menu *mp)
                 setcolor(wmenu, INPUTBOXCOLOR);
             else
                 setcolor(wmenu, SUBMENUCOLOR);
-            if (safe && strstr(p->name, "Tex"))
+            if (safe && ((p->name[0] == 'M') || strstr(p->name, "Tex")))
                 setcolor(wmenu, INPUTBOXCOLOR);
         }
         if (!has_colors())
@@ -1118,7 +1118,8 @@ void domenu(menu *mp)
                         setcolor(wmenu, INPUTBOXCOLOR);
                     else
                         setcolor(wmenu, SUBMENUCOLOR);
-                    if (safe && strstr(mp[old].name, "Tex"))
+                    if (safe && ((mp[old].name[0] == 'M')
+                                 || strstr(mp[old].name, "Tex")))
                         setcolor(wmenu, INPUTBOXCOLOR);
                 }
                 mvwaddstr(wmenu, old + 1, 1, 
@@ -3018,7 +3019,8 @@ int loadfile(char *fname)
     {
         if ((fp = fopen(fname, "r")) == NULL)
         {
-            strcat(fname, ".tsv");
+            if ((p = strstr(fname, ".tsv")) == NULL)
+                strcat(fname, ".tsv");
         }
         else
             fclose(fp);
@@ -3377,7 +3379,6 @@ int create(char *fn)
         return -1;
     }
 
-    strcpy(buf, fn);
     j = strlen(head);
     if ((j == 0) || (j > 66))
        strcpy(buf, "?");
@@ -3386,14 +3387,25 @@ int create(char *fn)
        strcpy(buf, head);
        j = strlen(buf);
        for (i=0; i<j; i++)
+       {
           if (buf[i] == csep)
-             buf[i] = ' ';
+              buf[i] = ' ';
+          else if (buf[i] == '\n')
+               {
+                   buf[i] = ' ';
+                   buf[i+1] = '\0';
+               }
+       }
        new = FALSE;
     }
     putmsg("", "To create a new database, enter the field names!", "");
     if (getfname(FALSE, HEADSTR, buf, 68))
     {
-        strcat(buf, "\n");
+        if (strchr(buf, ' ') == NULL)
+        {
+            errormsg("ERROR: There is not enough field, must have at least two!");
+            return -1;
+        }
         j = strlen(buf);
         if (j)
         {
@@ -3402,6 +3414,7 @@ int create(char *fn)
                 if (buf[i]==' ')
                    buf[i] = csep;
             }
+            strcat(buf, "\n");
             strcpy(head, buf);
             i = 0;
             k = 0;
@@ -3439,6 +3452,7 @@ int create(char *fn)
                 rows[reccnt+1] = NULL;
             }
         }
+        strcpy(datfname, fn);
         if (savefile(datfname, 1) == 0)
         {
             titlemsg(datfname);
@@ -6012,6 +6026,106 @@ int topset(int top, int y)
     return top;
 }
 
+void modstru(void)
+{
+    int i, j;
+    char c1[MAXCOLS][4];
+    char c2[MAXCOLS][MAXFLEN];
+    char st[MAXCOLS+1][MAXSTRLEN];
+    char *fieldnam[MAXCOLS+1];
+    char *fieldbuf[MAXCOLS+1];
+    int fieldlim[MAXCOLS+1];
+    BUFDEF;
+    int flen = 0;
+    int maxx;
+
+    if (ro || safe || (strlen(head) < 9))
+        return;
+
+    if (yesno("Modify structure? (Y/N):") == 0)
+        return;
+
+    for (i=0; i<=cols; i++)
+    {
+        flen = MAX(len[i], flen);
+    }
+
+    for (i=0; i<MAXCOLS; i++)
+    {
+        strcpy(st[i], stru[i]);
+        if (i < 9)
+        {
+            c1[i][0] = ' ';
+            c1[i][1] = '\0';
+        }
+        else
+            c1[i][0] = '\0';
+        strcat(c1[i], itoa(i+1, buf, 10));
+        strcat(c1[i], ":");
+        fieldnam[i] = c1[i];
+        if (i <= cols)
+        {
+            fieldbuf[i] = stru[i];
+            fieldlim[i] = len[i];
+            j = MAX(len[i], strlen(fieldbuf[i]));
+            if (j > flen)
+                flen = j;
+        }
+        else
+        {
+            strcpy(c2[i], " ");
+            fieldbuf[i] = c2[i];
+            fieldlim[i] = MAXFLEN;
+        }
+    }
+    flen++;
+    getmaxyx(wbody, j, maxx);
+    j = (maxx/2)-2;
+    if (flen > j)
+        flen = j;
+    fieldnam[MAXCOLS] = NULL;
+    fieldbuf[MAXCOLS] = NULL;
+    strcpy(buf, head);
+
+    if (getstrings(fieldnam, fieldbuf, 0, flen, fieldlim) != KEY_ESC)
+    {
+        if (fieldbuf[1][0] == '\0')
+        {
+            putmsg("","Must be at least two fields!","");
+            strcpy(head, buf);
+            for (i=0; i<MAXCOLS; i++)
+                	strcpy(stru[i], st[i]);
+            return;
+        }
+        strtrim(fieldbuf[0]);
+        strcpy(head, fieldbuf[0]);
+        for(i=1; i<MAXCOLS; i++)
+        {
+            strtrim(fieldbuf[i]);
+            if (0 == strlen(fieldbuf[i]))
+                	break;
+            strcat(head, ssep);
+            strcat(head, fieldbuf[i]);
+        }
+        strcat(head, "\n");
+        headspac = FALSE;
+        if (savefile(datfname, 1) == 0)
+        {
+            if (loadfile(datfname) == 0)
+            {
+                redraw();
+                flagmsg();
+            }
+        }
+        else
+        {
+            strcpy(head, buf);
+            for (i=0; i<MAXCOLS; i++)
+                	strcpy(stru[i], st[i]);
+        }
+    }
+}
+
 
 #ifdef NCURSES
 #define ALT_INS KEY_IL
@@ -6662,6 +6776,7 @@ menu SubMenu1[] =
     { "Sort", dosort, "Sort the whole file" },
     { "Field", dosortby, "Sort by other field" },
     { "nUm", dosortnum, "Sort natural order" },
+    { "Modify", modstru, "Restructuring" },
     { "crYpt", docrypt, "Code/decode" },
     { "Calc", calcall, "Evaluate the whole column" },
     { "tOtal", dosum, "Aggregate" },
