@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.55 2015/10/29 $
+ * $Id: tcsvdb.c,v 0.9.56 2015/10/30 $
  */
 
-#define VERSION "0.9.55"
+#define VERSION "0.9.56"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -249,6 +249,45 @@ void cpch(char *c)
   }
 }
 #endif
+
+
+bool is_leap_year(int year)
+{
+    return (!(year % 4) && (year % 100)) || !(year % 400);
+}
+
+bool is_valid_date(const char *s)
+{
+    char ys[] = "1234mmdd";
+    char ms[] = "56dd";
+    char ds[] = "78";
+
+    if (strlen(s) != 8)
+        	return FALSE;
+    strcpy(ys, s);
+    ys[4] = '\0';
+    strcpy(ms, s+4);
+    ms[2] = '\0';
+    strcpy(ds, s+6);
+
+    int y = atoi(ys);
+    int m = atoi(ms);
+    int d = atoi(ds);
+
+    if (y >= 1583 && y <= 9999 &&
+        m >= 1    && m <= 12   &&
+        d >= 1    && d <= 31)
+    {
+        if (m==2 && d>29)
+            return FALSE;
+        if (m==2 && d==29 && !is_leap_year(y))
+            return FALSE;
+        if (d==31 && (m==4 || m==6 || m==9 || m==11))
+            return FALSE;
+        return TRUE;
+    }
+    return FALSE;
+}
 
 
 // /*ED*/
@@ -1590,13 +1629,16 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
                     j = 0;
             if (j == 8)
             {
-                buf[10] = '\0';
-                buf[9] = (char)buf[7];
-                buf[8] = (char)buf[6];
-                buf[7] = (char)'.';
-                buf[6] = (char)buf[5];
-                buf[5] = (char)buf[4];
-                buf[4] = (char)'.';
+                if (is_valid_date(buf))
+                {
+                    buf[10] = '\0';
+                    buf[9] = (char)buf[7];
+                    buf[8] = (char)buf[6];
+                    buf[7] = (char)'.';
+                    buf[6] = (char)buf[5];
+                    buf[5] = (char)buf[4];
+                    buf[4] = (char)'.';
+                }
             }
             defdisp = FALSE;
             break;
