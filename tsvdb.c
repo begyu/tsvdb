@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.56 2015/10/30 $
+ * $Id: tcsvdb.c,v 0.9.57 2015/11/11 $
  */
 
-#define VERSION "0.9.56"
+#define VERSION "0.9.57"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -379,6 +379,7 @@ static tmprows tmpdat;
 
 static char progname[MAXSTRLEN] = "";
 static char wdname[MAXSTRLEN+1] = "";
+static char fnam[MAXSTRLEN] = "";
 static char datfname[MAXSTRLEN] = "";
 static char fstr[MAXSTRLEN] = "";
 static char regstr[MAXFLEN] = "(?i)";
@@ -427,7 +428,7 @@ static long int filesize = 0L;
 #define RXFORW 0xFF
 #define RXBACK 0xFE
 #define WSTR (" Wait! ")
-#define DISABLEDHOT ("aCcDFfMNnSsT")
+#define DISABLEDHOT ("aCcDFfIMNnSsT")
 #define FROMSTR ("From:")
 #define TOSTR   ("  To:")
 #define HEADSTR ("Head:")
@@ -3196,6 +3197,81 @@ int loadfile(char *fname)
     if (locked && cry)
     {
         crypt(reccnt);
+    }
+    field=0;
+    curcol=0;
+    clsbody();
+    wrefresh(wbody);
+    j = 0;
+    for (i=0; i<bodylen(); i++)
+    {
+        if (i < reccnt)
+           displn(i, j+1);
+        j++;
+    }
+    strcpy(datfname, fname);
+    return 0;
+}
+
+int getfile(char *fname)
+{
+    int i, j;
+    int k = 0;
+    FILE *fp;
+    BUFDEF;
+    bool ateof = FALSE;
+    bool csv_f = FALSE;
+    char *p;
+
+    if ((fp = fopen(fname, "r")) != NULL)
+    {
+        if ((p = strstr(fname, ".csv")) == NULL)
+            	csv_f = TRUE;
+        i = reccnt;
+        while (!ateof)
+        {
+            buf[0] = '\0';
+            fgets(buf, MAXSTRLEN, fp);
+            k = strlen(buf);
+            if (k)
+            {
+                if (csv_f)
+                {
+                    for (j=0; j<k; j++)
+                        if (buf[j] == COLCSEP)
+                            buf[j] = csep;
+                }
+                p = (char *)malloc(j+1);
+                if (p == NULL)
+                {
+                    errormsg("ERROR: Memory full!");
+                    ateof = TRUE;
+                    break;
+                }
+                rows[i] = p;
+                strcpy(rows[i], buf);
+                i++;
+                if (i >= MAXROWS)
+                {
+                    errormsg("ERROR: File too big, truncated!");
+                    ateof = TRUE;
+                }
+            }
+            else
+                ateof = TRUE;
+        }
+        reccnt = i;
+        fclose(fp);
+        rows[reccnt] = (char *)malloc(2);
+        strcpy(rows[reccnt], "\0");
+        if (k)
+            	modified = TRUE;
+    }
+    else
+    {
+        sprintf(buf, "ERROR: file '%s' not found", fname);
+        errormsg(buf);
+        return -1;
     }
     field=0;
     curcol=0;
@@ -6640,33 +6716,29 @@ void edit(void)
 
 void DoOpen(void)
 {
-    char fname[MAXSTRLEN];
-
     if (!ro)
     {
         if (modified == TRUE)
             if (savefile(datfname, 0) != 0)
                return;
     }
-    strcpy(fname, datfname);
-    if (getfname(TRUE, "File to open:", fname, 50))
+    strcpy(fnam, datfname);
+    if (getfname(TRUE, "File to open:", fnam, 50))
     {
-        if (loadfile(fname) == 0)
-            titlemsg(fname);
+        if (loadfile(fnam) == 0)
+            titlemsg(fnam);
     }
 }
 
 void DoSave(void)
 {
-    char fname[MAXSTRLEN];
-
     if (ro && !cry)
         return;
-    strcpy(fname, datfname);
-    if (getfname(TRUE, "Save to file:", fname, 50))
+    strcpy(fnam, datfname);
+    if (getfname(TRUE, "Save to file:", fnam, 50))
     {
-        if (savefile(fname, 0) == 0)
-            titlemsg(fname);
+        if (savefile(fnam, 0) == 0)
+            titlemsg(fnam);
     }
 }
 
@@ -6674,6 +6746,20 @@ void newdb(void)
 {
     create(FNAME);
 }
+
+void DoAppend(void)
+{
+    if (ro || cry)
+        	return;
+
+    strcpy(fnam, "?");
+    if (getfname(TRUE, "Get from file:", fnam, 50))
+    {
+        if (getfile(fnam) == 0)
+            putmsg("File: ", fnam, " loaded.");
+    }
+}
+
 
 void txted(void)
 {
@@ -6797,6 +6883,8 @@ menu SubMenu0[] =
     { "Open", DoOpen, "Open data file" },
     { "New", newdb, "Create data file" },
     { "Save", DoSave, "Save data file" },
+    { "Import", DoAppend, "Append data" },
+    { "eXport", selected, "Restricted set (restart)" },
     { "Text", txted, "Edit as text" },
     { "Exit", bye, "Quit" },
     { "", (FUNC)0, "" }
@@ -6822,7 +6910,6 @@ menu SubMenu1[] =
     { "crYpt", docrypt, "Code/decode" },
     { "Calc", calcall, "Evaluate the whole column" },
     { "tOtal", dosum, "Aggregate" },
-    { "eXport", selected, "Restricted set (restart)" },
     { "", (FUNC)0, "" }
 };
 
