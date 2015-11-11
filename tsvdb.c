@@ -6916,7 +6916,7 @@ menu SubMenu1[] =
 menu SubMenu2[] =
 {
     { "Keys", subfunc1, "General keys" },
-    { "Input keys", edithelp, "Keys in edit mode" },
+    { "input keys", edithelp, "Keys in edit mode" },
     { "Edit keys", txthelp, "Keys in texteditor" },
     { "Regexp", reghelp, "Regular expression help" },
     { "Options", opthelp, "Command line options" },
