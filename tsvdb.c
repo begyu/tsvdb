@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.57 2015/11/11 $
+ * $Id: tcsvdb.c,v 0.9.58 2015/11/13 $
  */
 
-#define VERSION "0.9.57"
+#define VERSION "0.9.58"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -5205,6 +5205,10 @@ void reorder(int y, bool left)
     k = strlen(buf);
     for (i=0; i<k; i++)
     {
+        if (buf[i] == '\n' || buf[i] == '\r')
+        {
+            buf[i] = ' ';
+        }
         if ((buf[i] == csep) && (buf[i+1] == csep))
         {
             k++;
@@ -5219,24 +5223,21 @@ void reorder(int y, bool left)
     while(p != NULL )
     {
         strcpy(tmpstr[i], p);
-        k = strlen(tmpstr[i]);
-        if (tmpstr[i][k-1] == '\n')
-            tmpstr[i][k-1] = '\0';
-        else if (tmpstr[i][k] == '\n')
-                 tmpstr[i][k] = '\0';
         i++;
         if (i > cols)
            break;
         p = strtok(NULL, ssep );
     }
-    if (p == NULL)
-       strcpy(tmpstr[i], ssep);
+    for (i=0; i<=cols; i++)
+    {
+        k = strlen(tmpstr[i]);
+        if (k == 0)
+            strcpy(tmpstr[i], " ");
+    }
     buf[0] = '\0';
     for (i=0; i<=cols; i++)
     {
-        k = strlen(tmpstr[i])-1;
-        if (tmpstr[i][k] == '\n')
-           tmpstr[i][k] = '\0';
+        k = strlen(tmpstr[i]);
         if (i == j)
            strcat(buf, tmpstr[field]);
         else if (i == field)
