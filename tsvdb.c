@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.58 2015/11/13 $
+ * $Id: tcsvdb.c,v 0.9.59 2015/11/17 $
  */
 
-#define VERSION "0.9.58"
+#define VERSION "0.9.59"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -6130,6 +6130,44 @@ void golen(bool ismax)
 }
 
 
+static int found = 0;
+
+void findequal(bool column)
+{
+    register int i;
+    BUFDEF;
+    char *fields0[MAXCOLS+1];
+    char *fields1[MAXCOLS+1];
+
+
+    if (found > curr)
+        curr++;
+    for (i=curr; i<(reccnt-1); i++)
+    {
+        if (column)
+        {
+            strcpy(buf, rows[i]);
+            strsplit(buf, fields0, ssep);
+            strcpy(buf, rows[i+1]);
+            strsplit(buf, fields1, ssep);
+            if (strcmp(fields0[field], fields1[field]) == 0)
+            {
+                curr = i;
+                found = (found == i) ? i+1 : i;
+                return;
+            }
+        }
+        else if (strcmp(rows[i], rows[i+1]) == 0)
+        {
+            curr = i;
+            found = (found == i) ? i+1 : i;
+            return;
+        }
+    }
+    found = 0;
+}
+
+
 int topset(int top, int y)
 {
     register int i;
@@ -6695,6 +6733,14 @@ void edit(void)
         case ALT_P:
             changecolor();
             break;
+        case CTRL_Q:
+            findequal(FALSE);
+            ctop = topset(curr, r);
+            break;
+        case ALT_Q:
+            findequal(TRUE);
+            ctop = topset(curr, r);
+            break;
         default:
             if ((c == 0x81) || (c == 0xEB) || (c == 0x1FB))
                c = 0x55; /* U */
@@ -6959,9 +7005,9 @@ void subfunc1(void)
         " Ctrl-F/D:  regexp search  \t\tCtrl/Alt-L:  lower/initial",
         "    Alt-F:  seek curr field\t\tC/A-arrows:  reorder fields",
         "Tab/C-Tab:  find next      \t\tShft-arrow:  align left/right",
-        " Shft-Tab:  previous       \t\t Shft-Home:  center",
-        "     Bksp:  del fstr back  \t\t   Ctrl-Up:  move backward",
-        " Del/Home:  clear fstr     \t\t Ctrl-Down:  move forward",
+        " Shft-Tab:  previous       \t\t Shft-Home:  adjust center",
+        "     Bksp:  del fstr back  \t\tCtrl-Up/Dn:  move back/forward",
+        " Del/Home:  clear fstr     \t\tCtrl/Alt-Q:  search equivalent",
         "   Ctrl-G:  goto line      \t\t   Alt-I/D:  ins/remove field",
         "Ctl/Alt-S:  replace/change \t\tCtrl/Alt-O:  count subs/field",
         "    Alt-C:  calculate      \t\t  C/A-Home:  go max/longest",
@@ -6970,7 +7016,7 @@ void subfunc1(void)
     int i;
     int j=15;
     
-    wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-70)/2, j+2, 70);
+    wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-72)/2, j+2, 72);
 #ifndef __MINGW_VERSION
     wborder(wmsg, '|', '|', '-', '-', '+', '+', '+', '+');
 #endif
