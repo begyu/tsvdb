@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.59 2015/11/17 $
+ * $Id: tcsvdb.c,v 0.9.60 2015/12/09 $
  */
 
-#define VERSION "0.9.59"
+#define VERSION "0.9.60"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -6138,7 +6138,6 @@ void findequal(bool column)
     BUFDEF;
     char *fields0[MAXCOLS+1];
     char *fields1[MAXCOLS+1];
-
 
     if (found > curr)
         curr++;
