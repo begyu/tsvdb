@@ -99,6 +99,7 @@ int     enter_string(char *s, char *buf)
                         ch = getch();
                         goto ins_char;
                 case KEY_BACKSPACE:
+                case 8:
                         if (b_len)
                                 buf[b_len - 1] = 0;
                         break;
