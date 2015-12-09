@@ -575,6 +575,8 @@ int ed(char *f)
         }
         for (;;) {
                 show();
+                if (cur_y)
+                    	cur_y--;
                 move(cur_y, cur_x);
                 refresh();
                 ch = getch();
@@ -635,6 +637,7 @@ int ed(char *f)
                 case CNTRL('T'):        /* go Top */
                         bow_line = cur_pos = 0;
                         break;
+                case CTL_END:
                 case CNTRL('O'):        /* go bOttom */
                         cur_pos = eof_pos;
                         break;
