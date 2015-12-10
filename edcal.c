@@ -211,7 +211,7 @@ void    show(void)
                 for (i = 0; m != bow_line && i < LINES; i++)
                         m = nextline(m);
                 if (i < LINES)
-                        scrl (i);
+                        scrl(i);
         } else if (bow_line < bow_line_prev) {
                 m = bow_line_prev;
                 for (i = 0; m != bow_line && i < LINES; i++)
@@ -227,7 +227,7 @@ void    show(void)
         for (m = bow_line, i = 0; m < eof_pos && i < LINES; i++) {
                 m = pos_x(m, win_shift);
                 move(i, 0);
-#define EOS_COLS (i < LINES - 1 ? COLS : COLS - 1)
+#define EOS_COLS (i < LINES - 1 ? COLS : COLS - TABSIZE)
                 for (j = 0; m < eof_pos && j < EOS_COLS; m++) {
                         if (m >= bos_pos && m < eos_pos)
                                 attron(A_REVERSE);
@@ -576,8 +576,6 @@ int ed(char *f)
         }
         for (;;) {
                 show();
-                if (cur_y)
-                    	cur_y--;
                 move(cur_y, cur_x);
                 refresh();
                 ch = getch();
