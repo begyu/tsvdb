@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.60 2015/12/09 $
+ * $Id: tcsvdb.c,v 0.9.61 2015/12/10 $
  */
 
-#define VERSION "0.9.60"
+#define VERSION "0.9.61"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
