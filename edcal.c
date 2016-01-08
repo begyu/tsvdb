@@ -8,6 +8,12 @@
 #include <errno.h>
 #include <ctype.h>
 
+#ifdef XCURSES
+#define KEY_ESC  0x1b   /* Escape */
+#define KEY_F0   0x108  /* function keys; 64 reserved */
+#define KEY_F(n) (KEY_F0 + (n))
+#endif
+
 /*#define KEY_BACKSPACE 0x008*/
 #define TABSIZE 8
 #define CHUNKSIZE 1024
@@ -537,6 +543,11 @@ void    edinit(void)
         nonl();
         raw();
         noecho();
+#ifdef PDCURSES
+        mouse_set(ALL_MOUSE_EVENTS);
+        PDC_save_key_modifiers(TRUE);
+        PDC_return_key_modifiers(TRUE);
+#endif
         refresh();
 }
 
@@ -566,6 +577,7 @@ void    norm_cur(void)
 int ed(char *f)
 {
         int     i, ch;
+        int     dx, dy, button;
 
         edinit();
         if (f != NULL) {
@@ -691,6 +703,43 @@ int ed(char *f)
                 case KEY_F(1):
                         hmsg(HLPSTR);
                         break;
+#ifdef PDCURSES
+                case KEY_MOUSE:
+                    getmouse();
+                    button = 0;
+                    request_mouse_pos();
+                    if (BUTTON_CHANGED(1))
+                        button = 1;
+                    else if (BUTTON_CHANGED(2))
+                        button = 2;
+                    else if (BUTTON_CHANGED(3))
+                        button = 3;
+                    if ((BUTTON_STATUS(button) &
+                        BUTTON_ACTION_MASK) == BUTTON_PRESSED)
+                    {
+                        dy = MOUSE_Y_POS;
+                        dx = MOUSE_X_POS;
+                        if (dy > cur_y)
+                        {
+                             for (i = dy - cur_y; i > 0; i--)
+                                  k_down();
+                        }
+                        else if (dy < cur_y)
+                        {
+                             for (i = cur_y - dy; i > 0; i--)
+                                  k_up();
+                        }
+                        if (dx != cur_x)
+                        {
+                             cur_pos = pos_x(cur_line, dx + win_shift);
+                        }
+                    }
+                    if (MOUSE_WHEEL_UP)
+                        k_up();
+                    else if (MOUSE_WHEEL_DOWN)
+                        k_down();
+                    break;
+#endif
                 case '\r':
                         ch = '\n';
                         /* FALLTHRU */
