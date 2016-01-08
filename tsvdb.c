@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.61 2015/12/10 $
+ * $Id: tcsvdb.c,v 0.9.62 2016/01/07 $
  */
 
-#define VERSION "0.9.61"
+#define VERSION "0.9.62"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -1457,6 +1457,10 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
         case ERR:
             break;
 
+        case 129: //0x81=''
+        case 144: //0x90=''
+        case 395: //0x8B='‹'
+        case 394: //0x8A='Š'
         case 507: //0xFB='ű'
         case 491: //0xEB='ë'
             goto ins_char;
@@ -7556,4 +7560,3 @@ int main(int argc, char **argv)
 #ifdef __cplusplus
 }
 #endif
-
