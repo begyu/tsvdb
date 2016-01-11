@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.62 2016/01/07 $
+ * $Id: tcsvdb.c,v 0.9.63 2016/01/11 $
  */
 
-#define VERSION "0.9.62"
+#define VERSION "0.9.63"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -7343,6 +7343,11 @@ void subfunc2(void)
 #endif
     delwin(wmsg);
     touchwin(wbody);
+#ifdef PDCURSES
+    mouse_set(ALL_MOUSE_EVENTS);
+    PDC_save_key_modifiers(TRUE);
+    PDC_return_key_modifiers(TRUE);
+#endif
     wrefresh(wbody);
 }
 
@@ -7560,3 +7565,4 @@ int main(int argc, char **argv)
 #ifdef __cplusplus
 }
 #endif
+
