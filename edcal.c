@@ -469,6 +469,7 @@ int     save(char *name, int pos, int size)
 {
         FILE    *f;
 
+        (void)chmod(name, S_IWUSR);
         f = fopen(name, "w");
         if (!f)
                 return error("$save file \"%s\"", name);
