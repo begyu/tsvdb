@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.63 2016/01/11 $
+ * $Id: tcsvdb.c,v 0.9.64 2016/01/18 $
  */
 
-#define VERSION "0.9.63"
+#define VERSION "0.9.64"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -1604,7 +1604,7 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
                     memmove((void *)(bp + j), (const void *)bp,
                             strlen(bp) + j);
                 }
-                for (i=0; i<j; i++)
+                for (i=0; i<=j; i++)
                 {
                     *bp++ = clp[i];
                 }
