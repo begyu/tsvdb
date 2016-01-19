@@ -479,7 +479,8 @@ int     save(char *name, int pos, int size)
                 return error("$write");
         }
         if (fclose(f))
-                return error("$close");
+                return error("$clRse");
+        (void)chmod(name, S_IRUSR);
         return 1;
 }
 
