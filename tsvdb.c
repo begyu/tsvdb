@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.65 2016/01/20 $
+ * $Id: tcsvdb.c,v 0.9.66 2016/01/20 $
  */
 
-#define VERSION "0.9.65"
+#define VERSION "0.9.66"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -4243,6 +4243,7 @@ void search(int y, int c)
     int k=0;
     char cstr[] = "?";
     char s[MAXSTRLEN+1];
+    char *p;
     bool masked;
     struct slre_cap cap = { NULL, 0 };
 
@@ -4256,7 +4257,15 @@ void search(int y, int c)
             casestr(s, TRUE, TRUE);
             if (masked)
             {
-                if (substr(s, fstr) != -1)
+                p = fstr;
+                if (p[0] == '?')
+                {
+                    p++;
+                    for (k=0; s[k]; k++)
+                        if (!isalnum(s[k]))
+                            strcpy(s+k, s+k+1);
+                }
+                if (substr(s, p) != -1)
                 {
                     curr = i;
                     break;
@@ -4288,7 +4297,15 @@ void search(int y, int c)
                 casestr(s, TRUE, TRUE);
                 if (masked)
                 {
-                    if (substr(s, fstr) != -1)
+                    p = fstr;
+                    if (p[0] == '?')
+                    {
+                        p++;
+                        for (k=0; s[k]; k++)
+                            if (!isalnum(s[k]))
+                                strcpy(s+k, s+k+1);
+                    }
+                    if (substr(s, p) != -1)
                     {
                         curr = i;
                         break;
@@ -4351,7 +4368,15 @@ void search(int y, int c)
             casestr(s, TRUE, TRUE);
             if (masked)
             {
-                if (substr(s, fstr) != -1)
+                p = fstr;
+                if (p[0] == '?')
+                {
+                    p++;
+                    for (k=0; s[k]; k++)
+                        if (!isalnum(s[k]))
+                            strcpy(s+k, s+k+1);
+                }
+                if (substr(s, p) != -1)
                 {
                     curr = i;
                     break;
