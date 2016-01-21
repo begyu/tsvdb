@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.66 2016/01/20 $
+ * $Id: tcsvdb.c,v 0.9.67 2016/01/20 $
  */
 
-#define VERSION "0.9.66"
+#define VERSION "0.9.67"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -1357,6 +1357,9 @@ static void repainteditbox(WINDOW *win, int x, char *buf, int lim)
     int maxy;
 #endif
     int maxx;
+#ifdef XCURSES
+    int i;
+#endif
 
 #ifdef PDCURSES
     maxx = getmaxx(win);
@@ -1364,12 +1367,34 @@ static void repainteditbox(WINDOW *win, int x, char *buf, int lim)
     getmaxyx(win, maxy, maxx);
 #endif
     werase(win);
+#ifndef XCURSES
     mvwprintw(win, 0, 0, "%s", padstr(buf, maxx));
+#else
+    padstr(buf, maxx);
+    for (i=0; i<maxx; i++)
+    {
+        if (buf[i] == 0)
+            break;
+        waddch(win, (unsigned char)(buf[i]));
+    }
+    wclrtoeol(win);
+#endif
     if (lim)
     {
         lim--;
         setcolor(win, EDITBOXTOOCOLOR);
+#ifndef XCURSES
         mvwprintw(win, 0, lim, "%s", padstr(buf+lim, maxx));
+#else
+        padstr(buf+lim, maxx);
+        for (i=0; i<maxx; i++)
+        {
+            if (buf[i+lim] == 0)
+                break;
+            waddch(win, (unsigned char)(buf[i+lim]));
+        }
+        wclrtoeol(win);
+#endif
         setcolor(win, EDITBOXCOLOR);
     }
     wmove(win, 0, x);
@@ -2714,7 +2739,14 @@ void displn(int y, int r)
            setcolor(wbody, BODYCOLOR);
         if ((beg[i]+len[i]) <= maxlen)
         {
+#ifndef XCURSES
            mvwaddstr(wbody, r, beg[i], s[i]);
+#else
+           wmove(wbody, r, beg[i]);
+           k = strlen(s[i]);
+           for (j=0; j<MIN(k,len[i]); j++)
+               waddch(wbody, (unsigned char)(s[i][j]));
+#endif
            mvwaddstr(wbody, 0, beg[i], stru[i+curcol]);
         }
         else
