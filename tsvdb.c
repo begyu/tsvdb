@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.67 2016/01/20 $
+ * $Id: tcsvdb.c,v 0.9.68 2016/01/21 $
  */
 
-#define VERSION "0.9.67"
+#define VERSION "0.9.68"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -1370,6 +1370,7 @@ static void repainteditbox(WINDOW *win, int x, char *buf, int lim)
 #ifndef XCURSES
     mvwprintw(win, 0, 0, "%s", padstr(buf, maxx));
 #else
+    wmove(win, 0, 0);
     padstr(buf, maxx);
     for (i=0; i<maxx; i++)
     {
@@ -1377,7 +1378,8 @@ static void repainteditbox(WINDOW *win, int x, char *buf, int lim)
             break;
         waddch(win, (unsigned char)(buf[i]));
     }
-    wclrtoeol(win);
+    for (; i<maxx; i++)
+        waddch(win, ' ');
 #endif
     if (lim)
     {
@@ -1386,6 +1388,7 @@ static void repainteditbox(WINDOW *win, int x, char *buf, int lim)
 #ifndef XCURSES
         mvwprintw(win, 0, lim, "%s", padstr(buf+lim, maxx));
 #else
+        wmove(win, 0, lim);
         padstr(buf+lim, maxx);
         for (i=0; i<maxx; i++)
         {
@@ -1393,7 +1396,8 @@ static void repainteditbox(WINDOW *win, int x, char *buf, int lim)
                 break;
             waddch(win, (unsigned char)(buf[i+lim]));
         }
-        wclrtoeol(win);
+        for (; i<maxx; i++)
+            waddch(win, ' ');
 #endif
         setcolor(win, EDITBOXCOLOR);
     }
