@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.68 2016/01/21 $
+ * $Id: tcsvdb.c,v 0.9.69 2016/02/03 $
  */
 
-#define VERSION "0.9.68"
+#define VERSION "0.9.69"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -1566,6 +1566,10 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
         case CTL_END:
             *bp = '\0';
             break;
+        case KEY_PPAGE:
+        case KEY_NPAGE:
+            stop = TRUE;
+            break;
 #ifdef PDCURSES
         case KEY_MOUSE:
             getmouse();
@@ -1954,6 +1958,11 @@ restart:
             if (++i == n)
                 i = 0;
             if (fsel)
+                stop = TRUE;
+            break;
+        case KEY_PPAGE:
+        case KEY_NPAGE:
+            if (fsel == FALSE)
                 stop = TRUE;
             break;
         case ALT_P:
@@ -3852,10 +3861,11 @@ void fltls(void)
     }
 }
 
-void modify(int y)
+int modify(int y)
 {
     int i, j, k, l;
-    char s[MAXCOLS][MAXSTRLEN+1];
+    int ret;
+    char s[MAXCOLS+1][MAXSTRLEN+1];
     BUFDEF;
     char *p=NULL;
     char *fieldnam[MAXCOLS+1];
@@ -3865,7 +3875,17 @@ void modify(int y)
     int maxx;
 
     if (ro)
-        return;
+        return y;
+loop:
+    p = NULL;
+    for (i=0; i<MAXCOLS; i++)
+    {
+        s[i][0] = 0;
+        fieldnam[i] = NULL;
+        fieldbuf[i] = NULL;
+        fieldlim[i] = 0;
+        flen = 0;
+    }
     strcpy(buf, rows[y]);
     if (strlen(buf) == 1)
     {
@@ -3940,8 +3960,8 @@ void modify(int y)
         flen = l;
     fieldnam[cols+1] = (char *)0;
     fieldbuf[cols+1] = NULL;
-    if (getstrings(fieldnam, fieldbuf, field, flen, fieldlim) == KEY_ESC)
-        return;
+    if ((ret=getstrings(fieldnam, fieldbuf, field, flen, fieldlim)) == KEY_ESC)
+        return y;
     else
     {
         modified = TRUE;
@@ -3994,6 +4014,23 @@ void modify(int y)
        free(rows[y]);
     rows[y] = (char *)malloc(i+1);
     strcpy(rows[y], buf);
+    if (ret == KEY_PPAGE)
+    {
+        if (y > 0)
+        {
+            y--;
+            goto loop;
+        }
+    }
+    else if (ret == KEY_NPAGE)
+    {
+        if (y < (reccnt-1))
+        {
+            y++;
+            goto loop;
+        }
+    }
+    return y;
 }
 
 int strsplit(const char *str, char *parts[], const char *delimiter)
@@ -4031,9 +4068,10 @@ void strtrim(char *s)
     }
 }
 
-void modallf(int y)
+int modallf(int y)
 {
     int i, j, k, l;
+    int ret;
     BUFDEF;
     char *fieldnam[MAXCOLS+1];
     char *fieldbuf[MAXCOLS+1];
@@ -4041,14 +4079,21 @@ void modallf(int y)
     int maxx;
 
     if (ro)
-        return;
+        return y;
 
+loop:
+    for (i=0; i<MAXCOLS; i++)
+    {
+        fieldnam[i] = NULL;
+        fieldbuf[i] = NULL;
+        flen = 0;
+    }
     strcpy(buf, rows[y]);
     i = strlen(buf);
     if (i < 2)
     {
-        modify(y);
-        return;
+        (void)modify(y);
+        return y;
     }
     buf[i-1] = csep;
     buf[i] = '\0';
@@ -4061,8 +4106,8 @@ void modallf(int y)
     flen = (maxx)-9;
     fieldnam[cols+1] = (char *)0;
     fieldbuf[cols+1] = NULL;
-    if (getstrings(fieldnam, fieldbuf, 0, flen, NULL) == KEY_ESC)
-        return;
+    if ((ret = getstrings(fieldnam, fieldbuf, 0, flen, NULL)) == KEY_ESC)
+        return y;
     else
     {
         modified = TRUE;
@@ -4115,6 +4160,23 @@ void modallf(int y)
        free(rows[y]);
     rows[y] = (char *)malloc(i+1);
     strcpy(rows[y], buf);
+    if (ret == KEY_PPAGE)
+    {
+        if (y > 0)
+        {
+            y--;
+            goto loop;
+        }
+    }
+    else if (ret == KEY_NPAGE)
+    {
+        if (y < (reccnt-1))
+        {
+            y++;
+            goto loop;
+        }
+    }
+    return y;
 }
 
 void modfield(int y)
@@ -6479,7 +6541,7 @@ void edit(void)
         case '\n':
             if (curr < reccnt)
             {
-               modify(curr);
+               curr = modify(curr);
                curs_set(1);
             }
             break;
@@ -6499,7 +6561,7 @@ void edit(void)
         case ALT_PADENTER:
             if (curr < reccnt)
             {
-               modallf(curr);
+               curr = modallf(curr);
                curs_set(1);
             }
             break;
@@ -6612,7 +6674,7 @@ void edit(void)
                 if ((curr < reccnt)
                 && (curr == (ctop+MOUSE_Y_POS-3)))
                 {
-                    modify(curr);
+                    curr = modify(curr);
                     curs_set(1);
                 }
             }
@@ -7098,26 +7160,26 @@ void edithelp(void)
     WINDOW *wmsg;
     char *s[] =
     {
-        "  Home/End:\tgo to 1'st char/EOL",
-        "   Up/Down:\tprevious/next field",
-        "  Del/Bksp:\tdelete char/backward",
-        "  Ctrl-End:\tdelete from cursor",
-        "    Ctrl-W:\tdelete word back",
-        "Ctl-arrows:\tskip word",
-        "  Ctrl-C/V:\tcopy/paste",
-        "    Ctrl-B:\tpaste fstr",
-        "Ctrl/Alt-U:\tuppercase",
-        "Ctrl/Alt-L:\tlowercase",
+        "   Home/End:\tgo to 1'st char/EOL",
+        "    Up/Down:\tprevious/next field",
+        "  PgUp/PgDn:\tsave & prev/next rec",
+        "   Del/Bksp:\tdelete char/backward",
+        "   Ctrl-End:\tdelete from cursor",
+        "     Ctrl-W:\tdelete word back",
+        " Ctl-arrows:\tskip word",
+        "   Ctrl-C/V:\tcopy/paste",
+        "     Ctrl-B:\tpaste fstr",
+        "Ctl/Alt-U/L:\tupper-/lowercase",
 #ifdef __MINGW_VERSION
-        "Shft-Up/Dn:\tchange chars",
+        " Shft-Up/Dn:\tchange chars",
 #endif
-        "    Ctrl-D:\tformat date",
-        "     Alt-C:\tcalculate",
-        "     Alt-D:\tchange dot & colon",
-        "  Ctrl-X/Y:\taccent/punctuation",
-        "       Esc:\tundo/cancel",
-        "     Alt-P:\tchange colorset",
-        "     Enter:\tmodify record"
+        "     Ctrl-D:\tformat date",
+        "      Alt-C:\tcalculate",
+        "      Alt-D:\tchange dot & colon",
+        "   Ctrl-X/Y:\taccent/punctuation",
+        "        Esc:\tundo/cancel",
+        "      Alt-P:\tchange colorset",
+        "      Enter:\tmodify record"
     };
     int i;
 #ifdef __MINGW_VERSION
