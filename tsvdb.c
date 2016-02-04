@@ -1,5 +1,5 @@
 /*
- * $Id: tcsvdb.c,v 0.9.69 2016/02/03 $
+ * $Id: tcsvdb.c,v 0.9.69 2016/02/04 $
  */
 
 #define VERSION "0.9.69"
@@ -3884,8 +3884,8 @@ loop:
         fieldnam[i] = NULL;
         fieldbuf[i] = NULL;
         fieldlim[i] = 0;
-        flen = 0;
     }
+    flen = 0;
     strcpy(buf, rows[y]);
     if (strlen(buf) == 1)
     {
@@ -4086,8 +4086,8 @@ loop:
     {
         fieldnam[i] = NULL;
         fieldbuf[i] = NULL;
-        flen = 0;
     }
+    flen = 0;
     strcpy(buf, rows[y]);
     i = strlen(buf);
     if (i < 2)
