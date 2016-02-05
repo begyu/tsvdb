@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.69 2016/02/04 $
+ * $Id: tcsvdb.c,v 0.9.70 2016/02/05 $
  */
 
-#define VERSION "0.9.69"
+#define VERSION "0.9.70"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -391,7 +391,7 @@ static char flags[MAXROWS+1];
 static char stru[MAXCOLS+1][MAXSTRLEN];
 static int beg[MAXCOLS+1];
 static int len[MAXCOLS+1];
-static int cols, reccnt, curr, field, curcol;
+static int cols, reccnt, curr, field, curcol, ctop;
 static bool modified=FALSE;
 static bool ro = FALSE;
 static bool wr = FALSE;
@@ -3861,7 +3861,30 @@ void fltls(void)
     }
 }
 
-int modify(int y)
+void disphint(int y)
+{
+    int i, j;
+    int r = bodylen() -1;
+
+    curr = y;
+    j = 0;
+    for (i=ctop; i<(ctop+r); i++)
+    {
+        if (i < reccnt)
+           displn(i, j+1);
+        else
+        {
+           wmove(wbody, j+1, 0);
+           wclrtoeol(wbody);
+           wrefresh(wbody);
+        }
+        j++;
+    }
+    statusln();
+    displn(y, y-ctop+1);
+}
+
+void modify(int y)
 {
     int i, j, k, l;
     int ret;
@@ -3875,7 +3898,7 @@ int modify(int y)
     int maxx;
 
     if (ro)
-        return y;
+        return;
 loop:
     p = NULL;
     for (i=0; i<MAXCOLS; i++)
@@ -3961,7 +3984,7 @@ loop:
     fieldnam[cols+1] = (char *)0;
     fieldbuf[cols+1] = NULL;
     if ((ret=getstrings(fieldnam, fieldbuf, field, flen, fieldlim)) == KEY_ESC)
-        return y;
+        return;
     else
     {
         modified = TRUE;
@@ -4019,6 +4042,9 @@ loop:
         if (y > 0)
         {
             y--;
+            if (y < ctop)
+                ctop--;
+            disphint(y);
             goto loop;
         }
     }
@@ -4027,10 +4053,12 @@ loop:
         if (y < (reccnt-1))
         {
             y++;
+            if ((y-ctop) >= (bodylen()-1))
+                ctop++;
+            disphint(y);
             goto loop;
         }
     }
-    return y;
 }
 
 int strsplit(const char *str, char *parts[], const char *delimiter)
@@ -4068,7 +4096,7 @@ void strtrim(char *s)
     }
 }
 
-int modallf(int y)
+void modallf(int y)
 {
     int i, j, k, l;
     int ret;
@@ -4079,7 +4107,7 @@ int modallf(int y)
     int maxx;
 
     if (ro)
-        return y;
+        return;
 
 loop:
     for (i=0; i<MAXCOLS; i++)
@@ -4092,8 +4120,8 @@ loop:
     i = strlen(buf);
     if (i < 2)
     {
-        (void)modify(y);
-        return y;
+        modify(y);
+        return;
     }
     buf[i-1] = csep;
     buf[i] = '\0';
@@ -4107,7 +4135,7 @@ loop:
     fieldnam[cols+1] = (char *)0;
     fieldbuf[cols+1] = NULL;
     if ((ret = getstrings(fieldnam, fieldbuf, 0, flen, NULL)) == KEY_ESC)
-        return y;
+        return;
     else
     {
         modified = TRUE;
@@ -4165,6 +4193,9 @@ loop:
         if (y > 0)
         {
             y--;
+            if (y < ctop)
+                ctop--;
+            disphint(y);
             goto loop;
         }
     }
@@ -4173,10 +4204,12 @@ loop:
         if (y < (reccnt-1))
         {
             y++;
+            if ((y-ctop) >= (bodylen()-1))
+                ctop++;
+            disphint(y);
             goto loop;
         }
     }
-    return y;
 }
 
 void modfield(int y)
@@ -6424,7 +6457,6 @@ void edit(void)
     int b = reccnt-bodylen();
     bool quit = FALSE;
     bool unget= FALSE;
-    int ctop;
     int c;
 
     curr = (curr <= reccnt) ? curr : 0;
@@ -6541,7 +6573,7 @@ void edit(void)
         case '\n':
             if (curr < reccnt)
             {
-               curr = modify(curr);
+               modify(curr);
                curs_set(1);
             }
             break;
@@ -6561,7 +6593,7 @@ void edit(void)
         case ALT_PADENTER:
             if (curr < reccnt)
             {
-               curr = modallf(curr);
+               modallf(curr);
                curs_set(1);
             }
             break;
@@ -6674,7 +6706,7 @@ void edit(void)
                 if ((curr < reccnt)
                 && (curr == (ctop+MOUSE_Y_POS-3)))
                 {
-                    curr = modify(curr);
+                    modify(curr);
                     curs_set(1);
                 }
             }
