@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.70 2016/02/05 $
+ * $Id: tcsvdb.c,v 0.9.71 2016/02/10 $
  */
 
-#define VERSION "0.9.70"
+#define VERSION "0.9.71"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -6845,6 +6845,14 @@ void edit(void)
         case CTL_DOWN:
             xchange(TRUE);
             break;
+        case ALT_UP:
+            if (ctop > 0)
+                ctop--;
+            break;
+        case ALT_DOWN:
+            if (ctop < (reccnt-r))
+               ctop++;
+            break;
         case ALT_I:
             insfield();
             break;
@@ -7160,19 +7168,20 @@ void subfunc1(void)
         " Ctrl-Del:  delete line    \t\t     Alt-P:  change colours",
         "(C-)Enter:  edit field/s   \t\tCtrl/Alt-E:  modify field/s",
         "   Letter:  search (? mask)\t\tCtrl/Alt-U:  uppercase/init",
-        " Ctrl-F/D:  regexp search  \t\tCtrl/Alt-L:  lower/initial",
-        "    Alt-F:  seek curr field\t\tC/A-arrows:  reorder fields",
-        "Tab/C-Tab:  find next      \t\tShft-arrow:  align left/right",
-        " Shft-Tab:  previous       \t\t Shft-Home:  adjust center",
-        "     Bksp:  del fstr back  \t\tCtrl-Up/Dn:  move back/forward",
-        " Del/Home:  clear fstr     \t\tCtrl/Alt-Q:  search equivalent",
-        "   Ctrl-G:  goto line      \t\t   Alt-I/D:  ins/remove field",
-        "Ctl/Alt-S:  replace/change \t\tCtrl/Alt-O:  count subs/field",
-        "    Alt-C:  calculate      \t\t  C/A-Home:  go max/longest",
-        "  Alt-X/Y:  calc fld/cols  \t\t   C/A-End:  go min/shortest"
+        "?+letters:  look only alnum\t\tCtrl/Alt-L:  lower/initial",
+        " Ctrl-F/D:  regexp search  \t\tC/A-arrows:  reorder fields",
+        "    Alt-F:  seek curr field\t\tShft-arrow:  align left/right",
+        "Tab/C-Tab:  find next      \t\t Shft-Home:  adjust center",
+        " Shft-Tab:  previous       \t\tCtrl-Up/Dn:  move back/forward",
+        "     Bksp:  del fstr back  \t\tCtrl/Alt-Q:  search equivalent",
+        " Del/Home:  clear fstr     \t\t   Alt-I/D:  ins/remove field",
+        "   Ctrl-G:  goto line      \t\tCtrl/Alt-O:  count subs/field",
+        "Ctl/Alt-S:  replace/change \t\t  C/A-Home:  go max/longest",
+        "    Alt-C:  calculate      \t\t   C/A-End:  go min/shortest",
+        "  Alt-X/Y:  calc fld/cols  \t\t Alt-Up/Dn:  shift screen"
     };
     int i;
-    int j=15;
+    int j=16;
     
     wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-72)/2, j+2, 72);
 #ifndef __MINGW_VERSION
