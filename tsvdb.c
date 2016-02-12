@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.71 2016/02/10 $
+ * $Id: tcsvdb.c,v 0.9.72 2016/02/12 $
  */
 
-#define VERSION "0.9.71"
+#define VERSION "0.9.72"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -351,7 +351,7 @@ void reghelp(void);
 void opthelp(void);
 
 void changecolor(void);
-
+void disphint(int);
 
 /****DAT****/
 
@@ -1569,6 +1569,24 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
         case KEY_PPAGE:
         case KEY_NPAGE:
             stop = TRUE;
+            break;
+        case CTL_UP:
+            if (ctop > 0)
+            {
+                ctop--;
+                disphint(curr);
+                touchwin(win);
+                wrefresh(win);
+            }
+            break;
+        case CTL_DOWN:
+            if (ctop < (reccnt-(bodylen()-1)))
+            {
+                ctop++;
+                disphint(curr);
+                touchwin(win);
+                wrefresh(win);
+            }
             break;
 #ifdef PDCURSES
         case KEY_MOUSE:
@@ -6839,19 +6857,19 @@ void edit(void)
                 align(field, curr, 2);
             }
             break;
-        case CTL_UP:
+        case ALT_UP:
             xchange(FALSE);
             break;
-        case CTL_DOWN:
+        case ALT_DOWN:
             xchange(TRUE);
             break;
-        case ALT_UP:
+        case CTL_UP:
             if (ctop > 0)
                 ctop--;
             break;
-        case ALT_DOWN:
+        case CTL_DOWN:
             if (ctop < (reccnt-r))
-               ctop++;
+                ctop++;
             break;
         case ALT_I:
             insfield();
@@ -7172,13 +7190,13 @@ void subfunc1(void)
         " Ctrl-F/D:  regexp search  \t\tC/A-arrows:  reorder fields",
         "    Alt-F:  seek curr field\t\tShft-arrow:  align left/right",
         "Tab/C-Tab:  find next      \t\t Shft-Home:  adjust center",
-        " Shft-Tab:  previous       \t\tCtrl-Up/Dn:  move back/forward",
+        " Shft-Tab:  previous       \t\t Alt-Up/Dn:  move back/forward",
         "     Bksp:  del fstr back  \t\tCtrl/Alt-Q:  search equivalent",
         " Del/Home:  clear fstr     \t\t   Alt-I/D:  ins/remove field",
         "   Ctrl-G:  goto line      \t\tCtrl/Alt-O:  count subs/field",
         "Ctl/Alt-S:  replace/change \t\t  C/A-Home:  go max/longest",
         "    Alt-C:  calculate      \t\t   C/A-End:  go min/shortest",
-        "  Alt-X/Y:  calc fld/cols  \t\t Alt-Up/Dn:  shift screen"
+        "  Alt-X/Y:  calc fld/cols  \t\tCtrl-Up/Dn:  shift screen"
     };
     int i;
     int j=16;
@@ -7204,6 +7222,7 @@ void edithelp(void)
         "   Home/End:\tgo to 1'st char/EOL",
         "    Up/Down:\tprevious/next field",
         "  PgUp/PgDn:\tsave & prev/next rec",
+        "  Ctl-Up/Dn:\tscroll background",
         "   Del/Bksp:\tdelete char/backward",
         "   Ctrl-End:\tdelete from cursor",
         "     Ctrl-W:\tdelete word back",
@@ -7224,9 +7243,9 @@ void edithelp(void)
     };
     int i;
 #ifdef __MINGW_VERSION
-    int j=18;
+    int j=19;
 #else
-    int j=17;
+    int j=18;
 #endif
     
     wmsg = mvwinputbox(wbody, (bodylen()-j)/4, (bodywidth()-38)/2, j+2, 38);
