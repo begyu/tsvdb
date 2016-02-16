@@ -1550,9 +1550,11 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
             stop = TRUE;
             break;
 
+        case CTL_PGUP:
         case SHF_PADPLUS:
             jog(buf, 1);
             break;
+        case CTL_PGDN:
         case SHF_PADMINUS:
             jog(buf, -1);
             break;
@@ -7290,7 +7292,7 @@ void edithelp(void)
         "      Alt-C:\tcalculate",
         "      Alt-D:\tchange dot & colon",
         "   Ctrl-X/Y:\taccent/punctuation",
-        "  Shift_+/-:\tinc/dec number",
+        "C-PgUp/PgDn:\tinc/dec number (S_+/-)",
         "        Esc:\tundo/cancel",
         "      Alt-P:\tchange colorset",
         "      Enter:\tmodify record"
@@ -7302,7 +7304,7 @@ void edithelp(void)
     int j=19;
 #endif
     
-    wmsg = mvwinputbox(wbody, (bodylen()-j)/4, (bodywidth()-38)/2, j+2, 38);
+    wmsg = mvwinputbox(wbody, (bodylen()-j)/4, (bodywidth()-40)/2, j+2, 40);
 #ifndef __MINGW_VERSION
     wborder(wmsg, '|', '|', '-', '-', '+', '+', '+', '+');
 #endif
