@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.72 2016/02/12 $
+ * $Id: tcsvdb.c,v 0.9.73 2016/02/16 $
  */
 
-#define VERSION "0.9.72"
+#define VERSION "0.9.73"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -289,6 +289,36 @@ bool is_valid_date(const char *s)
     return FALSE;
 }
 
+#define MAXSNLEN 12
+
+char *jog(char *s, int i)
+{
+    int slen, j;
+    char fs[3];
+    char ns[MAXSNLEN];
+
+    slen = strlen(s);
+    if (slen == 0 || slen > MAXSNLEN)
+        	return s;
+
+    for (j=0; j<slen; j++)
+    {
+        if (!isspace(s[j]))
+            break;
+    }
+    if (s[j] == '-' || s[j] == '+')
+        	j++;
+    for (; j<slen; j++)
+    {
+        if (!isdigit(s[j]))
+            return s;
+    }
+    sprintf(fs, "\%c%3dd", '%', slen);
+    sprintf(ns, fs, atoi(s)+i);
+    strcpy(s, ns);
+    return s;
+}
+
 
 // /*ED*/
 // extern int ed(char *);
@@ -416,6 +446,7 @@ static bool headspac = FALSE;
 static bool hunsort = FALSE;
 static bool insert = FALSE;
 static bool colorset = FALSE;
+static bool inside = FALSE;
 static long int filesize = 0L;
 
 #define TABCSEP '\t'
@@ -1519,6 +1550,13 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
             stop = TRUE;
             break;
 
+        case SHF_PADPLUS:
+            jog(buf, 1);
+            break;
+        case SHF_PADMINUS:
+            jog(buf, -1);
+            break;
+
         case KEY_LEFT:
             if (bp > buf)
                 bp--;
@@ -1571,7 +1609,7 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
             stop = TRUE;
             break;
         case CTL_UP:
-            if (ctop > 0)
+            if (inside && (ctop > 0))
             {
                 ctop--;
                 disphint(curr);
@@ -1580,7 +1618,7 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
             }
             break;
         case CTL_DOWN:
-            if (ctop < (reccnt-(bodylen()-1)))
+            if (inside && (ctop < (reccnt-(bodylen()-1))))
             {
                 ctop++;
                 disphint(curr);
@@ -4001,11 +4039,16 @@ loop:
         flen = l;
     fieldnam[cols+1] = (char *)0;
     fieldbuf[cols+1] = NULL;
+    inside = TRUE;
     if ((ret=getstrings(fieldnam, fieldbuf, field, flen, fieldlim)) == KEY_ESC)
+    {
+        inside = FALSE;
         return;
+    }
     else
     {
         modified = TRUE;
+        inside = FALSE;
         flagmsg();
     }
     for (i = 0; i <= cols; i++)
@@ -4152,11 +4195,16 @@ loop:
     flen = (maxx)-9;
     fieldnam[cols+1] = (char *)0;
     fieldbuf[cols+1] = NULL;
+    inside = TRUE;
     if ((ret = getstrings(fieldnam, fieldbuf, 0, flen, NULL)) == KEY_ESC)
+    {
+        inside = FALSE;
         return;
+    }
     else
     {
         modified = TRUE;
+        inside = FALSE;
         flagmsg();
     }
     for (i = 0; i <= cols; i++)
@@ -4254,8 +4302,13 @@ void modfield(int y)
     getmaxyx(wbody, k, maxx);
     flen = (maxx)-9;
     fieldbuf[cols+1] = NULL;
+    inside = TRUE;
     if (getfname(FALSE, ">", fieldbuf[field], flen) == NULL)
-        	return;
+    {
+        inside = FALSE;
+        return;
+    }
+    inside = FALSE;
     strtrim(fieldbuf[field]);
     modified = TRUE;
     flagmsg();
@@ -7237,15 +7290,16 @@ void edithelp(void)
         "      Alt-C:\tcalculate",
         "      Alt-D:\tchange dot & colon",
         "   Ctrl-X/Y:\taccent/punctuation",
+        "  Shift_+/-:\tinc/dec number",
         "        Esc:\tundo/cancel",
         "      Alt-P:\tchange colorset",
         "      Enter:\tmodify record"
     };
     int i;
 #ifdef __MINGW_VERSION
-    int j=19;
+    int j=20;
 #else
-    int j=18;
+    int j=19;
 #endif
     
     wmsg = mvwinputbox(wbody, (bodylen()-j)/4, (bodywidth()-38)/2, j+2, 38);
@@ -7257,6 +7311,8 @@ void edithelp(void)
     wrefresh(wmsg);
     (void)toupper(waitforkey());
     delwin(wmsg);
+    touchwin(wstatus);
+    wrefresh(wstatus);
     touchwin(wbody);
     wrefresh(wbody);
 }
