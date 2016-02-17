@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.73 2016/02/16 $
+ * $Id: tcsvdb.c,v 0.9.74 2016/02/17 $
  */
 
-#define VERSION "0.9.73"
+#define VERSION "0.9.74"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -289,15 +289,57 @@ bool is_valid_date(const char *s)
     return FALSE;
 }
 
-#define MAXSNLEN 12
+#define MAXSNLEN 10
+#define ONEDAY (60*60*24)
 
 char *jog(char *s, int i)
 {
     int slen, j;
-    char fs[3];
-    char ns[MAXSNLEN];
+    char fs[4];
+    char ns[MAXSNLEN*2];
+    bool dat = FALSE;
+    struct tm tinfo;
+    time_t t;
 
     slen = strlen(s);
+    if (slen == MAXSNLEN)
+    {
+        for (j=0; j<MAXSNLEN; j++)
+        {
+            if (j==4 || j==7)
+            {
+                if (s[j] != '.')
+                    	break;
+            }
+            else if (!isdigit(s[j]))
+                     	break;
+        }
+        dat = (j == MAXSNLEN);
+    }
+    if (dat)
+    {
+        strcpy(ns, s);
+        ns[4] = '\0';
+        tinfo.tm_year = atoi(ns) - 1900;
+        strcpy(ns, s+5);
+        ns[2] = '\0';
+        tinfo.tm_mon = atoi(ns) -1;
+        strcpy(ns, s+8);
+        tinfo.tm_mday = atoi(ns);
+        tinfo.tm_hour= 0;
+        tinfo.tm_min = 0;
+        tinfo.tm_sec = 1;
+        tinfo.tm_isdst = 0;
+        t = mktime(&tinfo);
+        if (t == -1)
+            return s;
+        t += (long) (i * ONEDAY);
+        j = strftime(ns, 2*MAXSNLEN, "%Y.%m.%d", localtime(&t));
+        if (j == 10);
+            	strcpy(s, ns);
+        return s;
+    }
+
     if (slen == 0 || slen > MAXSNLEN)
         	return s;
 
@@ -7292,7 +7334,7 @@ void edithelp(void)
         "      Alt-C:\tcalculate",
         "      Alt-D:\tchange dot & colon",
         "   Ctrl-X/Y:\taccent/punctuation",
-        "C-PgUp/PgDn:\tinc/dec number (S_+/-)",
+        "C-PgUp/PgDn:\tinc/dec num,dat (S+/-)",
         "        Esc:\tundo/cancel",
         "      Alt-P:\tchange colorset",
         "      Enter:\tmodify record"
