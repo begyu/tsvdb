@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.74 2016/02/17 $
+ * $Id: tcsvdb.c,v 0.9.75 2016/02/18 $
  */
 
-#define VERSION "0.9.74"
+#define VERSION "0.9.75"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -395,6 +395,7 @@ char *jog(char *s, int i)
 #define CTRL_G 0x07
 #define CTRL_L 0x0C
 #define CTRL_O 0x0F
+#define CTRL_P 0x10
 #define CTRL_Q 0x11
 #define CTRL_R 0x12
 #define CTRL_S 0x13
@@ -1884,6 +1885,18 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
         case ALT_P:
             stop = TRUE;
             break;
+        case CTRL_O:
+            c = 245;
+            goto ins_char;
+        case CTRL_P:
+            c = 213;
+            goto ins_char;
+        case CTRL_R:
+            c = 251;
+            goto ins_char;
+        case CTRL_T:
+            c = 219;
+            goto ins_char;
         default:
             if (c == erasechar())       /* backspace, ^H */
             {
@@ -7333,6 +7346,7 @@ void edithelp(void)
         "     Ctrl-D:\tformat date",
         "      Alt-C:\tcalculate",
         "      Alt-D:\tchange dot & colon",
+        "Ctl-O/P/R/T:\to^ / O^ / u^ / U^",
         "   Ctrl-X/Y:\taccent/punctuation",
         "C-PgUp/PgDn:\tinc/dec num,dat (S+/-)",
         "        Esc:\tundo/cancel",
@@ -7341,9 +7355,9 @@ void edithelp(void)
     };
     int i;
 #ifdef __MINGW_VERSION
-    int j=20;
+    int j=21;
 #else
-    int j=19;
+    int j=20;
 #endif
     
     wmsg = mvwinputbox(wbody, (bodylen()-j)/4, (bodywidth()-40)/2, j+2, 40);
