@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.75 2016/02/18 $
+ * $Id: tcsvdb.c,v 0.9.76 2016/02/21 $
  */
 
-#define VERSION "0.9.75"
+#define VERSION "0.9.76"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -4185,7 +4185,7 @@ int strsplit(const char *str, char *parts[], const char *delimiter)
     int i = 0;
     char *tmp = strdup(str);
     pch = strtok(tmp, delimiter);
-  
+
     parts[i++] = strdup(pch);
     while (pch)
     {
@@ -4241,19 +4241,39 @@ loop:
         modify(y);
         return;
     }
-    buf[i-1] = csep;
+    for (i=0,j=0; j<=cols; i++)
+    {
+        if (buf[i] == csep)
+            j++;
+        else if (buf[i] == '\r' || buf[i] == '\n' || buf[i] == '\0')
+                 break;
+    }
+    if (j <= cols)
+    {
+        buf[i] = '\0';
+        for (j--; j<=cols; j++)
+        {
+            strcat(buf, " ");
+            strcat(buf, ssep);
+        }
+        i = strlen(buf);
+    }
+    if (buf[i-1] == '\r' || buf[i] == '\n')
+        buf[i-1] = csep;
     buf[i] = '\0';
     strsplit(buf, fieldbuf, ssep);
     for (i = 0; i <= cols; i++)
     {
         fieldnam[i] = ">";
+        if (fieldbuf[i] == NULL)
+            fieldbuf[i] = strdup(" ");
     }
     getmaxyx(wbody, k, maxx);
-    flen = (maxx)-9;
+    flen = maxx-(maxx-MAXFLEN)-9;
     fieldnam[cols+1] = (char *)0;
     fieldbuf[cols+1] = NULL;
     inside = TRUE;
-    if ((ret = getstrings(fieldnam, fieldbuf, 0, flen, NULL)) == KEY_ESC)
+    if ((ret = getstrings(fieldnam, fieldbuf, field, flen, NULL)) == KEY_ESC)
     {
         inside = FALSE;
         return;
@@ -4333,7 +4353,7 @@ loop:
             goto loop;
         }
     }
-}
+} 
 
 void modfield(int y)
 {
@@ -4353,7 +4373,25 @@ void modfield(int y)
         buf[0] = ' ';
         i = 2;
     }
-    buf[i-1] = csep;
+    for (i=0,j=0; j<=cols; i++)
+    {
+        if (buf[i] == csep)
+            j++;
+        else if (buf[i] == '\r' || buf[i] == '\n' || buf[i] == '\0')
+                 break;
+    }
+    if (j <= cols)
+    {
+        buf[i] = '\0';
+        for (j--; j<=cols; j++)
+        {
+            strcat(buf, " ");
+            strcat(buf, ssep);
+        }
+        i = strlen(buf);
+    }
+    if (buf[i-1] == '\r' || buf[i] == '\n')
+        buf[i-1] = csep;
     buf[i] = '\0';
     strsplit(buf, fieldbuf, ssep);
     getmaxyx(wbody, k, maxx);
