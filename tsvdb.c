@@ -6849,6 +6849,7 @@ void edit(void)
                b = reccnt-bodylen();
             }
             break;
+        case ALT_T:
         case ALT_DEL:
             if (undelpos != 0)
             {
@@ -7440,7 +7441,7 @@ void subfunc1(void)
         "Ctl/Alt-S:  replace/change \t\t  C/A-Home:  go max/longest",
         "    Alt-C:  calculate      \t\t   C/A-End:  go min/shortest",
         "  Alt-X/Y:  calc fld/cols  \t\tCtrl-Up/Dn:  shift screen",
-        "Ctl/Alt-R:  undo/redo max10\t\t   Alt-Del:  undo line (max 1)"
+        "Ctl/Alt-R:  undo/redo max10\t\t A-T/A-Del:  undo line (max 1)"
     };
     int i;
     int j=17;
