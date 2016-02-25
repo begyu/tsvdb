@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.76 2016/02/21 $
+ * $Id: tcsvdb.c,v 0.9.77 2016/02/25 $
  */
 
-#define VERSION "0.9.76"
+#define VERSION "0.9.77"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -514,6 +514,70 @@ void msg(char *);
 
 int casestr(char *, bool, bool);
 int capfstr(char *, bool, bool);
+
+
+#define MAXUNDO 9
+
+typedef struct
+{
+    char und[MAXSTRLEN+1];
+    char red[MAXSTRLEN+1];
+    int idx;
+} undotype;
+
+static undotype undo[MAXUNDO+1];
+static int undoptr = -1;
+static char undel[MAXSTRLEN+1] = "";
+static int undelpos = 0;
+
+void pushundo(int y)
+{
+    undoptr++;
+    if (undoptr > MAXUNDO)
+    {
+        for (i=0; i<MAXUNDO; i++)
+        {
+             undo[i] = undo[i+1];
+        }
+        undoptr--;
+    }
+    strcpy(undo[undoptr].und, rows[y]);
+    strcpy(undo[undoptr].red, "");
+    undo[undoptr].idx = y;
+}
+
+int popundo(int y)
+{
+    int i = y;
+    int j;
+
+    if (undoptr >= 0)
+    {
+        i = undo[undoptr].idx;
+        strcpy(undo[undoptr].red, rows[i]);
+        j = strlen(undo[undoptr].und);
+        if (rows[i] != NULL)
+            free(rows[i]);
+        rows[i] = (char *)malloc(j+1);
+        strcpy(rows[i], undo[undoptr].und);
+        undoptr--;
+    }
+    return i;
+}
+
+int redo(int y)
+{
+    int i = y;
+
+    if (undoptr < MAXUNDO)
+    {
+        undoptr++;
+        strcpy(undo[undoptr].und, undo[undoptr].red);
+        i = popundo(y);
+    }
+    return i;
+}
+
 
 /****DAT****/
 
@@ -4104,6 +4168,7 @@ loop:
     }
     else
     {
+        pushundo(y);
         modified = TRUE;
         inside = FALSE;
         flagmsg();
@@ -4280,6 +4345,7 @@ loop:
     }
     else
     {
+        pushundo(y);
         modified = TRUE;
         inside = FALSE;
         flagmsg();
@@ -4405,6 +4471,7 @@ void modfield(int y)
     }
     inside = FALSE;
     strtrim(fieldbuf[field]);
+    pushundo(y);
     modified = TRUE;
     flagmsg();
     for (i = 0; i <= cols; i++)
@@ -4507,6 +4574,8 @@ void purge(int y)
     }
     if ((i=yesno("Delete record! Are You sure? (Y/N):")) == 0)
         return;
+    strcpy(undel, rows[y]);
+    undelpos = y;
     if (rows[y] != NULL)
        free(rows[y]);
     for (i=y; i<reccnt; i++)
@@ -6774,11 +6843,26 @@ void edit(void)
             b = reccnt-bodylen();
             break;
         case CTL_DEL:
-        case ALT_DEL:
             if (curr < reccnt)
             {
                purge(curr);
                b = reccnt-bodylen();
+            }
+            break;
+        case ALT_DEL:
+            if (undelpos != 0)
+            {
+               curr = undelpos;
+               newrec(curr, FALSE);
+               i = strlen(undel);
+               if (rows[curr] != NULL)
+                   	free(rows[curr]);
+               rows[curr] = (char *)malloc(i+1);
+               strcpy(rows[curr], undel);
+               undelpos = 0;
+               b = reccnt-bodylen();
+               if ((curr < ctop) || (curr >= (ctop+r)))
+                   	ctop = topset(curr, r);
             }
             break;
 /*        case KEY_TAB:*/
@@ -6988,7 +7072,8 @@ void edit(void)
             break;
         case CTRL_G:
             gorec();
-            ctop = topset(curr, r);
+            if ((curr < ctop) || (curr >= (ctop+r)))
+                	ctop = topset(curr, r);
             break;
         case KEY_SLEFT:
             if (!ro)
@@ -7072,6 +7157,16 @@ void edit(void)
         case ALT_Q:
             findequal(TRUE);
             ctop = topset(curr, r);
+            break;
+        case CTRL_R:
+            curr = popundo(curr);
+            if ((curr < ctop) || (curr >= (ctop+r)))
+                	ctop = topset(curr, r);
+            break;
+        case ALT_R:
+            curr = redo(curr);
+            if ((curr < ctop) || (curr >= (ctop+r)))
+                	ctop = topset(curr, r);
             break;
         default:
             if ((c == 0x81) || (c == 0xEB) || (c == 0x1FB))
@@ -7344,10 +7439,11 @@ void subfunc1(void)
         "   Ctrl-G:  goto line      \t\tCtrl/Alt-O:  count subs/field",
         "Ctl/Alt-S:  replace/change \t\t  C/A-Home:  go max/longest",
         "    Alt-C:  calculate      \t\t   C/A-End:  go min/shortest",
-        "  Alt-X/Y:  calc fld/cols  \t\tCtrl-Up/Dn:  shift screen"
+        "  Alt-X/Y:  calc fld/cols  \t\tCtrl-Up/Dn:  shift screen",
+        "Ctl/Alt-R:  undo/redo max10\t\t   Alt-Del:  undo line (max 1)"
     };
     int i;
-    int j=16;
+    int j=17;
     
     wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-72)/2, j+2, 72);
 #ifndef __MINGW_VERSION
