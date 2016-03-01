@@ -295,7 +295,7 @@ bool is_valid_date(const char *s)
 char *jog(char *s, int i)
 {
     int slen, j;
-    char fs[4];
+    char fs[7];
     char ns[MAXSNLEN*2];
     bool dat = FALSE;
     struct tm tinfo;
@@ -3976,7 +3976,7 @@ void fltls(void)
         case KEY_DOWN:
             if (curr < x)
                curr++;
-            while (flags[curr] != 1 && curr < x)
+            while (curr < x && flags[curr] != 1)
                curr++;
             break;
         case KEY_HOME:
@@ -3985,7 +3985,7 @@ void fltls(void)
         case KEY_END:
             clsbody();
             curr = reccnt-1;
-            while (flags[curr] != 1 && curr > 1)
+            while (curr > 1 && flags[curr] != 1)
                curr--;
             if (curr > x)
                curr = x;
@@ -4018,14 +4018,14 @@ void fltls(void)
             {
                 if (curr > 0)
                    curr--;
-                while (flags[curr] != 1 && curr > 0)
+                while (curr > 0 && flags[curr] != 1)
                    curr--;
             }
             else if (MOUSE_WHEEL_DOWN)
             {
                 if (curr < x)
                    curr++;
-                while (flags[curr] != 1 && curr < x)
+                while (curr < x && flags[curr] != 1)
                    curr++;
             }
             break;
