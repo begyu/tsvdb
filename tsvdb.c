@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.77 2016/02/25 $
+ * $Id: tcsvdb.c,v 0.9.78 2016/03/02 $
  */
 
-#define VERSION "0.9.77"
+#define VERSION "0.9.78"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -3474,6 +3474,7 @@ int getfile(char *fname)
                     ateof = TRUE;
                     break;
                 }
+                modified = TRUE;
                 rows[i] = p;
                 strcpy(rows[i], buf);
                 i++;
@@ -3490,8 +3491,6 @@ int getfile(char *fname)
         fclose(fp);
         rows[reccnt] = (char *)malloc(2);
         strcpy(rows[reccnt], "\0");
-        if (k)
-            	modified = TRUE;
     }
     else
     {
@@ -7231,7 +7230,10 @@ void DoAppend(void)
     if (getfname(TRUE, "Get from file:", fnam, 50))
     {
         if (getfile(fnam) == 0)
+        {
             putmsg("File: ", fnam, " loaded.");
+            flagmsg();
+        }
     }
 }
 
