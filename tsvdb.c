@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.78 2016/03/02 $
+ * $Id: tcsvdb.c,v 0.9.79 2016/03/10 $
  */
 
-#define VERSION "0.9.78"
+#define VERSION "0.9.79"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -6898,6 +6898,20 @@ void edit(void)
                   ctop = curr;
             }
             break;
+        case KEY_SDC:
+            if (strlen(fstr))
+            {
+               strcpy(fstr, fstr+1);
+               i = strlen(fstr);
+               setcolor(wstatus, MAINMENUCOLOR);
+               mvwaddstr(wstatus, 0, 20, (i!=0) ? "*" : " ");
+               setcolor(wstatus, FSTRCOLOR);
+               mvwaddstr(wstatus, 0, 21, fstr);
+               setcolor(wstatus, STATUSCOLOR);
+               wclrtoeol(wstatus);
+               wrefresh(wstatus);
+            }
+            break;
         case KEY_BTAB:
             if (strlen(fstr))
             {
@@ -7427,23 +7441,23 @@ void subfunc1(void)
     WINDOW *wmsg;
     char *s[] =
     {
-        " Ctrl-Ins:  insert line (C-+)\t\tCtrl/Alt-A:  mark/filter all",
-        "  Alt-Ins:  duplicate   (A-+)\t\t  Ctrl-C/V:  copy/paste",
-        " Ctrl-Del:  delete line    \t\t     Alt-P:  change colours",
-        "(C-)Enter:  edit field/s   \t\tCtrl/Alt-E:  modify field/s",
-        "   Letter:  search (? mask)\t\tCtrl/Alt-U:  uppercase/init",
-        "?+letters:  look only alnum\t\tCtrl/Alt-L:  lower/initial",
-        " Ctrl-F/D:  regexp search  \t\tC/A-arrows:  reorder fields",
-        "    Alt-F:  seek curr field\t\tShft-arrow:  align left/right",
-        "Tab/C-Tab:  find next      \t\t Shft-Home:  adjust center",
-        " Shft-Tab:  previous       \t\t Alt-Up/Dn:  move back/forward",
-        "     Bksp:  del fstr back  \t\tCtrl/Alt-Q:  search equivalent",
-        " Del/Home:  clear fstr     \t\t   Alt-I/D:  ins/remove field",
-        "   Ctrl-G:  goto line      \t\tCtrl/Alt-O:  count subs/field",
-        "Ctl/Alt-S:  replace/change \t\t  C/A-Home:  go max/longest",
-        "    Alt-C:  calculate      \t\t   C/A-End:  go min/shortest",
-        "  Alt-X/Y:  calc fld/cols  \t\tCtrl-Up/Dn:  shift screen",
-        "Ctl/Alt-R:  undo/redo max10\t\t A-T/A-Del:  undo line (max 1)"
+        "  Ctrl-Ins:  insert line (C-+)  \t Ctrl/Alt-A:  mark/filter all",
+        "   Alt-Ins:  duplicate   (A-+)  \t   Ctrl-C/V:  copy/paste",
+        "  Ctrl-Del:  delete line        \t      Alt-P:  change colours",
+        " (C-)Enter:  edit field/s       \t Ctrl/Alt-E:  modify field/s",
+        "    Letter:  search (? mask)    \t Ctrl/Alt-U:  uppercase/init",
+        " ?+letters:  look only alnum    \t Ctrl/Alt-L:  lower/initial",
+        "  Ctrl-F/D:  regexp search      \t C/A-arrows:  reorder fields",
+        "     Alt-F:  seek curr field    \t Shft-arrow:  align left/right",
+        " Tab/C-Tab:  find next          \t  Shft-Home:  adjust center",
+        "  Shft-Tab:  previous           \t  Alt-Up/Dn:  move back/forward",
+        "Bksp/S-Del:  del fstr back/first\t Ctrl/Alt-Q:  search equivalent",
+        "  Del/Home:  clear fstr         \t    Alt-I/D:  ins/remove field",
+        "    Ctrl-G:  goto line          \t Ctrl/Alt-O:  count subs/field",
+        "Ctrl/Alt-S:  replace/change     \t   C/A-Home:  go max/longest",
+        "     Alt-C:  calculate          \t    C/A-End:  go min/shortest",
+        "   Alt-X/Y:  calc fld/cols      \t Ctrl-Up/Dn:  shift screen",
+        "Ctrl/Alt-R:  undo/redo (max 10) \t  A-T/A-Del:  undo line (max 1)"
     };
     int i;
     int j=17;
@@ -7453,7 +7467,7 @@ void subfunc1(void)
     wborder(wmsg, '|', '|', '-', '-', '+', '+', '+', '+');
 #endif
     for (i=0; i<j; i++)
-        mvwaddstr(wmsg, i+1, 2, s[i]);
+        mvwaddstr(wmsg, i+1, 1, s[i]);
     wrefresh(wmsg);
     (void)toupper(waitforkey());
     delwin(wmsg);
