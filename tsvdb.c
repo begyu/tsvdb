@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.79 2016/03/10 $
+ * $Id: tcsvdb.c,v 0.9.80 2016/03/22 $
  */
 
-#define VERSION "0.9.79"
+#define VERSION "0.9.80"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -6676,6 +6676,59 @@ void modstru(void)
     }
 }
 
+#if !defined(__unix) || defined(__DJGPP__)
+void lat2(char *c, int x)
+{
+    int i, j;
+    char *p;
+    char c0[] =
+    "\xA0\x82\xA1\xA2\x94\x8B\xA3\x81\xB5\x90\xD6\xE0\x99\x8A\xE9\x9A\xEB";
+    char c1[] =
+    "\xE1\xE9\xED\xF3\xF6\xF5\xFA\xFC\xC1\xC9\xCD\xD3\xD6\xD5\xDA\xDC\xDB";
+   
+    if (ro) 
+        return;
+   
+    for (j = strlen(c); j > 0; j--)
+    {
+        if (x == 0)
+            p = strchr(c0, c[j]);
+        else
+            p = strchr(c1, c[j]);
+        if (p != NULL)
+        {
+            modified = TRUE;
+            if (x == 0)
+            {
+               i = p - c0;
+               c[j] = c1[i];
+            }
+            else
+            {
+               i = p - c1;
+               c[j] = c0[i];
+            }
+        }
+    }
+}
+
+void docode(void)
+{
+    int i, j;
+
+    if (ro || safe) 
+        return;
+
+    j = (yesno("To Latin-2 ? (Y/N):") == 0) ? 0 : 1;
+    for (i=0; i<(reccnt-1); i++)
+    {
+        lat2(rows[i], j);
+    }
+    redraw();
+    flagmsg();
+}
+#endif
+
 
 #ifdef NCURSES
 #define ALT_INS KEY_IL
@@ -7172,6 +7225,16 @@ void edit(void)
             findequal(TRUE);
             ctop = topset(curr, r);
             break;
+#if !defined(__unix) || defined(__DJGPP__)
+        case CTRL_W:
+            lat2(rows[curr], 1);
+            flagmsg();
+            break;
+        case ALT_W:
+            lat2(rows[curr], 0);
+            flagmsg();
+            break;
+#endif
         case CTRL_R:
             curr = popundo(curr);
             if ((curr < ctop) || (curr >= (ctop+r)))
@@ -7401,6 +7464,9 @@ menu SubMenu1[] =
     { "crYpt", docrypt, "Code/decode" },
     { "Calc", calcall, "Evaluate the whole column" },
     { "tOtal", dosum, "Aggregate" },
+#if !defined(__unix) || defined(__DJGPP__)
+    { "code", docode, "Switch coding in the entire file" },
+#endif
     { "", (FUNC)0, "" }
 };
 
@@ -7455,8 +7521,13 @@ void subfunc1(void)
         "  Del/Home:  clear fstr         \t    Alt-I/D:  ins/remove field",
         "    Ctrl-G:  goto line          \t Ctrl/Alt-O:  count subs/field",
         "Ctrl/Alt-S:  replace/change     \t   C/A-Home:  go max/longest",
+#if !defined(__unix) || defined(__DJGPP__)
+        " Alt-C/X/Y:  calculate/fld/cols \t    C/A-End:  go min/shortest",
+        "Ctrl/Alt-W:  to/from Latin-2    \t Ctrl-Up/Dn:  shift screen",
+#else
         "     Alt-C:  calculate          \t    C/A-End:  go min/shortest",
         "   Alt-X/Y:  calc fld/cols      \t Ctrl-Up/Dn:  shift screen",
+#endif
         "Ctrl/Alt-R:  undo/redo (max 10) \t  A-T/A-Del:  undo line (max 1)"
     };
     int i;
