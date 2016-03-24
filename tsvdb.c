@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.80 2016/03/22 $
+ * $Id: tcsvdb.c,v 0.9.81 2016/03/24 $
  */
 
-#define VERSION "0.9.80"
+#define VERSION "0.9.81"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -187,7 +187,7 @@ static void EnableConsoleCloseButton()
 }
 #endif
 
-#if !defined(__unix) || defined(__DJGPP__)
+//#if !defined(__unix) || defined(__DJGPP__)
 void xlate(char *s, int x)
 {
     char c[4][9] = {{0xA0,0x82,0xA1,0xA2,0x94,0x8B,0xA3,0x81,0xFB},
@@ -248,7 +248,7 @@ void cpch(char *c)
       c[0] = c1[i];
   }
 }
-#endif
+//#endif
 
 
 bool is_leap_year(int year)
@@ -1880,7 +1880,7 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
             wrefresh(win);
             wrefresh(wedit);
             break;
-#if !defined(__unix) || defined(__DJGPP__)
+//#if !defined(__unix) || defined(__DJGPP__)
         case KEY_SUP:
             xlate(buf, 0);
             break;
@@ -1890,7 +1890,7 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
         case CTRL_X:
             cpch(bp);
             break;
-#endif
+//#endif
 /*#ifdef DJGPP*/
         case CTRL_Y:
             i = 0;
@@ -6676,7 +6676,7 @@ void modstru(void)
     }
 }
 
-#if !defined(__unix) || defined(__DJGPP__)
+//#if !defined(__unix) || defined(__DJGPP__)
 void lat2(char *c, int x)
 {
     int i, j;
@@ -6720,14 +6720,14 @@ void docode(void)
         return;
 
     j = (yesno("To Latin-2 ? (Y/N):") == 0) ? 0 : 1;
-    for (i=0; i<(reccnt-1); i++)
+    for (i=0; i<(reccnt); i++)
     {
         lat2(rows[i], j);
     }
     redraw();
     flagmsg();
 }
-#endif
+//#endif
 
 
 #ifdef NCURSES
@@ -7225,7 +7225,7 @@ void edit(void)
             findequal(TRUE);
             ctop = topset(curr, r);
             break;
-#if !defined(__unix) || defined(__DJGPP__)
+//#if !defined(__unix) || defined(__DJGPP__)
         case CTRL_W:
             lat2(rows[curr], 1);
             flagmsg();
@@ -7234,7 +7234,7 @@ void edit(void)
             lat2(rows[curr], 0);
             flagmsg();
             break;
-#endif
+//#endif
         case CTRL_R:
             curr = popundo(curr);
             if ((curr < ctop) || (curr >= (ctop+r)))
@@ -7464,9 +7464,9 @@ menu SubMenu1[] =
     { "crYpt", docrypt, "Code/decode" },
     { "Calc", calcall, "Evaluate the whole column" },
     { "tOtal", dosum, "Aggregate" },
-#if !defined(__unix) || defined(__DJGPP__)
+//#if !defined(__unix) || defined(__DJGPP__)
     { "code", docode, "Switch coding in the entire file" },
-#endif
+//#endif
     { "", (FUNC)0, "" }
 };
 
@@ -7521,13 +7521,13 @@ void subfunc1(void)
         "  Del/Home:  clear fstr         \t    Alt-I/D:  ins/remove field",
         "    Ctrl-G:  goto line          \t Ctrl/Alt-O:  count subs/field",
         "Ctrl/Alt-S:  replace/change     \t   C/A-Home:  go max/longest",
-#if !defined(__unix) || defined(__DJGPP__)
+//#if !defined(__unix) || defined(__DJGPP__)
         " Alt-C/X/Y:  calculate/fld/cols \t    C/A-End:  go min/shortest",
         "Ctrl/Alt-W:  to/from Latin-2    \t Ctrl-Up/Dn:  shift screen",
-#else
-        "     Alt-C:  calculate          \t    C/A-End:  go min/shortest",
-        "   Alt-X/Y:  calc fld/cols      \t Ctrl-Up/Dn:  shift screen",
-#endif
+//#else
+//        "     Alt-C:  calculate          \t    C/A-End:  go min/shortest",
+//        "   Alt-X/Y:  calc fld/cols      \t Ctrl-Up/Dn:  shift screen",
+//#endif
         "Ctrl/Alt-R:  undo/redo (max 10) \t  A-T/A-Del:  undo line (max 1)"
     };
     int i;
