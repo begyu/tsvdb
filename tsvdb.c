@@ -2991,11 +2991,12 @@ void statusln(void)
     sprintf(buf, "%5u/%u (%u/%u) ",
             (UI)curr+1, (UI)reccnt, (UI)field+1, (UI)cols+1);
     setcolor(wbody, STATUSCOLOR);
-    rmline(wstatus, 0);
-    touchwin(wstatus);
+    mvwaddstr(wstatus, 0, 0, padstr(" ", 20));
     mvwaddstr(wstatus, 0, 0, buf);
     mvwaddstr(wstatus, 1, 0, ">");
     statusmsg(rows[curr]);
+    touchwin(wstatus);
+    wrefresh(wstatus);
 }
 
 
