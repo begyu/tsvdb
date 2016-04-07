@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.81 2016/03/24 $
+ * $Id: tcsvdb.c,v 0.9.82 2016/04/07 $
  */
 
-#define VERSION "0.9.81"
+#define VERSION "0.9.82"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -958,6 +958,9 @@ static void mainmenu(menu *mp)
 
     while (!quit)
     {
+        rmline(wstatus, 0);
+        touchwin(wstatus);
+        wrefresh(wstatus);
         if (cur != old)
         {
             if (old != -1)
@@ -2980,12 +2983,16 @@ void displn(int y, int r)
     wrefresh(wbody);
 }
 
+#define UI unsigned int
 void statusln(void)
 {
     BUFDEF;
 
-    sprintf(buf, "%5u/%u (%u/%u) ", curr+1, reccnt, field+1, cols+1);
+    sprintf(buf, "%5u/%u (%u/%u) ",
+            (UI)curr+1, (UI)reccnt, (UI)field+1, (UI)cols+1);
     setcolor(wbody, STATUSCOLOR);
+    rmline(wstatus, 0);
+    touchwin(wstatus);
     mvwaddstr(wstatus, 0, 0, buf);
     mvwaddstr(wstatus, 1, 0, ">");
     statusmsg(rows[curr]);
@@ -6730,6 +6737,121 @@ void docode(void)
 //#endif
 
 
+void donum(void)
+{
+    register int i, j;
+    int k, seps, begl, init, step, endl;
+    char *fieldname[6];
+    char *fieldbuf[6];
+    char nums[6][9];
+    char *fields[MAXCOLS+1];
+    BUFDEF;
+
+    if (ro || safe) 
+        	return;
+
+    if ((i=yesno("Replace the column with sequence numbers? (Y/N):")) == 0)
+        	return;
+
+#ifdef __MINGW_VERSION
+    pause(1);
+#else
+    sleep(1);
+#endif
+    fieldname[0] = "Field:";
+    fieldname[1] = "Start:";
+    fieldname[2] = " Init:";
+    fieldname[3] = " Step:";
+    fieldname[4] = "  End:";
+    fieldname[5] = 0;
+    sprintf(buf, "%d", field+1);
+    strcpy(nums[0], buf);
+    sprintf(buf, "%d", curr+1);
+    strcpy(nums[1], buf);
+    sprintf(buf, "%d", 1);
+    strcpy(nums[2], buf);
+    strcpy(nums[3], buf);
+    sprintf(buf, "%d", reccnt);
+    strcpy(nums[4], buf);
+    for (i=0; i<5; i++)
+        	fieldbuf[i] = nums[i];
+    fieldbuf[5] = 0;
+    j = getstrings(fieldname, fieldbuf, 0, 9, NULL);
+    if (j == KEY_ESC)
+        	return;
+
+    i = atoi(fieldbuf[0]);
+    if (i < 1 || i > (cols+1))
+    {
+        putmsg("","Field number out of range!","");
+        return;
+    }
+    field = i - 1;
+    begl = atoi(fieldbuf[1]);
+    init = atoi(fieldbuf[2]);
+    step = atoi(fieldbuf[3]);
+    endl = atoi(fieldbuf[4]);
+    if (init < 0)
+        init = 0;
+    if (begl < 1)
+        begl = 1;
+    if (begl >= reccnt)
+        begl = reccnt-1;
+    if (endl <= begl)
+        endl = begl+1;
+    if (endl > reccnt)
+        endl = reccnt;
+    if (step > (endl-begl))
+        step = (endl-begl);
+    begl--;
+    k = init;
+    for (i=begl; i<endl; i++)
+    {
+        for (j=0; j<MAXCOLS; j++)
+            	fields[j] = NULL;
+        strcpy(buf, rows[i]);
+        j = strlen(buf);
+        if (buf[j-1] == '\r' || buf[j] == '\n')
+           	buf[j-1] = csep;
+        buf[j] = '\0';
+        for (seps=0; j>0; j--)
+        {
+            if (buf[j] == csep)
+               	seps++;
+        }
+        if (seps < (cols+1))
+        {
+            for (j=seps; j<(cols+1); j++)
+            {
+                strcat(buf, ssep);
+                strcat(buf, " ");
+            }
+        }
+        strsplit(buf, fields, ssep);
+        sprintf(fields[field], "%d", k);
+        strcpy(buf, fields[0]);
+        for (j=1; j<(cols+1); j++)
+        {
+            if (fields[j][0] != 0)
+            {
+                strcat(buf, ssep);
+                strcat(buf, fields[j]);
+            }
+        }
+        strcat(buf, "\n");
+        j = strlen(buf);
+        if (rows[i] != NULL)
+            	free(rows[i]);
+        rows[i] = (char *)malloc(j+1);
+        strcpy(rows[i], buf);
+        k += step;
+    }
+    modified = TRUE;
+    redraw();
+    flagmsg();
+}
+
+
 #ifdef NCURSES
 #define ALT_INS KEY_IL
 #define CTL_INS KEY_SIC
@@ -7467,6 +7589,7 @@ menu SubMenu1[] =
 //#if !defined(__unix) || defined(__DJGPP__)
     { "code", docode, "Switch coding in the entire file" },
 //#endif
+    { "sequence", donum, "Insert integer sequence numbers" },
     { "", (FUNC)0, "" }
 };
 
