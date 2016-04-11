@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.82 2016/04/07 $
+ * $Id: tcsvdb.c,v 0.9.83 2016/04/11 $
  */
 
-#define VERSION "0.9.82"
+#define VERSION "0.9.83"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -7616,6 +7616,7 @@ void sub0(void)
 
 void sub1(void)
 {
+    SubMenu1[19].func = ro ? (FUNC)0 : donum;
     domenu(SubMenu1);
 }
 
