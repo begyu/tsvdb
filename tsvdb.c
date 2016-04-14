@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.83 2016/04/11 $
+ * $Id: tcsvdb.c,v 0.9.84 2016/04/14 $
  */
 
-#define VERSION "0.9.83"
+#define VERSION "0.9.84"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -1632,7 +1632,7 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
         case 395: //0x8B='‹'
         case 394: //0x8A='Š'
         case 507: //0xFB='ű'
-        case 491: //0xEB='ë'
+        // case 491: //0xEB='ë'  collision with A-UP!
             goto ins_char;
             break;
 
@@ -1737,6 +1737,16 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
                 touchwin(win);
                 wrefresh(win);
             }
+            break;
+        case ALT_UP:
+        case ALT_DOWN:
+        case ALT_PGUP:
+        case ALT_PGDN:
+        case ALT_HOME:
+        case ALT_END:
+        case ALT_LEFT:
+        case ALT_RIGHT:
+            stop = TRUE;
             break;
 #ifdef PDCURSES
         case KEY_MOUSE:
@@ -2054,6 +2064,7 @@ int getstrings(char *desc[], char *buf[], int field, int length, int lim[])
     WINDOW *winput;
     int oldy, oldx, maxy, maxx, nlines, ncols, i, n, l, mmax = 0;
     int c = 0;
+    int cx, cy;
     bool stop = FALSE;
     bool fsel = FALSE;
 
@@ -2095,10 +2106,15 @@ int getstrings(char *desc[], char *buf[], int field, int length, int lim[])
     }
 
     nlines = n + 2; ncols = mmax + length + 4;
-    winput = mvwinputbox(wbody, (maxy - nlines) / 2, (maxx - ncols) / 2, 
-        nlines, ncols);
+    cx = (maxx - ncols) / 2;
+    cy = (maxy - nlines) / 2;
 
 restart:
+    touchwin(wbody);
+    wrefresh(wbody);
+    winput = mvwinputbox(wbody, cy, cx, nlines, ncols);
+
+repaint:
     for (i = 0; i < n; i++)
     {
         setcolor(winput, INPUTBOXCOLOR);
@@ -2145,10 +2161,40 @@ restart:
             if (fsel == FALSE)
                 stop = TRUE;
             break;
+        case ALT_UP:
+        case ALT_PGUP:
+            if (cy > 1)
+                cy--;
+            delwin(winput);
+            goto restart;
+        case ALT_DOWN:
+        case ALT_PGDN:
+            if (cy < (maxy-nlines))
+                cy++;
+            delwin(winput);
+            goto restart;
+        case ALT_LEFT:
+            if (cx > 0)
+                cx--;
+            delwin(winput);
+            goto restart;
+        case ALT_RIGHT:
+            if (cx < (maxx-ncols))
+                cx++;
+            delwin(winput);
+            goto restart;
+        case ALT_HOME:
+            cx = 0;
+            delwin(winput);
+            goto restart;
+        case ALT_END:
+            cx = maxx - ncols;
+            delwin(winput);
+            goto restart;
         case ALT_P:
             changecolor();
             colorbox(winput, INPUTBOXCOLOR, 1);
-            goto restart;
+            goto repaint;
         }
     }
 
@@ -7681,8 +7727,7 @@ void edithelp(void)
         "  PgUp/PgDn:\tsave & prev/next rec",
         "  Ctl-Up/Dn:\tscroll background",
         "   Del/Bksp:\tdelete char/backward",
-        "   Ctrl-End:\tdelete from cursor",
-        "     Ctrl-W:\tdelete word back",
+        " Ctrl-End/W:\tdel from cursor/word back",
         " Ctl-arrows:\tskip word",
         "   Ctrl-C/V:\tcopy/paste",
         "     Ctrl-B:\tpaste fstr",
@@ -7695,7 +7740,8 @@ void edithelp(void)
         "      Alt-D:\tchange dot & colon",
         "Ctl-O/P/R/T:\to^ / O^ / u^ / U^",
         "   Ctrl-X/Y:\taccent/punctuation",
-        "C-PgUp/PgDn:\tinc/dec num,dat (S+/-)",
+        "C-PgUp/PgDn:\tinc/dec num, dat (S+/-)",
+        " Alt-arrows:\tmove inputbox",
         "        Esc:\tundo/cancel",
         "      Alt-P:\tchange colorset",
         "      Enter:\tmodify record"
@@ -7707,7 +7753,7 @@ void edithelp(void)
     int j=20;
 #endif
     
-    wmsg = mvwinputbox(wbody, (bodylen()-j)/4, (bodywidth()-40)/2, j+2, 40);
+    wmsg = mvwinputbox(wbody, (bodylen()-j)/4, (bodywidth()-42)/2, j+2, 42);
 #ifndef __MINGW_VERSION
     wborder(wmsg, '|', '|', '-', '-', '+', '+', '+', '+');
 #endif
