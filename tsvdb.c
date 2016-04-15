@@ -1,5 +1,5 @@
 /*
- * $Id: tcsvdb.c,v 0.9.84 2016/04/14 $
+ * $Id: tcsvdb.c,v 0.9.84 2016/04/15 $
  */
 
 #define VERSION "0.9.84"
@@ -1632,7 +1632,9 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
         case 395: //0x8B='‹'
         case 394: //0x8A='Š'
         case 507: //0xFB='ű'
-        // case 491: //0xEB='ë'  collision with A-UP!
+#ifdef __MINGW_VERSION
+        case 491: //0xEB='ë'  //collision with A-DN!
+#endif
             goto ins_char;
             break;
 
@@ -1739,7 +1741,9 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
             }
             break;
         case ALT_UP:
-        case ALT_DOWN:
+#ifndef __MINGW_VERSION
+        case ALT_DOWN: 
+#endif
         case ALT_PGUP:
         case ALT_PGDN:
         case ALT_HOME:
@@ -7724,7 +7728,7 @@ void edithelp(void)
     {
         "   Home/End:\tgo to 1'st char/EOL",
         "    Up/Down:\tprevious/next field",
-        "  PgUp/PgDn:\tsave & prev/next rec",
+        "  PgUp/PgDn:\tsave & prev/next record",
         "  Ctl-Up/Dn:\tscroll background",
         "   Del/Bksp:\tdelete char/backward",
         " Ctrl-End/W:\tdel from cursor/word back",
@@ -7741,7 +7745,11 @@ void edithelp(void)
         "Ctl-O/P/R/T:\to^ / O^ / u^ / U^",
         "   Ctrl-X/Y:\taccent/punctuation",
         "C-PgUp/PgDn:\tinc/dec num, dat (S+/-)",
+#ifdef __MINGW_VERSION
+        " Alt-arrows:\tmove inputbox (A-PgDn)",
+#else
         " Alt-arrows:\tmove inputbox",
+#endif
         "        Esc:\tundo/cancel",
         "      Alt-P:\tchange colorset",
         "      Enter:\tmodify record"
