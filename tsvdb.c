@@ -7766,6 +7766,9 @@ void subfunc1(void)
     int i;
     int j=17;
     
+    if (COLS <72)
+        	return;
+
     wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-72)/2, j+2, 72);
 #ifndef __MINGW_VERSION
     wborder(wmsg, '|', '|', '-', '-', '+', '+', '+', '+');
@@ -7904,6 +7907,9 @@ void reghelp(void)
     int i;
     int j=18;
     
+    if (COLS <65)
+        	return;
+
     wmsg = mvwinputbox(wbody, (bodylen()-j)/4, (bodywidth()-65)/2, j+2, 65);
 #ifndef __MINGW_VERSION
     wborder(wmsg, '|', '|', '-', '-', '+', '+', '+', '+');
