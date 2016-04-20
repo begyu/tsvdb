@@ -2966,7 +2966,7 @@ void displn(int y, int r)
             {
                   strcat(s[i], " ");
             }
-            p = strtok( 0, delim);
+            p = strtok(0, delim);
         }
         else
         {
@@ -3418,8 +3418,8 @@ int loadfile(char *fname)
         {
             i = 0;
             k = 0;
-            p = strtok(buf, ssep );
-            while(p != NULL )
+            p = strtok(buf, ssep);
+            while(p != NULL)
             {
                 strcpy(stru[i], p);
                 j = strlen(stru[i]);
@@ -3435,7 +3435,7 @@ int loadfile(char *fname)
                 i++;
                 if (i >= MAXCOLS)
                    break;
-                p = strtok(NULL, ssep );
+                p = strtok(NULL, ssep);
             }
             cols = i-1;
             stru[cols][len[cols]-1] = ' ';
@@ -3822,8 +3822,8 @@ int create(char *fn)
             strcpy(head, buf);
             i = 0;
             k = 0;
-            p = strtok(buf, ssep );
-            while(p != NULL )
+            p = strtok(buf, ssep);
+            while(p != NULL)
             {
                 strcpy(stru[i], p);
                 j = strlen(stru[i]);
@@ -3839,7 +3839,7 @@ int create(char *fn)
                 i++;
                 if (i >= MAXCOLS)
                    break;
-                p = strtok(NULL, ssep );
+                p = strtok(NULL, ssep);
             }
             cols = i-1;
             //head[beg[cols]+len[cols]] = '\0';
@@ -4176,7 +4176,7 @@ loop:
     {
         flen = MAX(len[i], flen);
     }
-    p = strtok(buf, ssep );
+    p = strtok(buf, ssep);
     for (i=0; i<=cols; i++)
     {
         if (p != NULL)
@@ -4195,7 +4195,7 @@ loop:
             for (; j<flen; j++)
                s[i][j] = ' ';
             s[i][flen] = '\0';
-            p = strtok( 0, ssep );
+            p = strtok(0, ssep);
         }
         else
         {
@@ -5675,13 +5675,13 @@ void reorder(int y, bool left)
     }
     i = 0;
     p = strtok(buf, ssep);
-    while(p != NULL )
+    while(p != NULL)
     {
         strcpy(tmpstr[i], p);
         i++;
         if (i > cols)
            break;
-        p = strtok(NULL, ssep );
+        p = strtok(NULL, ssep);
     }
     for (i=0; i<=cols; i++)
     {
@@ -5752,7 +5752,7 @@ void reordall(bool left)
     i = 0;
     k = 0;
     p = strtok(buf, ssep);
-    while(p != NULL )
+    while(p != NULL)
     {
         strcpy(stru[i], p);
         j = strlen(stru[i]);
@@ -6038,14 +6038,14 @@ void dosum(void)
                 buf[j] = ' ';
             }
         }
-        p = strtok(buf, ssep );
+        p = strtok(buf, ssep);
         for (j=0; j<=cols; j++)
         {
             if (p != NULL)
             {
                 strcpy(s[j], p);
                 s[j][len[j]] = '\0';
-                p = strtok( 0, ssep );
+                p = strtok(0, ssep);
             }
             else
                 strcpy(s[j], " ");
@@ -6515,13 +6515,13 @@ void gominmax(bool ismax)
                 buf[j] = ' ';
             }
         }
-        p = strtok(buf, ssep );
+        p = strtok(buf, ssep);
         for (j=0; j<=field; j++)
         {
             if (p != NULL)
             {
                 strcpy(s, p);
-                p = strtok( 0, ssep );
+                p = strtok(0, ssep);
             }
             else
                 strcpy(s, " ");
