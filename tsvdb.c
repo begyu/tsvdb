@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.84 2016/04/15 $
+ * $Id: tcsvdb.c,v 0.9.85 2016/04/20 $
  */
 
-#define VERSION "0.9.84"
+#define VERSION "0.9.85"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -491,6 +491,7 @@ static bool insert = FALSE;
 static bool colorset = FALSE;
 static bool inside = FALSE;
 static long int filesize = 0L;
+static int origy, origx;
 
 #define TABCSEP '\t'
 #define TABSSEP "\t"
@@ -1448,6 +1449,8 @@ void init()
     incurses = TRUE;
     initcolor();
 
+    origy = LINES;
+    origx = COLS;
     wtitl = subwin(stdscr, th, bw, 0, 0);
     wmain = subwin(stdscr, mh, bw, th, 0);
     wbody = subwin(stdscr, bh, bw, th + mh, 0);
@@ -7568,6 +7571,59 @@ void tsv_select(void)
     }
 }
 
+void resize(bool dis)
+{
+    int x, y;
+
+    if (dis)
+    {
+        x = (COLS < (2*origx)) ? COLS+1 : COLS;
+        y = (LINES < (2*origy)) ? LINES+1 : LINES;
+    }
+    else
+    {
+        x = (COLS > (int)(.6*origx)) ? COLS-1 : COLS;
+        y = (LINES > 25) ? LINES-1 : LINES;
+    }
+    resize_term(y, x);
+    touchwin(stdscr);
+    wrefresh(stdscr);
+    delwin(wtitl);
+    delwin(wmain);
+    delwin(wbody);
+    delwin(wstatus);
+    wtitl = subwin(stdscr, th, bw, 0, 0);
+    wmain = subwin(stdscr, mh, bw, th, 0);
+    wbody = subwin(stdscr, bh, bw, th + mh, 0);
+    wstatus = subwin(stdscr, sh, bw, th + mh + bh, 0);
+    colorbox(wtitl, TITLECOLOR, 0);
+    colorbox(wmain, MAINMENUCOLOR, 0);
+    colorbox(wbody, BODYCOLOR, 0);
+    colorbox(wstatus, STATUSCOLOR, 0);
+    cbreak();
+    noecho();
+    curs_set(0);
+    nodelay(wbody, TRUE);
+    halfdelay(10);
+    keypad(wbody, TRUE);
+    scrollok(wbody, TRUE);
+    leaveok(stdscr, TRUE);
+    leaveok(wtitl, TRUE);
+    leaveok(wmain, TRUE);
+    leaveok(wstatus, TRUE);
+}
+
+void incw(void)
+{
+    resize(TRUE);
+}
+
+void decw(void)
+{
+    resize(FALSE);
+}
+
+
 void bye(void)
 {
     quit = FALSE;
@@ -7653,6 +7709,8 @@ menu SubMenu2[] =
     { "Options", opthelp, "Command line options" },
     { "Limits", limits, "Maximums & conditions" },
     { "Colors", changecolor, "Change color set" },
+    { "+", incw, "Enlarge window" },
+    { "-", decw, "Decrease window" },
     { "About", subfunc2, "Info" },
     { "", (FUNC)0, "" }
 };
