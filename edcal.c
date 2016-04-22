@@ -1,12 +1,40 @@
 /***ED***/
 /* frox25.no-ip.org/~mtve */
-//#include <curses.h>
 #include <signal.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <errno.h>
 #include <ctype.h>
+#include <sys/stat.h>
+
+#ifdef __MINGV_VERSION
+    #include <io.h>
+#endif
+
+#ifdef XCURSES
+    #include <xcurses.h>
+#else
+    #include <curses.h>
+#endif
+
+#ifndef S_IREAD
+#define _S_IREAD 0x0100
+#define S_IREAD _S_IREAD
+#endif
+#ifndef S_IWRITE
+#define _S_IWRITE 0x0080
+#define S_IWRITE _S_IWRITE
+#endif
+#ifndef S_IRUSR
+#define S_IRUSR  _S_IRUSR
+#define _S_IRUSR _S_IREAD
+#endif
+#ifndef S_IWUSR
+#define _S_IWUSR _S_IWRITE
+#define S_IWUSR  _S_IWUSR
+#endif
+
 
 #ifdef XCURSES
 #define KEY_ESC  0x1b   /* Escape */
@@ -479,7 +507,7 @@ int     save(char *name, int pos, int size)
                 return error("$write");
         }
         if (fclose(f))
-                return error("$clRse");
+                return error("$close");
         (void)chmod(name, S_IRUSR);
         return 1;
 }
