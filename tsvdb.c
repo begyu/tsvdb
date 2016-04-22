@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.85 2016/04/20 $
+ * $Id: tcsvdb.c,v 0.9.86 2016/04/22 $
  */
 
-#define VERSION "0.9.85"
+#define VERSION "0.9.86"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -25,6 +25,7 @@
 #include <sys/stat.h>
 /*#include <fcntl.h>*/
 #include <dirent.h>
+#include <math.h>
 
 #ifndef MSDOS
   #include <libgen.h>
@@ -96,7 +97,12 @@ int putmsg(char *, char *, char *);
 
 /****REGEXP****/
 /* http://cesanta.com */
-#include "slre.c"
+static int is_metacharacter(const unsigned char *s)
+{
+  static const char *metacharacters = "^$().[]*+?|\\Ssdbfnrtv";
+  return strchr(metacharacters, *s) != NULL;
+}
+#include "slre.h"
 
 #define RXCINS ("(?i)")
 #define RXCLEN 4
@@ -363,12 +369,13 @@ char *jog(char *s, int i)
 
 
 // /*ED*/
-// extern int ed(char *);
+extern int ed(char *);
 // 
 // /*CALC*/
-// extern double calcExpression(char *);
-// extern bool calcerr;
-#include "edcal.c"
+extern double calcExpression(char *);
+extern void calcexp(char *);
+extern bool calcerr;
+//#include "edcal.c"
 
 
 #ifdef A_COLOR
@@ -456,6 +463,7 @@ static char fnam[MAXSTRLEN] = "";
 static char datfname[MAXSTRLEN] = "";
 static char fstr[MAXSTRLEN] = "";
 static char regstr[MAXFLEN] = "(?i)";
+static char *ync[] = {"Yes", "No", "Cancel", "", ""};
 static char fchr = '\0';
 static char head[MAXSTRLEN] = "";
 static char clp[MAXSTRLEN] = "";
@@ -533,6 +541,8 @@ static int undelpos = 0;
 
 void pushundo(int y)
 {
+    int i;
+
     undoptr++;
     if (undoptr > MAXUNDO)
     {
@@ -3617,6 +3627,146 @@ int yesno(char *msg)
     return (i == 'Y' ? 1 : 0);
 }
 
+
+#define BMAX 4
+int selbox(char *msg, char **butts, int b)
+{
+    WINDOW *wdmsg;
+    WINDOW *wb[BMAX] = {NULL, NULL, NULL, NULL};
+    int bpos[BMAX+1] = {0, 0, 0, 0, 0};
+    int blen[BMAX+1] = {0, 0, 0, 0, 0};
+    int i, j, k;
+    int c, x, y;
+    int bmax;
+    bool quit = FALSE;
+
+    j = 0;
+    for (i=0; i<BMAX; i++)
+    {
+         blen[i+1] = strlen(butts[i])+4;
+         j += blen[i+1];
+    }
+    if (blen[1] == 2)
+        	return 0;
+    i = strlen(msg)+4;
+    if (i < j)
+        	i = j;
+    x = (bodywidth()-i)/2;
+    y = (bodylen()-5)/3;
+    wdmsg = mvwinputbox(wbody, y, x, 6, i);
+    mvwaddstr(wdmsg, 1, 2, msg);
+    wrefresh(wdmsg);
+    bmax = 0;
+    for (i=0; i<=BMAX; i++)
+    {
+        if (butts[i][0] != 0)
+        {
+            k = 0;
+            for (j=i; j>0; j--)
+                	k += blen[j]+2;
+            bpos[i+1] = k+2;
+            wb[i] = mvwinputbox(wdmsg, 2, bpos[i+1], 3, blen[i+1]);
+            bmax++;
+        }
+    }
+    while (1)
+    {
+        for (i=0; i<bmax; i++)
+        {
+            setcolor(wb[i], MAINMENUCOLOR);
+            mvwaddstr(wb[i], 1, 2, butts[i]);
+            touchwin(wb[i]);
+            wrefresh(wb[i]);
+        }
+        setcolor(wb[b-1], MAINMENUREVCOLOR);
+        mvwaddstr(wb[b-1], 1, 2, butts[b-1]);
+        setcolor(wb[b-1], MAINMENUCOLOR);
+        touchwin(wb[b-1]);
+        wrefresh(wb[b-1]);
+        if (quit)
+        {
+#ifdef __MINGW_VERSION
+            pause(1);
+#else
+            sleep(1);
+#endif
+            break;
+        }
+        switch (c = (key != ERR ? key : waitforkey()))
+        {
+        case '\n':
+            quit = TRUE;
+            break;
+        case KEY_LEFT:
+            b = b > 1 ? b-1 : bmax;
+            break;
+        case KEY_RIGHT:
+            b = b < bmax ? b+1 : 1;
+            break;
+        case KEY_ESC:
+            b = 0;
+            quit = TRUE;
+            break;
+        case KEY_HOME:
+            b = 1;
+            break;
+        case KEY_END:
+            b = bmax;
+            break;
+
+#ifdef PDCURSES
+        case KEY_MOUSE:
+            getmouse();
+            button = 0;
+            request_mouse_pos();
+            if (BUTTON_CHANGED(1))
+                button = 1;
+            else if (BUTTON_CHANGED(2))
+                button = 2;
+            else if (BUTTON_CHANGED(3))
+                button = 3;
+            if (((BUTTON_STATUS(button) & BUTTON_ACTION_MASK) == BUTTON_PRESSED)
+            || ((BUTTON_STATUS(button) & BUTTON_ACTION_MASK) == BUTTON_CLICKED))
+            {
+                j = y+5;
+                if (MOUSE_Y_POS == j)
+                {
+                    for (i=1; i<=bmax; i++)
+                    {
+                        k = x+bpos[i];
+                        if ((MOUSE_X_POS >= k) && (MOUSE_X_POS <= (k+blen[i])))
+                        {
+                            b = i;
+                            quit = TRUE;
+                            break;
+                        }
+                    }
+                }
+            }
+            break;
+#endif
+
+        default:
+            if (isalpha(c))
+            {
+                c = toupper(c);
+                for (i=0; i<bmax; i++)
+                    if (c == butts[i][0])
+                    {
+                        b = i+1;
+                        quit = TRUE;
+                    }
+            }
+        }
+    }
+    for (i=0; i<bmax; i++)
+        	delwin(wb[i]);
+    delwin(wdmsg);
+    touchwin(wbody);
+    wrefresh(wbody);
+    return b;
+}
+
 #ifndef S_IREAD
 #define _S_IREAD 0x0100
 #define S_IREAD _S_IREAD
@@ -3650,7 +3800,7 @@ int savefile(char *fname, int force)
         fclose(fp);
         if (strcmp(fname, datfname) != 0)
         {
-           if (yesno("File exists! Overwrite it? (Y/N):") == 0)
+           if (selbox("File exists! Overwrite it?", ync, 2) != 1)
               return -1;
         }
     }
@@ -4632,7 +4782,8 @@ void purge(int y)
         yesno("First record, edit it!");
         return;
     }
-    if ((i=yesno("Delete record! Are You sure? (Y/N):")) == 0)
+    i = selbox("Delete record! Are You sure?", ync, 2);
+    if (i != 1)
         return;
     strcpy(undel, rows[y]);
     undelpos = y;
@@ -5479,7 +5630,8 @@ void evalall()
     if (ro)
         return;
 
-    if ((i=yesno("Evaluate whole column! Are You sure? (Y/N):")) == 0)
+    i = selbox("Evaluate whole column! Are You sure?", ync, 2);
+    if (i != 1)
         return;
 
     i = curr;
@@ -5724,7 +5876,8 @@ void reordall(bool left)
     if (ro || safe)
         return;
 
-    if (yesno("Reorder all fields? (Y/N):") == 0)
+    i = selbox("Reorder all fields?", ync, 1);
+    if (i != 1)
         return;
 
     msg(WSTR);
@@ -6351,7 +6504,8 @@ void delfield(void)
 
     if (cols > 0)
     {
-        if ((i=yesno("Delete field! Are You sure? (Y/N):")) == 0)
+        i = selbox("Delete field! Are You sure?", ync, 2);
+        if (i != 1)
             return;
         l = len[field];
         i = beg[field];
@@ -6653,7 +6807,8 @@ void modstru(void)
     if (ro || safe || (strlen(head) < 9))
         return;
 
-    if (yesno("Modify structure? (Y/N):") == 0)
+    i = selbox("Modify structure?", ync, 2);
+    if (i != 1)
         return;
 
     for (i=0; i<=cols; i++)
@@ -6775,12 +6930,13 @@ void lat2(char *c, int x)
 
 void docode(void)
 {
+    char *b[] = {"From Latin-2", "To Latin-2", "", "", ""};
     int i, j;
 
     if (ro || safe) 
         return;
 
-    j = (yesno("To Latin-2 ? (Y/N):") == 0) ? 0 : 1;
+    j = selbox("Toggle encoding", b, 1) - 1;
     for (i=0; i<(reccnt); i++)
     {
         lat2(rows[i], j);
@@ -7493,11 +7649,13 @@ void DoAppend(void)
 
 void txted(void)
 {
+    int i;
     BUFDEF;
 
     if (!ro && !safe)
     {
-        if ((yesno("Directly editing! Are You sure? (Y/N):")) == 0)
+        i = selbox("Directly editing! Are You sure?", ync, 1);
+        if (i != 1)
             return;
         if (modified == TRUE)
             if (savefile(datfname, 0) != 0)
@@ -7571,6 +7729,7 @@ void tsv_select(void)
     }
 }
 
+#ifdef __MINGW_VERSION
 void resize(bool dis)
 {
     int x, y;
@@ -7622,19 +7781,27 @@ void decw(void)
 {
     resize(FALSE);
 }
-
+#endif
 
 void bye(void)
 {
+    int i;
+    char *p;
+
     quit = FALSE;
     if (modified)
     {
-        if (yesno("Database changed! Leave it? (Y/N):") != 0)
+        i = selbox("Database changed! Leave it?", ync, 2);
+        if (i == 1)
         {
             DoExit();
             return;
         }
-        if (yesno("Save file? (Y/N):") == 0)
+        p = ync[2];
+        ync[2] = "";
+        i = selbox("Save file?:", ync, 1);
+        ync[2] = p;
+        if (i != 1)
             return;
         if (savefile(datfname, 1) != 0)
             return;
@@ -7709,8 +7876,10 @@ menu SubMenu2[] =
     { "Options", opthelp, "Command line options" },
     { "Limits", limits, "Maximums & conditions" },
     { "Colors", changecolor, "Change color set" },
+#ifdef __MINGW_VERSION
     { "+", incw, "Enlarge window" },
     { "-", decw, "Decrease window" },
+#endif
     { "About", subfunc2, "Info" },
     { "", (FUNC)0, "" }
 };
@@ -7766,9 +7935,10 @@ void subfunc1(void)
     int i;
     int j=17;
     
+#ifdef __MINGW_VERSION
     if (COLS <72)
         	return;
-
+#endif
     wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-72)/2, j+2, 72);
 #ifndef __MINGW_VERSION
     wborder(wmsg, '|', '|', '-', '-', '+', '+', '+', '+');
@@ -7907,9 +8077,10 @@ void reghelp(void)
     int i;
     int j=18;
     
+#ifdef __MINGW_VERSION
     if (COLS <65)
         	return;
-
+#endif
     wmsg = mvwinputbox(wbody, (bodylen()-j)/4, (bodywidth()-65)/2, j+2, 65);
 #ifndef __MINGW_VERSION
     wborder(wmsg, '|', '|', '-', '-', '+', '+', '+', '+');
