@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.86 2016/04/22 $
+ * $Id: tcsvdb.c,v 0.9.87 2016/04/26 $
  */
 
-#define VERSION "0.9.86"
+#define VERSION "0.9.87"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -7062,6 +7062,65 @@ void donum(void)
 }
 
 
+#ifdef __MINGW_VERSION
+void resize(int dx, int dy)
+{
+    int x, y;
+
+    if (dx > 0)
+        x = (COLS < (2*origx)) ? COLS+dx : COLS;
+    else
+        x = (COLS > (int)(.6*origx)) ? COLS+dx : COLS;
+    if (dy > 0)
+        y = (LINES < (2*origy)) ? LINES+dy : LINES;
+    else
+        y = (LINES > 25) ? LINES+dy : LINES;
+
+    delwin(wtitl);
+    delwin(wmain);
+    delwin(wbody);
+    delwin(wstatus);
+    endwin();
+    initscr();
+    initcolor();
+    resize_term(y, x);
+    LINES = y;
+    COLS = x;
+    touchwin(stdscr);
+    wrefresh(stdscr);
+    wtitl = subwin(stdscr, th, bw, 0, 0);
+    wmain = subwin(stdscr, mh, bw, th, 0);
+    wbody = subwin(stdscr, bh, bw, th + mh, 0);
+    wstatus = subwin(stdscr, sh, bw, th + mh + bh, 0);
+    colorbox(wtitl, TITLECOLOR, 0);
+    colorbox(wmain, MAINMENUCOLOR, 0);
+    colorbox(wbody, BODYCOLOR, 0);
+    colorbox(wstatus, STATUSCOLOR, 0);
+    cbreak();
+    noecho();
+    nodelay(wbody, TRUE);
+    halfdelay(10);
+    keypad(wbody, TRUE);
+    scrollok(wbody, TRUE);
+    leaveok(stdscr, TRUE);
+    leaveok(wtitl, TRUE);
+    leaveok(wmain, TRUE);
+    leaveok(wstatus, TRUE);
+    curs_set(1);
+}
+
+void incw(void)
+{
+    resize(1, 1);
+}
+
+void decw(void)
+{
+    resize(-1, -1);
+}
+#endif
+
+
 #ifdef NCURSES
 #define ALT_INS KEY_IL
 #define CTL_INS KEY_SIC
@@ -7577,6 +7636,22 @@ void edit(void)
             if ((curr < ctop) || (curr >= (ctop+r)))
                 	ctop = topset(curr, r);
             break;
+        case KEY_SUP:
+            resize(0, -1);
+            r = bodylen()-1;
+            b = reccnt-bodylen();
+            break;
+        case KEY_SDOWN:
+            resize(0, 1);
+            r = bodylen()-1;
+            b = reccnt-bodylen();
+            break;
+        case SHF_PADPLUS:
+            resize(1, 0);
+            break;
+        case SHF_PADMINUS:
+            resize(-1, 0);
+            break;
         default:
             if ((c == 0x81) || (c == 0xEB) || (c == 0x1FB))
                c = 0x55; /* U */
@@ -7596,6 +7671,7 @@ void edit(void)
     wrefresh(wbody);
     werase(wstatus);
 }
+
 
 void DoOpen(void)
 {
@@ -7728,60 +7804,6 @@ void tsv_select(void)
         curr = 0;
     }
 }
-
-#ifdef __MINGW_VERSION
-void resize(bool dis)
-{
-    int x, y;
-
-    if (dis)
-    {
-        x = (COLS < (2*origx)) ? COLS+1 : COLS;
-        y = (LINES < (2*origy)) ? LINES+1 : LINES;
-    }
-    else
-    {
-        x = (COLS > (int)(.6*origx)) ? COLS-1 : COLS;
-        y = (LINES > 25) ? LINES-1 : LINES;
-    }
-    resize_term(y, x);
-    touchwin(stdscr);
-    wrefresh(stdscr);
-    delwin(wtitl);
-    delwin(wmain);
-    delwin(wbody);
-    delwin(wstatus);
-    wtitl = subwin(stdscr, th, bw, 0, 0);
-    wmain = subwin(stdscr, mh, bw, th, 0);
-    wbody = subwin(stdscr, bh, bw, th + mh, 0);
-    wstatus = subwin(stdscr, sh, bw, th + mh + bh, 0);
-    colorbox(wtitl, TITLECOLOR, 0);
-    colorbox(wmain, MAINMENUCOLOR, 0);
-    colorbox(wbody, BODYCOLOR, 0);
-    colorbox(wstatus, STATUSCOLOR, 0);
-    cbreak();
-    noecho();
-    curs_set(0);
-    nodelay(wbody, TRUE);
-    halfdelay(10);
-    keypad(wbody, TRUE);
-    scrollok(wbody, TRUE);
-    leaveok(stdscr, TRUE);
-    leaveok(wtitl, TRUE);
-    leaveok(wmain, TRUE);
-    leaveok(wstatus, TRUE);
-}
-
-void incw(void)
-{
-    resize(TRUE);
-}
-
-void decw(void)
-{
-    resize(FALSE);
-}
-#endif
 
 void bye(void)
 {
@@ -7923,17 +7945,17 @@ void subfunc1(void)
         "  Del/Home:  clear fstr         \t    Alt-I/D:  ins/remove field",
         "    Ctrl-G:  goto line          \t Ctrl/Alt-O:  count subs/field",
         "Ctrl/Alt-S:  replace/change     \t   C/A-Home:  go max/longest",
-//#if !defined(__unix) || defined(__DJGPP__)
         " Alt-C/X/Y:  calculate/fld/cols \t    C/A-End:  go min/shortest",
         "Ctrl/Alt-W:  to/from Latin-2    \t Ctrl-Up/Dn:  shift screen",
-//#else
-//        "     Alt-C:  calculate          \t    C/A-End:  go min/shortest",
-//        "   Alt-X/Y:  calc fld/cols      \t Ctrl-Up/Dn:  shift screen",
-//#endif
+#ifdef __MINGW_VERSION
+        "Ctrl/Alt-R:  undo/redo (max 10) \t Shft-Up/Dn:  inc/dec scr lines",
+        " A-T/A-Del:  undo line (max 1)  \t  Shft- +/-:  inc/dec scr width"
+#else
         "Ctrl/Alt-R:  undo/redo (max 10) \t  A-T/A-Del:  undo line (max 1)"
+#endif
     };
     int i;
-    int j=17;
+    int j=18;
     
 #ifdef __MINGW_VERSION
     if (COLS <72)
