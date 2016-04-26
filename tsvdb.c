@@ -7970,6 +7970,8 @@ void subfunc1(void)
 #ifdef __MINGW_VERSION
     if (COLS <72)
         	return;
++#else
++    j--;
 #endif
     wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-72)/2, j+2, 72);
 #ifndef __MINGW_VERSION
