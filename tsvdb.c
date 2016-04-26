@@ -7106,6 +7106,16 @@ void resize(int dx, int dy)
     leaveok(wtitl, TRUE);
     leaveok(wmain, TRUE);
     leaveok(wstatus, TRUE);
+#ifdef PDCURSES
+    mouse_set(ALL_MOUSE_EVENTS);
+    PDC_save_key_modifiers(TRUE);
+    PDC_return_key_modifiers(TRUE);
+#endif
+    newterm(getenv("TERM"), stderr, stdin);
+    keypad(stdscr,  TRUE);
+    refresh();
+    if (getcwd(wdname, MAXSTRLEN) == NULL)
+        strcpy(wdname, ".");
     curs_set(1);
 }
 
