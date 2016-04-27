@@ -7646,6 +7646,7 @@ void edit(void)
             if ((curr < ctop) || (curr >= (ctop+r)))
                 	ctop = topset(curr, r);
             break;
+#ifdef __MINGW_VERSION
         case KEY_SUP:
             resize(0, -1);
             r = bodylen()-1;
@@ -7662,6 +7663,7 @@ void edit(void)
         case SHF_PADMINUS:
             resize(-1, 0);
             break;
+#endif
         default:
             if ((c == 0x81) || (c == 0xEB) || (c == 0x1FB))
                c = 0x55; /* U */
@@ -7970,8 +7972,8 @@ void subfunc1(void)
 #ifdef __MINGW_VERSION
     if (COLS <72)
         	return;
-+#else
-+    j--;
+#else
+    j--;
 #endif
     wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-72)/2, j+2, 72);
 #ifndef __MINGW_VERSION
