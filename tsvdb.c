@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.87 2016/04/26 $
+ * $Id: tcsvdb.c,v 0.9.88 2016/04/28 $
  */
 
-#define VERSION "0.9.87"
+#define VERSION "0.9.88"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -926,6 +926,10 @@ static void repaintmenu(WINDOW *wmenu, menu *mp)
                 setcolor(wmenu, SUBMENUCOLOR);
             if (safe && ((p->name[0] == 'M') || strstr(p->name, "Tex")))
                 setcolor(wmenu, INPUTBOXCOLOR);
+#if !defined(__unix) || defined(__DJGPP__)
+            if (safe && strstr(p->name, "cod"))
+                	setcolor(wmenu, INPUTBOXCOLOR);
+#endif
         }
         if (!has_colors())
         {
@@ -3512,7 +3516,8 @@ int loadfile(char *fname)
 
 int getfile(char *fname)
 {
-    int i, j;
+    int i;
+    int j = 0;
     int k = 0;
     FILE *fp;
     BUFDEF;
@@ -5673,6 +5678,8 @@ void redraw()
     }
 }
 
+
+#ifndef PDCW
 void selected(void)
 {
     register int i, j;
@@ -5759,6 +5766,8 @@ void tsv_filter(void)
     else
        filtered = FALSE;
 }
+#endif
+
 
 void dosort(void)
 {
@@ -6892,7 +6901,7 @@ void modstru(void)
     }
 }
 
-//#if !defined(__unix) || defined(__DJGPP__)
+#if !defined(__unix) || defined(__DJGPP__)
 void lat2(char *c, int x)
 {
     int i, j;
@@ -6907,14 +6916,14 @@ void lat2(char *c, int x)
    
     for (j = strlen(c); j > 0; j--)
     {
-        if (x == 0)
+        if (x == 1)
             p = strchr(c0, c[j]);
         else
             p = strchr(c1, c[j]);
         if (p != NULL)
         {
             modified = TRUE;
-            if (x == 0)
+            if (x == 1)
             {
                i = p - c0;
                c[j] = c1[i];
@@ -6933,10 +6942,12 @@ void docode(void)
     char *b[] = {"From Latin-2", "To Latin-2", "", "", ""};
     int i, j;
 
-    if (ro || safe) 
+    if (ro || safe)
         return;
 
-    j = selbox("Toggle encoding", b, 1) - 1;
+    j = selbox("Toggle encoding", b, 1);
+    if (j == 0)
+        return;
     for (i=0; i<(reccnt); i++)
     {
         lat2(rows[i], j);
@@ -6944,7 +6955,7 @@ void docode(void)
     redraw();
     flagmsg();
 }
-//#endif
+#endif
 
 
 void donum(void)
@@ -7063,6 +7074,7 @@ void donum(void)
 
 
 #ifdef __MINGW_VERSION
+#ifndef PDCW
 void resize(int dx, int dy)
 {
     int x, y;
@@ -7128,6 +7140,7 @@ void decw(void)
 {
     resize(-1, -1);
 }
+#endif
 #endif
 
 
@@ -7626,7 +7639,7 @@ void edit(void)
             findequal(TRUE);
             ctop = topset(curr, r);
             break;
-//#if !defined(__unix) || defined(__DJGPP__)
+#if !defined(__unix) || defined(__DJGPP__)
         case CTRL_W:
             lat2(rows[curr], 1);
             flagmsg();
@@ -7635,7 +7648,7 @@ void edit(void)
             lat2(rows[curr], 0);
             flagmsg();
             break;
-//#endif
+#endif
         case CTRL_R:
             curr = popundo(curr);
             if ((curr < ctop) || (curr >= (ctop+r)))
@@ -7647,6 +7660,7 @@ void edit(void)
                 	ctop = topset(curr, r);
             break;
 #ifdef __MINGW_VERSION
+  #ifndef PDCW
         case KEY_SUP:
             resize(0, -1);
             r = bodylen()-1;
@@ -7663,6 +7677,7 @@ void edit(void)
         case SHF_PADMINUS:
             resize(-1, 0);
             break;
+  #endif
 #endif
         default:
             if ((c == 0x81) || (c == 0xEB) || (c == 0x1FB))
@@ -7735,6 +7750,7 @@ void DoAppend(void)
 }
 
 
+#ifndef PDCW
 void txted(void)
 {
     int i;
@@ -7762,6 +7778,7 @@ void txted(void)
         flagmsg();
     }
 }
+#endif
 
 void tsv_select(void)
 {
@@ -7868,8 +7885,10 @@ menu SubMenu0[] =
     { "New", newdb, "Create data file" },
     { "Save", DoSave, "Save data file" },
     { "Import", DoAppend, "Append data" },
+#ifndef PDCW
     { "eXport", selected, "Restricted set (restart)" },
     { "Text", txted, "Edit as text" },
+#endif
     { "Exit", bye, "Quit" },
     { "", (FUNC)0, "" }
 };
@@ -7882,7 +7901,9 @@ menu SubMenu1[] =
     { "Change", change, "Replace string" },
     { "scHange", schange, "Selectively change" },
     { "seLect", tsv_select, "Collated rows (with previous set)" },
+#ifndef PDCW
     { "filteR", tsv_filter, "Choose records (restart with new file)" },
+#endif
     { "Delimit", unlimit, "Remove delimiters" },
     { "Terminate", delimit, "Add delimiters" },
     { "seParate", dosep, "Set field separator" },
@@ -7894,9 +7915,9 @@ menu SubMenu1[] =
     { "crYpt", docrypt, "Code/decode" },
     { "Calc", calcall, "Evaluate the whole column" },
     { "tOtal", dosum, "Aggregate" },
-//#if !defined(__unix) || defined(__DJGPP__)
+#if !defined(__unix) || defined(__DJGPP__)
     { "code", docode, "Switch coding in the entire file" },
-//#endif
+#endif
     { "sequence", donum, "Insert integer sequence numbers" },
     { "", (FUNC)0, "" }
 };
@@ -7911,8 +7932,10 @@ menu SubMenu2[] =
     { "Limits", limits, "Maximums & conditions" },
     { "Colors", changecolor, "Change color set" },
 #ifdef __MINGW_VERSION
+  #ifndef PDCW
     { "+", incw, "Enlarge window" },
     { "-", decw, "Decrease window" },
+  #endif
 #endif
     { "About", subfunc2, "Info" },
     { "", (FUNC)0, "" }
@@ -7927,7 +7950,13 @@ void sub0(void)
 
 void sub1(void)
 {
+#if !defined(__unix) || defined(__DJGPP__)
+  #ifdef PDCW
+    SubMenu1[18].func = ro ? (FUNC)0 : donum;
+  #else
     SubMenu1[19].func = ro ? (FUNC)0 : donum;
+  #endif
+#endif
     domenu(SubMenu1);
 }
 
@@ -7958,8 +7987,12 @@ void subfunc1(void)
         "    Ctrl-G:  goto line          \t Ctrl/Alt-O:  count subs/field",
         "Ctrl/Alt-S:  replace/change     \t   C/A-Home:  go max/longest",
         " Alt-C/X/Y:  calculate/fld/cols \t    C/A-End:  go min/shortest",
+#if !defined(__unix) || defined(__DJGPP__)
         "Ctrl/Alt-W:  to/from Latin-2    \t Ctrl-Up/Dn:  shift screen",
-#ifdef __MINGW_VERSION
+#else
+        "        F1:  Keys help          \t Ctrl-Up/Dn:  shift screen",
+#endif
+#if defined(__MINGW_VERSION) && !defined(PDCW)
         "Ctrl/Alt-R:  undo/redo (max 10) \t Shft-Up/Dn:  inc/dec scr lines",
         " A-T/A-Del:  undo line (max 1)  \t  Shft- +/-:  inc/dec scr width"
 #else
@@ -7967,13 +8000,13 @@ void subfunc1(void)
 #endif
     };
     int i;
-    int j=18;
     
-#ifdef __MINGW_VERSION
+#if defined(__MINGW_VERSION) && !defined(PDCW)
+    int j=18;
     if (COLS <72)
         	return;
 #else
-    j--;
+    int j=17;
 #endif
     wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-72)/2, j+2, 72);
 #ifndef __MINGW_VERSION
@@ -8291,7 +8324,11 @@ void subfunc2(void)
             &&  (MOUSE_X_POS > begx+8) && (MOUSE_X_POS < begx+30))
             {
 #ifdef __MINGW_VERSION
+  #ifdef PDCW
+                brows = NULL;
+  #else
                 brows = "explorer.exe";
+  #endif
 #else
                 brows = getenv("browser");
                 if (brows == NULL)
