@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.88 2016/04/28 $
+ * $Id: tcsvdb.c,v 0.9.89 2016/05/02 $
  */
 
-#define VERSION "0.9.88"
+#define VERSION "0.9.89"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -3642,18 +3642,25 @@ int selbox(char *msg, char **butts, int b)
     int blen[BMAX+1] = {0, 0, 0, 0, 0};
     int i, j, k;
     int c, x, y;
-    int bmax;
+    int bmax = 0;
     bool quit = FALSE;
 
     j = 0;
-    for (i=0; i<BMAX; i++)
+    for (i=0; i<=BMAX; i++)
     {
-         blen[i+1] = strlen(butts[i])+4;
-         j += blen[i+1];
+        if (butts[i][0] != 0)
+        {
+           bmax++;
+           blen[i+1] = strlen(butts[i])+4;
+           j += blen[i+1];
+        }
+        else
+           break;
     }
-    if (blen[1] == 2)
+    if (bmax == 0)
         	return 0;
-    i = strlen(msg)+4;
+    i = j + (3*bmax);
+    j = strlen(msg)+4;
     if (i < j)
         	i = j;
     x = (bodywidth()-i)/2;
@@ -3661,18 +3668,13 @@ int selbox(char *msg, char **butts, int b)
     wdmsg = mvwinputbox(wbody, y, x, 6, i);
     mvwaddstr(wdmsg, 1, 2, msg);
     wrefresh(wdmsg);
-    bmax = 0;
-    for (i=0; i<=BMAX; i++)
+    for (i=0; i<bmax; i++)
     {
-        if (butts[i][0] != 0)
-        {
-            k = 0;
-            for (j=i; j>0; j--)
-                	k += blen[j]+2;
-            bpos[i+1] = k+2;
-            wb[i] = mvwinputbox(wdmsg, 2, bpos[i+1], 3, blen[i+1]);
-            bmax++;
-        }
+        k = 0;
+        for (j=i; j>0; j--)
+            	k += blen[j]+2;
+        bpos[i+1] = k+2;
+        wb[i] = mvwinputbox(wdmsg, 2, bpos[i+1], 3, blen[i+1]);
     }
     while (1)
     {
@@ -3683,11 +3685,14 @@ int selbox(char *msg, char **butts, int b)
             touchwin(wb[i]);
             wrefresh(wb[i]);
         }
-        setcolor(wb[b-1], MAINMENUREVCOLOR);
-        mvwaddstr(wb[b-1], 1, 2, butts[b-1]);
-        setcolor(wb[b-1], MAINMENUCOLOR);
-        touchwin(wb[b-1]);
-        wrefresh(wb[b-1]);
+        if (b > 0)
+        {
+            setcolor(wb[b-1], MAINMENUREVCOLOR);
+            mvwaddstr(wb[b-1], 1, 2, butts[b-1]);
+            setcolor(wb[b-1], MAINMENUCOLOR);
+            touchwin(wb[b-1]);
+            wrefresh(wb[b-1]);
+        }
         if (quit)
         {
 #ifdef __MINGW_VERSION
@@ -3703,9 +3708,11 @@ int selbox(char *msg, char **butts, int b)
             quit = TRUE;
             break;
         case KEY_LEFT:
+        case KEY_BTAB:
             b = b > 1 ? b-1 : bmax;
             break;
         case KEY_RIGHT:
+        case 9:
             b = b < bmax ? b+1 : 1;
             break;
         case KEY_ESC:
@@ -6122,6 +6129,7 @@ void align(int n, int y, int m)
 void doindent(void)
 {
     int i, j;
+    char *b[] = {"Left", "Center", "Right", "None", ""};
 
     if (ro)
         return;
@@ -6134,12 +6142,17 @@ void doindent(void)
 #else
         sleep(1);
 #endif
-        do {
-            j = putmsg("", "Align left, center or right? (1/2/3):", "");
-            if (j == KEY_ESC)
-                	return;
-            j -= '0';
-        } while (j<1 || j>3);
+        /*
+        //do {
+        //    j = putmsg("", "Align left, center or right? (1/2/3):", "");
+        //    if (j == KEY_ESC)
+        //        	return;
+        //    j -= '0';
+        //} while (j<1 || j>3);
+        */
+        j = selbox("Align", b, 1);
+        if (j<1 || j>3)
+            	return;
         if (j == 2)
             align(i, -1, 1);
         align(i, -1, j);
