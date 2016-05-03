@@ -1,5 +1,5 @@
 /*
- * $Id: tcsvdb.c,v 0.9.89 2016/05/02 $
+ * $Id: tcsvdb.c,v 0.9.89 2016/05/03 $
  */
 
 #define VERSION "0.9.89"
@@ -6156,8 +6156,7 @@ void doindent(void)
         if (j == 2)
             align(i, -1, 1);
         align(i, -1, j);
-        putmsg("Adjusted ", stru[i],
-               (j==1) ? "left" : (j==3) ? "right" : "center");
+        putmsg("Adjusted ", stru[i], b[j]);
         modified = TRUE;
         flagmsg();
         j = 0;
