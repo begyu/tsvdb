@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.89 2016/05/03 $
+ * $Id: tcsvdb.c,v 0.9.90 2016/05/05 $
  */
 
-#define VERSION "0.9.89"
+#define VERSION "0.9.90"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -511,7 +511,7 @@ static int origy, origx;
 #define RXFORW 0xFF
 #define RXBACK 0xFE
 #define WSTR (" Wait! ")
-#define DISABLEDHOT ("aCcDFfIMNnSsT")
+#define DISABLEDHOT ("aCcDFfIMNnSsTt")
 #define FROMSTR ("From:")
 #define TOSTR   ("  To:")
 #define HEADSTR ("Head:")
@@ -5780,9 +5780,9 @@ void dosort(void)
 {
     if (ro && !locked)
         return;
-    if (yesno("Sort database? (Y/N):") == 0)
+    if (selbox("Sort database?", ync, 2) != 1)
         return;
-    if (yesno("Reverse order? (Y/N):") == 0)
+    if (selbox("Reverse order?", ync, 2) != 1)
         sort(reccnt);
     else
         sort_back(reccnt);
@@ -5988,6 +5988,97 @@ void gorec()
         curr = i-1;
 }
 
+int rtrim(char *str, int x)
+{
+    register int i, j;
+    int olen;
+    char c;
+
+    olen = strlen(str);
+    switch (x)
+    {
+    case 1:
+        for (i=0, j=0; i<olen; i++)
+            	if (str[i] == csep)
+                	j++;
+        c = str[olen-1];
+        if ((c > ' ') && (c != '_'))
+        {
+            str[olen] = csep;
+            olen++;
+            j++;
+        }
+        for (i=j; i<=cols; i++)
+        {
+            str[olen] = '_';
+            olen++;
+            str[olen] = csep;
+            olen++;
+        }
+        str[olen] = '\0';
+        if (i > j)
+            	return(strlen(str));
+        break;
+    case 2:
+        i = olen-1;
+        for (; i>0; i--)
+        {
+            c = str[i];
+            if (c == ' ' || c == '_' || c == csep)
+            {
+                str[i] = '\0';
+            }
+            else
+                break;
+        }
+        j = strlen(str);
+        if (j < olen);
+            	return(j);
+        break;
+    default:
+        break;
+    }
+    return 0;
+}
+
+void trail()
+{
+    register int i, j;
+    int k;
+    char *b[] = {"Add", "Remove", "None", "", ""};
+    BUFDEF;
+
+    if (ro || crypted)
+        return;
+
+    k = selbox("Trailing whitespaces", b, 2);
+    if (k < 1 || k > 2)
+        	return;
+
+    for (i=0; i<(reccnt); i++)
+    {
+        strcpy(buf, rows[i]);
+        j = strlen(buf)-1;
+        while ((j>0) && (buf[j] == '\n' || buf[j] == '\r'))
+        {
+            buf[j] = '\0';
+            j--;
+        }
+        j = rtrim(buf, k);
+        strcat(buf, "\n");
+        if (j != 0)
+        {
+            if (rows[i] != NULL)
+               	free(rows[i]);
+            rows[i] = (char *)malloc(j+2);
+            strcpy(rows[i], buf);
+            modified = TRUE;
+        }
+    }
+    redraw();
+    flagmsg();
+}
+
 void dosortby(void)
 {
     register int i, j;
@@ -6003,10 +6094,10 @@ void dosortby(void)
         hunsort = FALSE;
         if (numsort == FALSE)
         {
-            if (yesno("Hungarian abc? (Y/N):") != 0)
+            if (selbox("Hungarian abc?", ync, 2) == 1)
                 hunsort = TRUE;
         }
-        if (yesno("Reverse order? (Y/N):") == 0)
+        if (selbox("Reverse order?", ync, 2) != 1)
             sort(reccnt);
         else
             sort_back(reccnt);
@@ -6174,7 +6265,7 @@ void docrypt(void)
 {
     if (locked || (ro && !crypted))
         return;
-    if (yesno("Encrypt database? (Y/N):") == 0)
+    if (selbox("Encrypt database?", ync, 2) != 1)
         return;
     crypt(reccnt);
     modified = TRUE;
@@ -7909,7 +8000,6 @@ menu SubMenu1[] =
 {
     { "Edit", edit, "File edit" },
     { "View", brows, "Browse file" }, 
-    { "Go", gorec, "Go to record" },
     { "Change", change, "Replace string" },
     { "scHange", schange, "Selectively change" },
     { "seLect", tsv_select, "Collated rows (with previous set)" },
@@ -7917,8 +8007,9 @@ menu SubMenu1[] =
     { "filteR", tsv_filter, "Choose records (restart with new file)" },
 #endif
     { "Delimit", unlimit, "Remove delimiters" },
-    { "Terminate", delimit, "Add delimiters" },
+    { "terminate", delimit, "Add delimiters" },
     { "seParate", dosep, "Set field separator" },
+    { "Trailing", trail, "Add/remove trailing spaces & separators" },
     { "adJust", doindent, "Align left/right/center" },
     { "Sort", dosort, "Sort the whole file" },
     { "Field", dosortby, "Sort by other field" },
