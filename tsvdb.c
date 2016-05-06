@@ -1,5 +1,5 @@
 /*
- * $Id: tcsvdb.c,v 0.9.90 2016/05/05 $
+ * $Id: tcsvdb.c,v 0.9.90 2016/05/06 $
  */
 
 #define VERSION "0.9.90"
@@ -341,7 +341,7 @@ char *jog(char *s, int i)
             return s;
         t += (long) (i * ONEDAY);
         j = strftime(ns, 2*MAXSNLEN, "%Y.%m.%d", localtime(&t));
-        if (j == 10);
+        if (j == 10)
             	strcpy(s, ns);
         return s;
     }
@@ -6032,7 +6032,7 @@ int rtrim(char *str, int x)
                 break;
         }
         j = strlen(str);
-        if (j < olen);
+        if (j < olen)
             	return(j);
         break;
     default:
