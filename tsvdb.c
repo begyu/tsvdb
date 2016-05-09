@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.90 2016/05/06 $
+ * $Id: tcsvdb.c,v 0.9.91 2016/05/09 $
  */
 
-#define VERSION "0.9.90"
+#define VERSION "0.9.91"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -532,10 +532,12 @@ typedef struct
     char und[MAXSTRLEN+1];
     char red[MAXSTRLEN+1];
     int idx;
+    int pos;
 } undotype;
 
 static undotype undo[MAXUNDO+1];
 static int undoptr = -1;
+static int redoptr = -1;
 static char undel[MAXSTRLEN+1] = "";
 static int undelpos = 0;
 
@@ -552,9 +554,10 @@ void pushundo(int y)
         }
         undoptr--;
     }
+    strcpy(undo[undoptr].red, undo[undoptr].und);
     strcpy(undo[undoptr].und, rows[y]);
-    strcpy(undo[undoptr].red, "");
     undo[undoptr].idx = y;
+    undo[undoptr].pos = ctop;
 }
 
 int popundo(int y)
@@ -564,7 +567,9 @@ int popundo(int y)
 
     if (undoptr >= 0)
     {
+        redoptr++;
         i = undo[undoptr].idx;
+        ctop = undo[undoptr].pos;
         strcpy(undo[undoptr].red, rows[i]);
         j = strlen(undo[undoptr].und);
         if (rows[i] != NULL)
@@ -579,12 +584,21 @@ int popundo(int y)
 int redo(int y)
 {
     int i = y;
+    int j;
 
-    if (undoptr < MAXUNDO)
+    if ((redoptr >= 0) && (undoptr < MAXUNDO))
     {
         undoptr++;
-        strcpy(undo[undoptr].und, undo[undoptr].red);
-        i = popundo(y);
+        i = undo[undoptr].idx;
+        ctop = undo[undoptr].pos;
+        strcpy(undo[undoptr].und, rows[i]);
+        j = strlen(undo[undoptr].red);
+        if (rows[i] != NULL)
+            free(rows[i]);
+        rows[i] = (char *)malloc(j+1);
+        strcpy(rows[i], undo[undoptr].red);
+        redoptr--;
+
     }
     return i;
 }
@@ -7754,13 +7768,9 @@ void edit(void)
 #endif
         case CTRL_R:
             curr = popundo(curr);
-            if ((curr < ctop) || (curr >= (ctop+r)))
-                	ctop = topset(curr, r);
             break;
         case ALT_R:
             curr = redo(curr);
-            if ((curr < ctop) || (curr >= (ctop+r)))
-                	ctop = topset(curr, r);
             break;
 #ifdef __MINGW_VERSION
   #ifndef PDCW
