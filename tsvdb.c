@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.91 2016/05/09 $
+ * $Id: tcsvdb.c,v 0.9.92 2016/05/18 $
  */
 
-#define VERSION "0.9.91"
+#define VERSION "0.9.92"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -432,6 +432,7 @@ void opthelp(void);
 
 void changecolor(void);
 void disphint(int);
+void flagmsg(void);
 
 /****DAT****/
 
@@ -1720,6 +1721,7 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
         case CTL_PADPLUS:
             defdisp = FALSE;
             insert = !insert;
+            flagmsg();
             curs_set(insert ? 2 : 1);
             break;
 
@@ -2915,6 +2917,7 @@ void flagmsg(void)
     {
         setcolor(wtitl, FSTRCOLOR);
         mvwaddstr(wtitl, 0, 0, "*");
+        mvwaddstr(wmain, 0, bw-5, "Mod");
 #ifdef __MINGW_VERSION
         if (terminable)
         {
@@ -2927,8 +2930,12 @@ void flagmsg(void)
     {
         setcolor(wtitl, TITLECOLOR);
         mvwaddstr(wtitl, 0, 0, "_");
+        mvwaddstr(wmain, 0, bw-5, "   ");
     }
     wrefresh(wtitl);
+    mvwaddstr(wmain, 0, bw-12, ro ? "Ro" : "  ");
+    mvwaddstr(wmain, 0, bw-9, insert ? "Ins" : "   ");
+    wrefresh(wmain);
 }
 
 int bodywidth(void)
@@ -7246,6 +7253,8 @@ void resize(int dx, int dy)
     if (getcwd(wdname, MAXSTRLEN) == NULL)
         strcpy(wdname, ".");
     curs_set(1);
+    titlemsg(datfname);
+    flagmsg();
 }
 
 void incw(void)
@@ -7298,6 +7307,7 @@ void edit(void)
             j++;
         }
         statusln();
+        flagmsg();
         displn(curr, curr-ctop+1);
         if (unget == FALSE)
             	c = waitforkey();
