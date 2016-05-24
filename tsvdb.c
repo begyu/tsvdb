@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.92 2016/05/18 $
+ * $Id: tcsvdb.c,v 0.9.93 2016/05/24 $
  */
 
-#define VERSION "0.9.92"
+#define VERSION "0.9.93"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -5707,7 +5707,6 @@ void redraw()
 }
 
 
-#ifndef PDCW
 void selected(void)
 {
     register int i, j;
@@ -5746,7 +5745,6 @@ void selected(void)
         fclose(fp);
         msg(NULL);
         def_prog_mode();
-        endwin();
         if (j == 0)
             return;
 /*        execlp("tsvdb", tmpfname, (char *)0);*/
@@ -5794,7 +5792,6 @@ void tsv_filter(void)
     else
        filtered = FALSE;
 }
-#endif
 
 
 void dosort(void)
@@ -7198,17 +7195,26 @@ void donum(void)
 
 
 #ifdef __MINGW_VERSION
-#ifndef PDCW
+#define MAXHEIGHT 60
+#define MAXWIDTH 160
 void resize(int dx, int dy)
 {
     int x, y;
 
     if (dx > 0)
+    {
         x = (COLS < (2*origx)) ? COLS+dx : COLS;
+        if (x > MAXWIDTH)
+            x = MAXWIDTH;
+    }
     else
         x = (COLS > (int)(.6*origx)) ? COLS+dx : COLS;
     if (dy > 0)
+    {
         y = (LINES < (2*origy)) ? LINES+dy : LINES;
+        if (y > MAXHEIGHT)
+            y = MAXHEIGHT;
+    }
     else
         y = (LINES > 25) ? LINES+dy : LINES;
 
@@ -7216,9 +7222,6 @@ void resize(int dx, int dy)
     delwin(wmain);
     delwin(wbody);
     delwin(wstatus);
-    endwin();
-    initscr();
-    initcolor();
     resize_term(y, x);
     LINES = y;
     COLS = x;
@@ -7267,7 +7270,6 @@ void decw(void)
     resize(-1, -1);
 }
 #endif
-#endif
 
 
 #ifdef NCURSES
@@ -7284,7 +7286,7 @@ void edit(void)
     int b = reccnt-bodylen();
     bool quit = FALSE;
     bool unget= FALSE;
-    int c;
+    int c = 0;
 
     curr = (curr <= reccnt) ? curr : 0;
     ctop = topset(curr, r);
@@ -7783,7 +7785,6 @@ void edit(void)
             curr = redo(curr);
             break;
 #ifdef __MINGW_VERSION
-  #ifndef PDCW
         case KEY_SUP:
             resize(0, -1);
             r = bodylen()-1;
@@ -7796,11 +7797,16 @@ void edit(void)
             break;
         case SHF_PADPLUS:
             resize(1, 0);
+#ifdef PDCW
+            search(curr, -1);
+#endif
             break;
         case SHF_PADMINUS:
             resize(-1, 0);
+#ifdef PDCW
+            search(curr, -1);
+#endif
             break;
-  #endif
 #endif
         default:
             if ((c == 0x81) || (c == 0xEB) || (c == 0x1FB))
@@ -7873,7 +7879,6 @@ void DoAppend(void)
 }
 
 
-#ifndef PDCW
 void txted(void)
 {
     int i;
@@ -7888,7 +7893,6 @@ void txted(void)
             if (savefile(datfname, 0) != 0)
                return;
         def_prog_mode();
-        endwin();
         strcpy(buf, progname);
         strcat(buf, " -e ");
         strcat(buf, datfname);
@@ -7901,7 +7905,6 @@ void txted(void)
         flagmsg();
     }
 }
-#endif
 
 void tsv_select(void)
 {
@@ -8008,10 +8011,8 @@ menu SubMenu0[] =
     { "New", newdb, "Create data file" },
     { "Save", DoSave, "Save data file" },
     { "Import", DoAppend, "Append data" },
-#ifndef PDCW
     { "eXport", selected, "Restricted set (restart)" },
     { "Text", txted, "Edit as text" },
-#endif
     { "Exit", bye, "Quit" },
     { "", (FUNC)0, "" }
 };
@@ -8023,9 +8024,7 @@ menu SubMenu1[] =
     { "Change", change, "Replace string" },
     { "scHange", schange, "Selectively change" },
     { "seLect", tsv_select, "Collated rows (with previous set)" },
-#ifndef PDCW
     { "filteR", tsv_filter, "Choose records (restart with new file)" },
-#endif
     { "Delimit", unlimit, "Remove delimiters" },
     { "terminate", delimit, "Add delimiters" },
     { "seParate", dosep, "Set field separator" },
@@ -8055,10 +8054,8 @@ menu SubMenu2[] =
     { "Limits", limits, "Maximums & conditions" },
     { "Colors", changecolor, "Change color set" },
 #ifdef __MINGW_VERSION
-  #ifndef PDCW
     { "+", incw, "Enlarge window" },
     { "-", decw, "Decrease window" },
-  #endif
 #endif
     { "About", subfunc2, "Info" },
     { "", (FUNC)0, "" }
@@ -8074,11 +8071,7 @@ void sub0(void)
 void sub1(void)
 {
 #if !defined(__unix) || defined(__DJGPP__)
-  #ifdef PDCW
-    SubMenu1[18].func = ro ? (FUNC)0 : donum;
-  #else
     SubMenu1[19].func = ro ? (FUNC)0 : donum;
-  #endif
 #endif
     domenu(SubMenu1);
 }
@@ -8115,7 +8108,7 @@ void subfunc1(void)
 #else
         "        F1:  Keys help          \t Ctrl-Up/Dn:  shift screen",
 #endif
-#if defined(__MINGW_VERSION) && !defined(PDCW)
+#ifdef __MINGW_VERSION
         "Ctrl/Alt-R:  undo/redo (max 10) \t Shft-Up/Dn:  inc/dec scr lines",
         " A-T/A-Del:  undo line (max 1)  \t  Shft- +/-:  inc/dec scr width"
 #else
@@ -8124,7 +8117,7 @@ void subfunc1(void)
     };
     int i;
     
-#if defined(__MINGW_VERSION) && !defined(PDCW)
+#ifdef __MINGW_VERSION
     int j=18;
     if (COLS <72)
         	return;
@@ -8447,11 +8440,7 @@ void subfunc2(void)
             &&  (MOUSE_X_POS > begx+8) && (MOUSE_X_POS < begx+30))
             {
 #ifdef __MINGW_VERSION
-  #ifdef PDCW
-                brows = NULL;
-  #else
                 brows = "explorer.exe";
-  #endif
 #else
                 brows = getenv("browser");
                 if (brows == NULL)
