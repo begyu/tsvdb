@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.93 2016/05/24 $
+ * $Id: tcsvdb.c,v 0.9.94 2016/05/25 $
  */
 
-#define VERSION "0.9.93"
+#define VERSION "0.9.94"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -7222,6 +7222,11 @@ void resize(int dx, int dy)
     delwin(wmain);
     delwin(wbody);
     delwin(wstatus);
+#ifndef PDCW
+    endwin();
+    initscr();
+    initcolor();
+#endif
     resize_term(y, x);
     LINES = y;
     COLS = x;
@@ -7258,6 +7263,8 @@ void resize(int dx, int dy)
     curs_set(1);
     titlemsg(datfname);
     flagmsg();
+    doupdate();
+    wnoutrefresh(wbody);
 }
 
 void incw(void)
