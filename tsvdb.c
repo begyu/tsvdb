@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.94 2016/05/25 $
+ * $Id: tcsvdb.c,v 0.9.95 2016/05/31 $
  */
 
-#define VERSION "0.9.94"
+#define VERSION "0.9.95"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -1474,6 +1474,12 @@ void domenu(menu *mp)
 
 void init()
 {
+#ifdef PDCW
+    ttytype[0] = 25;
+    ttytype[1] = 36;
+    ttytype[2] = 80;
+    ttytype[3] = (unsigned char)132;
+#endif
     initscr();
     incurses = TRUE;
     initcolor();
@@ -7195,8 +7201,53 @@ void donum(void)
 
 
 #ifdef __MINGW_VERSION
-#define MAXHEIGHT 60
-#define MAXWIDTH 160
+#ifdef PDCW
+  #define MAXHEIGHT 36
+  #define MAXWIDTH 132
+void resize_event()
+{
+    delwin(wtitl);
+    delwin(wmain);
+    delwin(wbody);
+    delwin(wstatus);
+    resize_term(0, 0);
+    refresh();
+    wtitl = subwin(stdscr, th, bw, 0, 0);
+    wmain = subwin(stdscr, mh, bw, th, 0);
+    wbody = subwin(stdscr, bh, bw, th + mh, 0);
+    wstatus = subwin(stdscr, sh, bw, th + mh + bh, 0);
+    colorbox(wtitl, TITLECOLOR, 0);
+    colorbox(wmain, MAINMENUCOLOR, 0);
+    colorbox(wbody, BODYCOLOR, 0);
+    colorbox(wstatus, STATUSCOLOR, 0);
+    cbreak();
+    noecho();
+    nodelay(wbody, TRUE);
+    halfdelay(10);
+    keypad(wbody, TRUE);
+    scrollok(wbody, TRUE);
+    leaveok(stdscr, TRUE);
+    leaveok(wtitl, TRUE);
+    leaveok(wmain, TRUE);
+    leaveok(wstatus, TRUE);
+#ifdef PDCURSES
+    mouse_set(ALL_MOUSE_EVENTS);
+    PDC_save_key_modifiers(TRUE);
+    PDC_return_key_modifiers(TRUE);
+#endif
+    newterm(getenv("TERM"), stderr, stdin);
+    keypad(stdscr,  TRUE);
+    refresh();
+    if (getcwd(wdname, MAXSTRLEN) == NULL)
+        strcpy(wdname, ".");
+    curs_set(1);
+    titlemsg(datfname);
+    flagmsg();
+}
+#else
+  #define MAXHEIGHT 60
+  #define MAXWIDTH 160
+#endif
 void resize(int dx, int dy)
 {
     int x, y;
@@ -7792,6 +7843,13 @@ void edit(void)
             curr = redo(curr);
             break;
 #ifdef __MINGW_VERSION
+#ifdef PDCW
+        case KEY_RESIZE:
+            resize_event();
+            r = bodylen()-1;
+            b = reccnt-bodylen();
+            break;
+#endif
         case KEY_SUP:
             resize(0, -1);
             r = bodylen()-1;
