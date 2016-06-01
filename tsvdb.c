@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.95 2016/05/31 $
+ * $Id: tcsvdb.c,v 0.9.96 2016/06/01 $
  */
 
-#define VERSION "0.9.95"
+#define VERSION "0.9.96"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -8037,6 +8037,10 @@ void bye(void)
         if (i == 1)
         {
             DoExit();
+            return;
+        }
+        else if (i == 3)
+        {
             return;
         }
         p = ync[2];
