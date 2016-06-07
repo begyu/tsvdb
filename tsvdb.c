@@ -1,5 +1,5 @@
 /*
- * $Id: tcsvdb.c,v 0.9.96 2016/06/01 $
+ * $Id: tcsvdb.c,v 0.9.96 2016/06/07 $
  */
 
 #define VERSION "0.9.96"
@@ -7206,15 +7206,19 @@ void donum(void)
   #define MAXWIDTH 132
 void resize_event()
 {
+    int x, y;
+
     delwin(wtitl);
     delwin(wmain);
-    delwin(wbody);
     delwin(wstatus);
     resize_term(0, 0);
     refresh();
+    getmaxyx(stdscr, y, x);
+    LINES = y;
+    COLS = x;
     wtitl = subwin(stdscr, th, bw, 0, 0);
     wmain = subwin(stdscr, mh, bw, th, 0);
-    wbody = subwin(stdscr, bh, bw, th + mh, 0);
+    wresize(wbody, y-4, x);
     wstatus = subwin(stdscr, sh, bw, th + mh + bh, 0);
     colorbox(wtitl, TITLECOLOR, 0);
     colorbox(wmain, MAINMENUCOLOR, 0);
@@ -7222,6 +7226,7 @@ void resize_event()
     colorbox(wstatus, STATUSCOLOR, 0);
     cbreak();
     noecho();
+    curs_set(0);
     nodelay(wbody, TRUE);
     halfdelay(10);
     keypad(wbody, TRUE);
@@ -7271,9 +7276,9 @@ void resize(int dx, int dy)
 
     delwin(wtitl);
     delwin(wmain);
-    delwin(wbody);
     delwin(wstatus);
 #ifndef PDCW
+    delwin(wbody);
     endwin();
     initscr();
     initcolor();
@@ -7285,7 +7290,11 @@ void resize(int dx, int dy)
     wrefresh(stdscr);
     wtitl = subwin(stdscr, th, bw, 0, 0);
     wmain = subwin(stdscr, mh, bw, th, 0);
+#ifndef PDCW
     wbody = subwin(stdscr, bh, bw, th + mh, 0);
+#else
+    wresize(wbody, y-4, x);
+#endif
     wstatus = subwin(stdscr, sh, bw, th + mh + bh, 0);
     colorbox(wtitl, TITLECOLOR, 0);
     colorbox(wmain, MAINMENUCOLOR, 0);
