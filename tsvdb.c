@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.96 2016/06/07 $
+ * $Id: tcsvdb.c,v 0.9.97 2016/06/08 $
  */
 
-#define VERSION "0.9.96"
+#define VERSION "0.9.97"
 #define URL "http://tsvdb.sf.net"
 
 #ifdef XCURSES
@@ -693,6 +693,7 @@ void rmerror(void);
 # define MARKCOLOR        (12 | A_BOLD)
 # define FSTRCOLOR        (13 | A_BOLD)
 # define EDITBOXTOOCOLOR  (14 | A_BOLD)
+# define INFOCOLOR        (15 | A_BOLD)
 #else
 # define TITLECOLOR       0       /* color pair indices */
 # define MAINMENUCOLOR    (A_BOLD)
@@ -708,6 +709,7 @@ void rmerror(void);
 # define MARKCOLOR        (A_BOLD)
 # define FSTRCOLOR        (A_BOLD)
 # define EDITBOXTOOCOLOR  (A_BOLD)
+# define INFOCOLOR        (A_BOLD)
 #endif
 
 
@@ -788,6 +790,7 @@ static void initcolor(void)
     init_pair(MARKCOLOR        & ~A_ATTR, COLOR_GREEN, COLOR_BLUE);
     init_pair(FSTRCOLOR        & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
     init_pair(EDITBOXTOOCOLOR  & ~A_ATTR, COLOR_WHITE, COLOR_CYAN);
+    init_pair(INFOCOLOR        & ~A_ATTR, COLOR_GREEN, COLOR_CYAN);
 #endif
 }
 
@@ -810,6 +813,7 @@ static void initcolo2(void)
     init_pair(MARKCOLOR        & ~A_ATTR, COLOR_MAGENTA, COLOR_WHITE);
     init_pair(FSTRCOLOR        & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
     init_pair(EDITBOXTOOCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
+    init_pair(INFOCOLOR        & ~A_ATTR, COLOR_MAGENTA, COLOR_CYAN);
 #endif
 }
 
@@ -950,6 +954,13 @@ static void repaintmenu(WINDOW *wmenu, menu *mp)
         {
             if (strstr(p->name, "Col"))
                 	setcolor(wmenu, INPUTBOXCOLOR);
+        }
+        if (p->name[0] == 'R')
+        {
+            if (filtered)
+                setcolor(wmenu, SUBMENUCOLOR);
+            else
+                setcolor(wmenu, INPUTBOXCOLOR);
         }
         mvwaddstr(wmenu, i + 1, 2, p->name);
     }
@@ -1331,6 +1342,13 @@ void domenu(menu *mp)
                         setcolor(wmenu, SUBMENUCOLOR);
                     if (safe && ((mp[old].name[0] == 'M')
                                  || strstr(mp[old].name, "Tex")))
+                        setcolor(wmenu, INPUTBOXCOLOR);
+                }
+                if (mp[old].name[0] == 'R')
+                {
+                    if (filtered)
+                        setcolor(wmenu, SUBMENUCOLOR);
+                    else
                         setcolor(wmenu, INPUTBOXCOLOR);
                 }
                 mvwaddstr(wmenu, old + 1, 1, 
@@ -2919,6 +2937,7 @@ void sort_back(int n)
 
 void flagmsg(void)
 {
+    setcolor(wmain, INFOCOLOR);
     if (modified)
     {
         setcolor(wtitl, FSTRCOLOR);
@@ -2939,8 +2958,10 @@ void flagmsg(void)
         mvwaddstr(wmain, 0, bw-5, "   ");
     }
     wrefresh(wtitl);
+    mvwaddstr(wmain, 0, bw-16, filtered ? "Sel" : "   ");
     mvwaddstr(wmain, 0, bw-12, ro ? "Ro" : "  ");
     mvwaddstr(wmain, 0, bw-9, insert ? "Ins" : "   ");
+    setcolor(wmain, MAINMENUCOLOR);
     wrefresh(wmain);
 }
 
@@ -7980,33 +8001,54 @@ void txted(void)
     }
 }
 
-void tsv_select(void)
+void segregate(bool rev)
 {
-    int i, j;
+    register int i, j;
 
     if (cry)
         	return;
 
-    getfstr();
-    if (strlen(fstr))
+    if (!rev)
     {
-        curr = -1;
-        do
+        getfstr();
+        if (strlen(fstr))
         {
-           j = curr;
-           search(curr, regex ? RXFORW : 0);
-           if (curr != j)
-              flags[curr] = 1;
-           else
-              break;
-        } while (j < reccnt);
-        filtered = TRUE;
+            i = 0;
+            curr = -1;
+            do
+            {
+                j = curr;
+                search(curr, regex ? RXFORW : 0);
+                if (curr != j)
+                {
+                    flags[curr] = 1;
+                    i++;
+                }
+                else
+                    break;
+            } while (j < reccnt);
+            filtered = (bool)(i > 0);
+            curr = 0;
+        }
+        else
+        {
+            memset(flags, 0, MAXROWS);
+            filtered = FALSE;
+        }
+        flagmsg();
     }
     if (filtered)
     {
         tmpdat.total = reccnt;
         for (i=0, j=0; i<=reccnt; i++)
         {
+            if (rev)
+            {
+                if (flags[i] == 0)
+                    flags[i] = 1;
+                else
+                    flags[i] = 0;
+            }
             tmpdat.ptr[i] = rows[i];
             tmpdat.idx[i] = -1;
             tmpdat.flag[i] = flags[i];
@@ -8033,6 +8075,17 @@ void tsv_select(void)
         curr = 0;
     }
 }
+
+void tsv_select()
+{
+    segregate(FALSE);
+}
+
+void tsv_reverse()
+{
+    segregate(TRUE);
+}
+
 
 void bye(void)
 {
@@ -8095,6 +8148,7 @@ menu SubMenu0[] =
     { "", (FUNC)0, "" }
 };
 
+#define LASTFUNC donum
 menu SubMenu1[] =
 {
     { "Edit", edit, "File edit" },
@@ -8102,7 +8156,8 @@ menu SubMenu1[] =
     { "Change", change, "Replace string" },
     { "scHange", schange, "Selectively change" },
     { "seLect", tsv_select, "Collated rows (with previous set)" },
-    { "filteR", tsv_filter, "Choose records (restart with new file)" },
+    { "filter", tsv_filter, "Choose records (restart with new file)" },
+    { "Reverse", tsv_reverse, "Invert selection" },
     { "Delimit", unlimit, "Remove delimiters" },
     { "terminate", delimit, "Add delimiters" },
     { "seParate", dosep, "Set field separator" },
@@ -8118,7 +8173,7 @@ menu SubMenu1[] =
 #if !defined(__unix) || defined(__DJGPP__)
     { "code", docode, "Switch coding in the entire file" },
 #endif
-    { "sequence", donum, "Insert integer sequence numbers" },
+    { "sequence", LASTFUNC, "Insert integer sequence numbers" },
     { "", (FUNC)0, "" }
 };
 
@@ -8149,7 +8204,7 @@ void sub0(void)
 void sub1(void)
 {
 #if !defined(__unix) || defined(__DJGPP__)
-    SubMenu1[19].func = ro ? (FUNC)0 : donum;
+    SubMenu1[20].func = ro ? (FUNC)0 : LASTFUNC;
 #endif
     domenu(SubMenu1);
 }
