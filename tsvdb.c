@@ -8182,7 +8182,7 @@ menu SubMenu2[] =
     { "Keys", subfunc1, "General keys" },
     { "input keys", edithelp, "Keys in edit mode" },
     { "Edit keys", txthelp, "Keys in texteditor" },
-    { "Regexp", reghelp, "Regular expression help" },
+    { "regeXp", reghelp, "Regular expression help" },
     { "Options", opthelp, "Command line options" },
     { "Limits", limits, "Maximums & conditions" },
     { "Colors", changecolor, "Change color set" },
