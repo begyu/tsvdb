@@ -1,9 +1,10 @@
 /*
- * $Id: tcsvdb.c,v 0.9.97 2016/06/08 $
+ * $Id: tcsvdb.c,v 0.9.98 2016/06/10 $
  */
 
-#define VERSION "0.9.97"
+#define VERSION "0.9.98"
 #define URL "http://tsvdb.sf.net"
+#define PRGHLP "tsvdb.hlp"
 
 #ifdef XCURSES
 #include <xcurses.h>
@@ -433,6 +434,7 @@ void opthelp(void);
 void changecolor(void);
 void disphint(int);
 void flagmsg(void);
+void bye(void);
 
 /****DAT****/
 
@@ -481,6 +483,7 @@ static bool cry = FALSE;
 static bool crypted = FALSE;
 static bool locked = FALSE;
 static bool safe = FALSE;
+static bool leave = FALSE;
 static int button;
 static bool ontop = FALSE;
 static bool bottom = FALSE;
@@ -7921,6 +7924,8 @@ void edit(void)
     clsbody();
     wrefresh(wbody);
     werase(wstatus);
+    if (leave)
+       	bye();
 }
 
 
@@ -8076,14 +8081,48 @@ void segregate(bool rev)
     }
 }
 
-void tsv_select()
+void tsv_select(void)
 {
     segregate(FALSE);
 }
 
-void tsv_reverse()
+void tsv_reverse(void)
 {
     segregate(TRUE);
+}
+
+void prghelp(void)
+{
+    FILE *f = NULL;
+    char *p = NULL;
+    char cmd[MAXSTRLEN+1];
+    BUFDEF;
+
+#ifdef XCURSES
+    strcpy(buf, "/usr/share/tsvdb/");
+#else
+    strcpy(buf, progname);
+    p = strrchr(buf, '\\');
+    if (p == NULL)
+        buf[0] = '\0';
+    else
+        p[1] = '\0';
+#endif
+    strcat(buf, PRGHLP);
+    f = fopen(buf, "r");
+    if (f == NULL)
+    {
+        putmsg("File \"",PRGHLP,"\" file not found!");
+        return;
+    }
+    fclose(f);
+    def_prog_mode();
+    strcpy(cmd, progname);
+    strcat(cmd, " -tyzq ");
+    strcat(cmd, buf);
+    system(cmd);
+    reset_prog_mode();
+    redraw();
 }
 
 
@@ -8184,6 +8223,7 @@ menu SubMenu2[] =
     { "Edit keys", txthelp, "Keys in texteditor" },
     { "regeXp", reghelp, "Regular expression help" },
     { "Options", opthelp, "Command line options" },
+    { "Whole", prghelp, "Help index" },
     { "Limits", limits, "Maximums & conditions" },
     { "Colors", changecolor, "Change color set" },
 #ifdef __MINGW_VERSION
@@ -8480,12 +8520,13 @@ static char *hlpstrs[] =
     "-x        Mixed mode",
     "-y        Locked mode",
     "-z        Safety on",
+    "-q        Quit on",
     "-t        Top",
     "-b        Bottom",
     "-n <num>  Go to num'th row",
     "-s <str>  Search str",
-    "          or \"-s (regexp)\"",
-    "          or \"-S (regexp)\" to extract",
+    "          or -s \"(regexp)\"",
+    "          or -S \"(regexp)\" to extract",
     "-l <str>  List str found",
     "          or \"-L\" with header",
     "-d <,|;>  Set separator to ',' or ';'",
@@ -8508,7 +8549,7 @@ void opthelp(void)
 {
     WINDOW *wmsg;
     int i;
-    int j=16;
+    int j=17;
     
     wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-40)/2, j+2, 40);
 #ifndef __MINGW_VERSION
@@ -8649,7 +8690,7 @@ int main(int argc, char **argv)
     strncpy(progname, argv[0], MAXSTRLEN-1);
     curr = 0;
     opterr = 0;
-    while ((c=getopt(argc, argv, "HhRrVvXxYyZzTtBbEeN:n:D:d:S:s:L:l:?")) != -1)
+    while ((c=getopt(argc,argv,"HhRrVvXxYyZzQqTtBbEeN:n:D:d:S:s:L:l:?")) != -1)
     {
       switch (c)
       {
@@ -8668,6 +8709,10 @@ int main(int argc, char **argv)
         case 'z':
         case 'Z':
           safe = TRUE;
+          break;
+        case 'q':
+        case 'Q':
+          leave = TRUE;
           break;
         case 'v':
         case 'V':
@@ -8761,7 +8806,7 @@ int main(int argc, char **argv)
           }
         case 'h':
         case 'H':
-          printf("\nUsage: %s [-r|x|y|z|t|b|e|h|v] [-n{row}] [-[s|l]{str}] "
+          printf("\nUsage: %s [-r|q|x|y|z|t|b|e|h|v] [-n{row}] [-[s|l]{str}] "
             "[-d{sep}] [file]\n",
             (char *)basename(progname));
           if (toupper(c) == 'H')
