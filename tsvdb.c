@@ -8094,13 +8094,13 @@ void tsv_reverse(void)
 void prghelp(void)
 {
     FILE *f = NULL;
-    char *p = NULL;
     char cmd[MAXSTRLEN+1];
     BUFDEF;
 
 #ifdef XCURSES
     strcpy(buf, "/usr/share/tsvdb/");
 #else
+    char *p = NULL;
     strcpy(buf, progname);
     p = strrchr(buf, '\\');
     if (p == NULL)
