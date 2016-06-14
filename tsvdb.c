@@ -2169,7 +2169,16 @@ int getstrings(char *desc[], char *buf[], int field, int length, int lim[])
         }
     }
 
-    nlines = n + 2; ncols = mmax + length + 4;
+    nlines = n + 2;
+    ncols = mmax + length + 4;
+
+    if ((ncols+2) > COLS)
+    {
+        putmsg("", "Screen width to small!", "");
+        stop = TRUE;
+        return KEY_ESC;
+    }
+
     cx = (maxx - ncols) / 2;
     cy = (maxy - nlines) / 2;
 
@@ -8094,7 +8103,9 @@ void tsv_reverse(void)
 void prghelp(void)
 {
     FILE *f = NULL;
+#ifndef XCURSES
     char *p = NULL;
+#endif
     char cmd[MAXSTRLEN+1];
     BUFDEF;
 
