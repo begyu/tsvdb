@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.98 2016/06/10 $
+ * $Id: tcsvdb.c,v 0.9.99 2016/06/14 $
  */
 
-#define VERSION "0.9.98"
+#define VERSION "0.9.99"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -8094,13 +8094,16 @@ void tsv_reverse(void)
 void prghelp(void)
 {
     FILE *f = NULL;
+    char *p = NULL;
     char cmd[MAXSTRLEN+1];
     BUFDEF;
+
+    if (leave)
+        	return;
 
 #ifdef XCURSES
     strcpy(buf, "/usr/share/tsvdb/");
 #else
-    char *p = NULL;
     strcpy(buf, progname);
     p = strrchr(buf, '\\');
     if (p == NULL)
@@ -8304,7 +8307,10 @@ void subfunc1(void)
     for (i=0; i<j; i++)
         mvwaddstr(wmsg, i+1, 1, s[i]);
     wrefresh(wmsg);
-    (void)toupper(waitforkey());
+    if ((!leave) && (KEY_F(1) == waitforkey()))
+    {
+        prghelp();
+    }
     delwin(wmsg);
     touchwin(wbody);
     wrefresh(wbody);
@@ -8357,7 +8363,8 @@ void edithelp(void)
     for (i=0; i<j; i++)
         mvwaddstr(wmsg, i+1, 2, s[i]);
     wrefresh(wmsg);
-    (void)toupper(waitforkey());
+    if ((!leave) && (KEY_F(1) == waitforkey()))
+        prghelp();
     delwin(wmsg);
     touchwin(wstatus);
     wrefresh(wstatus);
@@ -8446,7 +8453,8 @@ void reghelp(void)
     for (i=0; i<j; i++)
         mvwaddstr(wmsg, i+1, 2, s[i]);
     wrefresh(wmsg);
-    (void)toupper(waitforkey());
+    if (KEY_F(1) == waitforkey())
+        EDITHLP;
     delwin(wmsg);
     touchwin(wbody);
     wrefresh(wbody);
