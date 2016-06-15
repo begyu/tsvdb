@@ -1,5 +1,5 @@
 /*
- * $Id: tcsvdb.c,v 0.9.99 2016/06/14 $
+ * $Id: tcsvdb.c,v 0.9.99 2016/06/15 $
  */
 
 #define VERSION "0.9.99"
@@ -2206,6 +2206,7 @@ repaint:
             getregexp = TRUE;
         else if (strcmp(desc[i], TOSTR) == 0)
                  getregexp = FALSE;
+        waitforkey();
         switch (c = mvweditstr(winput, i+1, mmax+3, buf[i], length, l))
         {
         case KEY_ESC:
