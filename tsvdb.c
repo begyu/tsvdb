@@ -2206,7 +2206,9 @@ repaint:
             getregexp = TRUE;
         else if (strcmp(desc[i], TOSTR) == 0)
                  getregexp = FALSE;
+#ifdef PDCW
         waitforkey();
+#endif
         switch (c = mvweditstr(winput, i+1, mmax+3, buf[i], length, l))
         {
         case KEY_ESC:
