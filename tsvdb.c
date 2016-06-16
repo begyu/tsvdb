@@ -2206,9 +2206,6 @@ repaint:
             getregexp = TRUE;
         else if (strcmp(desc[i], TOSTR) == 0)
                  getregexp = FALSE;
-#ifdef PDCW
-        waitforkey();
-#endif
         switch (c = mvweditstr(winput, i+1, mmax+3, buf[i], length, l))
         {
         case KEY_ESC:
@@ -4749,6 +4746,9 @@ void modfield(int y)
     flen = (maxx)-9;
     fieldbuf[cols+1] = NULL;
     inside = TRUE;
+#ifdef PDCW
+        waitforkey();
+#endif
     if (getfname(FALSE, ">", fieldbuf[field], flen) == NULL)
     {
         inside = FALSE;
