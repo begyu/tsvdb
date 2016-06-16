@@ -1,5 +1,5 @@
 /*
- * $Id: tcsvdb.c,v 0.9.99 2016/06/15 $
+ * $Id: tcsvdb.c,v 0.9.99 2016/06/16 $
  */
 
 #define VERSION "0.9.99"
@@ -2174,7 +2174,7 @@ int getstrings(char *desc[], char *buf[], int field, int length, int lim[])
 
     if ((ncols+2) > COLS)
     {
-        putmsg("", "Screen width to small!", "");
+        putmsg("", "Screen width too small!", "");
         stop = TRUE;
         return KEY_ESC;
     }
