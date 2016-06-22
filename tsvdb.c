@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 0.9.99 2016/06/16 $
+ * $Id: tcsvdb.c,v 1.0.0 2016/06/22 $
  */
 
-#define VERSION "0.9.99"
+#define VERSION "1.0"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -5946,7 +5946,9 @@ void reorder(int y, bool left)
 void reordall(bool left)
 {
     register int i, j, k;
+    int m, n;
     char *p;
+    char *b[] = {"All", "Empty", "Contain", "", ""};
     BUFDEF;
 
     if (ro || safe)
@@ -5956,45 +5958,73 @@ void reordall(bool left)
     if (i != 1)
         return;
 
-    msg(WSTR);
-    for (i=0; i<reccnt; i++)
-        reorder(i, left);
+    m = selbox("Method?", b, 1);
+    if (m<1 || m>3)
+        m = 1;
 
-    for (i=0; i<=cols; i++)
+    msg(WSTR);
+    if (m == 1)
     {
-        j = strlen(stru[i])-1;
-        if (stru[i][j] == ' ')
-            stru[i][j] = '\0';
+        for (i=0; i<reccnt; i++)
+            reorder(i, left);
+       
+        for (i=0; i<=cols; i++)
+        {
+            j = strlen(stru[i])-1;
+            if (stru[i][j] == ' ')
+                stru[i][j] = '\0';
+        }
+        j = (left) ? -1 : 1;
+        strcpy(buf, stru[field+j]);
+        strcpy(stru[field+j], stru[field]);
+        strcpy(stru[field], buf);
+        strcpy(head, stru[0]);
+        for (j=1; j<=cols; j++)
+        {
+            strcat(head, ssep);
+            strcat(head, stru[j]);
+        }
+        strcpy(buf, head);
+        strcat(head, "\n");
+        i = 0;
+        k = 0;
+        p = strtok(buf, ssep);
+        while(p != NULL)
+        {
+            strcpy(stru[i], p);
+            j = strlen(stru[i]);
+            strcat(stru[i], " ");
+            beg[i] = k;
+            len[i] = j+1;
+            k += j+1;
+            i++;
+            if (i >= MAXCOLS)
+               break;
+            p = strtok(NULL, ssep);
+        }
+        stru[cols][len[cols]-1] = '\0';
     }
-    j = (left) ? -1 : 1;
-    strcpy(buf, stru[field+j]);
-    strcpy(stru[field+j], stru[field]);
-    strcpy(stru[field], buf);
-    strcpy(head, stru[0]);
-    for (j=1; j<=cols; j++)
+    else
     {
-        strcat(head, ssep);
-        strcat(head, stru[j]);
+        for (i=0; i<reccnt; i++)
+        {
+            n = 0;
+            for (j=0; rows[i][j]; j++)
+            {
+                if (n == field)
+                {
+                    n = ((unsigned char)(rows[i][j]) > 0x20) ? 1 : 0;
+                    break;
+                }
+                if (rows[i][j] == csep)
+                    n++;
+            }
+            if (((m == 2) && (n == 1))
+            ||  ((m == 3) && (n == 0)))
+                continue;
+            reorder(i, left);
+        }
     }
-    strcpy(buf, head);
-    strcat(head, "\n");
-    i = 0;
-    k = 0;
-    p = strtok(buf, ssep);
-    while(p != NULL)
-    {
-        strcpy(stru[i], p);
-        j = strlen(stru[i]);
-        strcat(stru[i], " ");
-        beg[i] = k;
-        len[i] = j+1;
-        k += j+1;
-        i++;
-        if (i >= MAXCOLS)
-           break;
-        p = strtok(NULL, ssep);
-    }
-    stru[cols][len[cols]-1] = '\0';
     msg(NULL);
 }
 
@@ -8828,7 +8858,7 @@ int main(int argc, char **argv)
           }
         case 'h':
         case 'H':
-          printf("\nUsage: %s [-r|q|x|y|z|t|b|e|h|v] [-n{row}] [-[s|l]{str}] "
+          printf("\nUsage: %s [-r|x|y|z|q|t|b|e|h|v] [-n{row}] [-[s|l]{str}] "
             "[-d{sep}] [file]\n",
             (char *)basename(progname));
           if (toupper(c) == 'H')
