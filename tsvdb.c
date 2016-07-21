@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 1.0.0 2016/06/22 $
+ * $Id: tcsvdb.c,v 1.1.0 2016/07/21 $
  */
 
-#define VERSION "1.0"
+#define VERSION "1.1"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -1374,6 +1374,9 @@ void domenu(menu *mp)
         case '\n':          /* menu item selected */
             touchwin(wbody);
             wrefresh(wbody);
+            rmline(wstatus, 0);
+            touchwin(wstatus);
+            wrefresh(wstatus);
             setmenupos(y + 1, x + 1);
             rmerror();
 
@@ -8133,6 +8136,98 @@ void tsv_reverse(void)
     segregate(TRUE);
 }
 
+
+char *strcasechr(char *haystack, int c)
+{
+    char u = toupper(c), l = tolower(c);
+    while(*haystack && *haystack != u && *haystack != l) { haystack++; }
+    return *haystack == '\0' ? NULL : haystack;
+}
+/*
+//char *strfuzzy(char *haystack, const char *needle)
+//{
+//    if(!haystack || !needle) { return NULL; }
+//    haystack = strchr(haystack, *(needle++));
+//    while(haystack && *needle)
+//    {
+//        haystack = strchr(haystack + 1, *(needle++));
+//    }
+//    return haystack;
+//}
+*/
+char *strcasefuzzy(char *haystack, const char *needle)
+{
+    if(!haystack || !needle) { return NULL; }
+    haystack = strcasechr(haystack, *(needle++));
+    while(haystack && *needle)
+    {
+        haystack = strcasechr(haystack + 1, *(needle++));
+    }
+    return haystack;
+}
+
+void fuzzy(void)
+{
+    register int i, j;
+    int k = 0;
+    char *p;
+
+    if (cry)
+        	return;
+
+    getfstr();
+    if (strlen(fstr))
+    {
+        for (i=0; i<reccnt; i++)
+        {
+            p = strcasefuzzy(rows[i], fstr);
+            j = (p == NULL) ? 0 : 1;
+            flags[i] = j;
+            if (k == 0)
+                k = j;
+        }
+        filtered = (bool)(k == 1);
+    }
+    else
+    {
+        memset(flags, 0, MAXROWS);
+        filtered = FALSE;
+    }
+    flagmsg();
+
+    if (filtered)
+    {
+        tmpdat.total = reccnt;
+        for (i=0, j=0; i<=reccnt; i++)
+        {
+            tmpdat.ptr[i] = rows[i];
+            tmpdat.idx[i] = -1;
+            tmpdat.flag[i] = flags[i];
+            if (flags[i])
+            {
+                rows[j] = rows[i];
+                tmpdat.idx[j] = i;
+                flags[j] = 1;
+                j++;
+            }
+        }
+        rows[j] = rows[reccnt];
+        reccnt = j;
+        curr = 0;
+        edit();
+        reccnt = tmpdat.total;
+        for (i=0; i<j; i++)
+            	tmpdat.ptr[tmpdat.idx[i]] = rows[i];
+        for (i=0; i<=reccnt; i++)
+        {
+            rows[i] = tmpdat.ptr[i];
+            flags[i] = tmpdat.flag[i];
+        }
+        curr = 0;
+    }
+}
+
+
 void prghelp(void)
 {
     FILE *f = NULL;
@@ -8235,6 +8330,7 @@ menu SubMenu0[] =
 };
 
 #define LASTFUNC donum
+#define LASTITEM 21
 menu SubMenu1[] =
 {
     { "Edit", edit, "File edit" },
@@ -8244,6 +8340,7 @@ menu SubMenu1[] =
     { "seLect", tsv_select, "Collated rows (with previous set)" },
     { "filter", tsv_filter, "Choose records (restart with new file)" },
     { "Reverse", tsv_reverse, "Invert selection" },
+    { "fuZzy", fuzzy, "Filter approximate string matching" },
     { "Delimit", unlimit, "Remove delimiters" },
     { "terminate", delimit, "Add delimiters" },
     { "seParate", dosep, "Set field separator" },
@@ -8291,7 +8388,7 @@ void sub0(void)
 void sub1(void)
 {
 #if !defined(__unix) || defined(__DJGPP__)
-    SubMenu1[20].func = ro ? (FUNC)0 : LASTFUNC;
+    SubMenu1[LASTITEM].func = (ro || (LINES<(LASTITEM+6))) ? (FUNC)0 : LASTFUNC;
 #endif
     domenu(SubMenu1);
 }
