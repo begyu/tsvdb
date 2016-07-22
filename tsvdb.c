@@ -8352,8 +8352,8 @@ menu SubMenu1[] =
     { "Modify", modstru, "Restructuring" },
     { "crYpt", docrypt, "Code/decode" },
     { "Calc", calcall, "Evaluate the whole column" },
-    { "tOtal", dosum, "Aggregate" },
 #if !defined(__unix) || defined(__DJGPP__)
+    { "tOtal", dosum, "Aggregate" },
     { "code", docode, "Switch coding in the entire file" },
 #endif
     { "sequence", LASTFUNC, "Insert integer sequence numbers" },
