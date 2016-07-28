@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 1.1.0 2016/07/21 $
+ * $Id: tcsvdb.c,v 1.2.0 2016/07/28 $
  */
 
-#define VERSION "1.1"
+#define VERSION "1.2"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -927,7 +927,9 @@ static void repaintmenu(WINDOW *wmenu, menu *mp)
         if (ro)
         {
             if (((c = strchr(DISABLEDHOT, (char)(p->name[0]))) != NULL)
-               && (!strstr(p->name, "Col")) && (!strstr(p->name, "seL")))
+               && (!strstr(p->name, "Col")) 
+               && (!strstr(p->name, "fuZ")) 
+               && (!strstr(p->name, "seL")))
                 setcolor(wmenu, INPUTBOXCOLOR);
             else
                 setcolor(wmenu, SUBMENUCOLOR);
@@ -1323,6 +1325,7 @@ void domenu(menu *mp)
                 {
                     if (((c = strchr(DISABLEDHOT, (char)(mp[old].name[0]))) != NULL)
                        && (!strstr(mp[old].name, "Col"))
+                       && (!strstr(mp[old].name, "fuZ"))
                        && (!strstr(mp[old].name, "seL")))
                         setcolor(wmenu, INPUTBOXCOLOR);
                     else
@@ -6512,22 +6515,22 @@ void limit(bool set)
     flagmsg();
 }
 
-void delimit(void)
+void dolimit(void)
 {
-    if (ro || crypted)
-        return;
-    if (yesno("Set fields delimiter? (Y/N):") == 0)
-        return;
-    limit(TRUE);
-}
+    int i;
+    char *b[] = {"Set", "Purge", "None", "", ""};
 
-void unlimit(void)
-{
     if (ro || crypted)
         return;
-    if (yesno("Purge all delimiters? (Y/N):") == 0)
-        return;
-    limit(FALSE);
+
+    i = selbox("Fields delimiter", b, 3);
+    if (i<1 || i>3)
+        i = 3;
+
+    if (i == 1)
+        limit(TRUE);
+    else if (i == 2)
+        limit(FALSE);
 }
 
 void dosep(void)
@@ -8143,18 +8146,7 @@ char *strcasechr(char *haystack, int c)
     while(*haystack && *haystack != u && *haystack != l) { haystack++; }
     return *haystack == '\0' ? NULL : haystack;
 }
-/*
-//char *strfuzzy(char *haystack, const char *needle)
-//{
-//    if(!haystack || !needle) { return NULL; }
-//    haystack = strchr(haystack, *(needle++));
-//    while(haystack && *needle)
-//    {
-//        haystack = strchr(haystack + 1, *(needle++));
-//    }
-//    return haystack;
-//}
-*/
+
 char *strcasefuzzy(char *haystack, const char *needle)
 {
     if(!haystack || !needle) { return NULL; }
@@ -8330,7 +8322,7 @@ menu SubMenu0[] =
 };
 
 #define LASTFUNC donum
-#define LASTITEM 21
+#define LASTITEM 20
 menu SubMenu1[] =
 {
     { "Edit", edit, "File edit" },
@@ -8341,8 +8333,7 @@ menu SubMenu1[] =
     { "filter", tsv_filter, "Choose records (restart with new file)" },
     { "Reverse", tsv_reverse, "Invert selection" },
     { "fuZzy", fuzzy, "Filter approximate string matching" },
-    { "Delimit", unlimit, "Remove delimiters" },
-    { "terminate", delimit, "Add delimiters" },
+    { "Delimit", dolimit, "Add/remove delimiters" },
     { "seParate", dosep, "Set field separator" },
     { "Trailing", trail, "Add/remove trailing spaces & separators" },
     { "adJust", doindent, "Align left/right/center" },
@@ -8352,8 +8343,8 @@ menu SubMenu1[] =
     { "Modify", modstru, "Restructuring" },
     { "crYpt", docrypt, "Code/decode" },
     { "Calc", calcall, "Evaluate the whole column" },
-#if !defined(__unix) || defined(__DJGPP__)
     { "tOtal", dosum, "Aggregate" },
+#if !defined(__unix) || defined(__DJGPP__)
     { "code", docode, "Switch coding in the entire file" },
 #endif
     { "sequence", LASTFUNC, "Insert integer sequence numbers" },
