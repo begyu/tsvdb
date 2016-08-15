@@ -2487,7 +2487,7 @@ int casestr(char *str, bool upper, bool ascii)
   unsigned char c;
 
   for (i=0; i<w; i++)
-  {                                                         
+  {
       if ((c=str[i]) < 0x7F)
           str[i] = (upper ? toupper(c) : tolower(c));
       else
