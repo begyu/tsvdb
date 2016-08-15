@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 1.2.0 2016/07/28 $
+ * $Id: tcsvdb.c,v 1.2.3 2016/08/15 $
  */
 
-#define VERSION "1.2"
+#define VERSION "1.2.3"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -402,6 +402,7 @@ extern bool calcerr;
 #define CTRL_F 0x06
 #define CTRL_G 0x07
 #define CTRL_L 0x0C
+#define CTRL_N 0x0E
 #define CTRL_O 0x0F
 #define CTRL_P 0x10
 #define CTRL_Q 0x11
@@ -423,6 +424,7 @@ extern bool calcerr;
 //#define ALT_Y 0x1b9
 */
 
+void edit(void);
 void subfunc1(void);
 #define HELP subfunc1()
 void edithelp(void);
@@ -502,6 +504,8 @@ static bool hunsort = FALSE;
 static bool insert = FALSE;
 static bool colorset = FALSE;
 static bool inside = FALSE;
+static bool phonetic = FALSE;
+static bool hunset = FALSE;
 static long int filesize = 0L;
 static int origy, origx;
 
@@ -2483,7 +2487,7 @@ int casestr(char *str, bool upper, bool ascii)
   unsigned char c;
 
   for (i=0; i<w; i++)
-  {
+  {                                                         
       if ((c=str[i]) < 0x7F)
           str[i] = (upper ? toupper(c) : tolower(c));
       else
@@ -2953,6 +2957,7 @@ void sort_back(int n)
     msg(NULL);
 }
 
+
 void flagmsg(void)
 {
     setcolor(wmain, INFOCOLOR);
@@ -2976,9 +2981,12 @@ void flagmsg(void)
         mvwaddstr(wmain, 0, bw-5, "   ");
     }
     wrefresh(wtitl);
-    mvwaddstr(wmain, 0, bw-16, filtered ? "Sel" : "   ");
-    mvwaddstr(wmain, 0, bw-12, ro ? "Ro" : "  ");
-    mvwaddstr(wmain, 0, bw-9, insert ? "Ins" : "   ");
+    mvwaddstr(wmain, 0, bw-24, phonetic ? "Sndx" : "     ");
+    mvwaddstr(wmain, 0, bw-19, hunset ? "Hu" : "   ");
+    mvwaddstr(wmain, 0, bw-16, filtered ? "Sel" : "    ");
+    mvwaddstr(wmain, 0, bw-12, ro ? "Ro" : "   ");
+    mvwaddstr(wmain, 0, bw-9, insert ? "Ins" : "    ");
+    // mvwaddstr(wmain, 0, bw-5, modified ? "Mod" : "   ");
     setcolor(wmain, MAINMENUCOLOR);
     wrefresh(wmain);
 }
@@ -4537,8 +4545,8 @@ int strsplit(const char *str, char *parts[], const char *delimiter)
     char *pch;
     int i = 0;
     char *tmp = strdup(str);
-    pch = strtok(tmp, delimiter);
 
+    pch = strtok(tmp, delimiter);
     parts[i++] = strdup(pch);
     while (pch)
     {
@@ -4566,6 +4574,215 @@ void strtrim(char *s)
         i--;
     }
 }
+
+
+static char sxcode[128] = { 0 };
+void add_code(const char *s, int c)
+{
+    while (*s)
+    {
+        sxcode[(int)*s] = sxcode[0x20 ^ (int)*s] = c;
+        s++;
+    }
+}
+ 
+void sndx_init()
+{
+    static const char *cls[] =
+        { "AEIOU", "", "BFPV", "CGJKQSXZ", "DT", "L", "MN", "R", 0};
+    int i;
+    for (i = 0; cls[i]; i++)
+        add_code(cls[i], i - 1);
+}
+ 
+/* returns a static buffer; user must copy if want to save
+   result across calls */
+char* soundex(const char *s)
+{
+    static char out[5];
+    int c, prev, i;
+ 
+    out[0] = out[4] = 0;
+    if (!s || !*s) return out;
+    out[0] = *s++;
+    /* first letter, though not coded, can still affect next letter: Pfister */
+    prev = sxcode[(int)out[0]];
+    for (i = 1; *s && i < 4; s++)
+    {
+        if ((c = sxcode[(int)*s]) == prev) continue;
+ 
+        if (c == -1) prev = 0;    /* vowel as separator */
+        else if (c > 0)
+        {
+            out[i++] = c + '0';
+            prev = c;
+        }
+    }
+    while (i < 4) out[i++] = '0';
+    out[4] = '\0';
+    return out;
+}
+
+
+
+/*
+ * Replace all occurrences of `subs` with `repl` in `str`
+ * when length repl <= len subs
+ */
+int str_repl(char *str, const char *subs, const char *repl)
+{
+    char *pos = NULL;
+    BUFDEF;
+    int i = strlen(subs);
+    int j = strlen(repl);
+    int r = 0;
+   
+    if (j > i) return -1;
+    strcpy(buf, str);
+    while ((pos = strstr(buf, subs)))
+    {
+        strcpy(pos, repl);
+        strcpy(pos+j, str+(pos-buf)+i);
+        r++;
+    }
+    strcpy(str, buf);
+    return r;
+}
+
+static bool sxfirst = TRUE;
+static char fsx[5] = { 0 };
+void fsndx(bool all)
+{
+    register int i;
+    int j, k;
+    char *fieldname[MAXCOLS+1];
+    char *fieldbuf[MAXCOLS+1];
+    char *s;
+    BUFDEF;
+    bool found = FALSE;
+    int y=curr;
+
+    strcpy(buf, fstr);
+    if (buf[0] == '\0')
+        	strcpy(buf, "?");
+
+    j = strlen(fstr);
+    if (all)
+    {
+        y = 0;
+        sxfirst = TRUE;
+        memset(flags, 0, MAXROWS);
+    }
+    else
+    {
+        y++;
+    }
+    if (sxfirst)
+    {
+        phonetic = FALSE;
+        strcpy(buf, fstr);
+        fieldname[0] = "Soundex:";
+        fieldname[1] = 0;
+        fieldbuf[0] = buf;
+        fieldbuf[1] = 0;
+        getregexp = FALSE;
+        getstrings(fieldname, fieldbuf, 0, MAXFLEN+1, NULL);
+        casestr(buf, TRUE, TRUE);
+        strcpy(fstr, buf);
+        j = strlen(fstr);
+        if (hunset)
+        {
+/*            str_repl(buf, "CZ", "C");*/
+            str_repl(buf, "TS", "CS");
+        }
+        s = soundex(buf);
+        strcpy(fsx, s);
+        sxfirst = FALSE;
+    }
+    for (i=y; i<reccnt; i++)
+    {
+        strsplit(rows[i], fieldbuf, ssep);
+        strcpy(buf, fieldbuf[field]);
+        buf[j] = '\0';
+        casestr(buf, TRUE, TRUE);
+        if (hunset)
+        {
+/*            str_repl(buf, "CZ", "C");*/
+            str_repl(buf, "TS", "CS");
+        }
+        s = soundex(buf);
+        if (0 == strcmp(fsx, s))
+        {
+            found = TRUE;
+            if (all)
+            {
+                flags[i] = 1;
+                filtered = TRUE;
+                phonetic = TRUE;
+            }
+            else
+            {
+                curr = i;
+                break;
+            }
+        }
+    }
+    if (i >= reccnt) sxfirst = TRUE;
+    regex = FALSE;
+    if (all)
+    {
+        sxfirst = FALSE;
+        if (found)
+        {
+            tmpdat.total = reccnt;
+            for (i=0, j=0; i<=reccnt; i++)
+            {
+                tmpdat.ptr[i] = rows[i];
+                tmpdat.idx[i] = -1;
+                tmpdat.flag[i] = flags[i];
+                if (flags[i])
+                {
+                    rows[j] = rows[i];
+                    tmpdat.idx[j] = i;
+                    flags[j] = 1;
+                    j++;
+                }
+            }
+            rows[j] = rows[reccnt];
+            reccnt = j;
+            i = curr;
+            k = field;
+            curr = 0;
+            edit();
+            curr = i;
+            field = k;
+            reccnt = tmpdat.total;
+            for (i=0; i<j; i++)
+                	tmpdat.ptr[tmpdat.idx[i]] = rows[i];
+            for (i=0; i<=reccnt; i++)
+            {
+                rows[i] = tmpdat.ptr[i];
+                flags[i] = tmpdat.flag[i];
+            }
+        }
+        curr = 0;
+        filtered = FALSE;
+    }
+    else
+    {
+        setcolor(wstatus, MAINMENUCOLOR);
+        mvwaddstr(wstatus, 0, 20, (j!=0) ? "*" : " ");
+        setcolor(wstatus, FSTRCOLOR);
+        mvwaddstr(wstatus, 0, 21, fstr);
+        setcolor(wstatus, STATUSCOLOR);
+        if (found)
+            mvwaddstr(wstatus, 0, 22+j, fsx);
+        wclrtoeol(wstatus);
+        wrefresh(wstatus);
+    }
+    phonetic = FALSE;
+}
+
 
 void modallf(int y)
 {
@@ -5236,7 +5453,7 @@ void change()
     if (changes)
     {
         c = (changes == 1) ? ' ' : 's';
-        sprintf(s, "%d occurence%c changed.", changes, c);
+        sprintf(s, "%d occurrence%c changed.", changes, c);
         msg(s);
         modified = TRUE;
         flagmsg();
@@ -5467,7 +5684,7 @@ void schange()
     {
         displn(last, 1);
         c = (changes == 1) ? ' ' : 's';
-        sprintf(s, "%d occurence%c changed.", changes, c);
+        sprintf(s, "%d occurrence%c changed.", changes, c);
         msg(s);
         modified = TRUE;
         flagmsg();
@@ -6190,8 +6407,10 @@ void dosortby(void)
         hunsort = FALSE;
         if (numsort == FALSE)
         {
-            if (selbox("Hungarian abc?", ync, 2) == 1)
+            if (hunset)
                 hunsort = TRUE;
+            else if (selbox("Hungarian abc?", ync, 2) == 1)
+                     hunsort = TRUE;
         }
         if (selbox("Reverse order?", ync, 2) != 1)
             sort(reccnt);
@@ -6778,6 +6997,69 @@ void delfield(void)
     }
 }
 
+
+/*
+ * Get the number of occurrences of `needle` in `haystack`
+ */
+size_t occurrences(const char *needle, const char *haystack)
+{
+    if (NULL == needle || NULL == haystack) return -1;
+    char *pos = (char *)haystack;
+    size_t i = 0;
+    size_t l = strlen(needle);
+    if (l == 0) return 0;
+    while ((pos = strstr(pos, needle)))
+    {
+        pos += l;
+        i++;
+    }
+    return i;
+}
+
+
+void counter(void)
+{
+    int i, j, k, l;
+    BUFDEF;
+    char *fieldname[2];
+    char *fieldbuf[2];
+
+    fieldname[0] = "Locate:";
+    fieldname[1] = 0;
+    fieldbuf[0] = buf;
+    fieldbuf[1] = 0;
+
+    strcpy(buf, fstr);
+    if (buf[0] == '\0')
+        	strcpy(buf, "?");
+    getregexp = FALSE;
+    getstrings(fieldname, fieldbuf, 0, MAXFLEN+1, NULL);
+    touchwin(wbody);
+    wrefresh(wbody);
+    i = strlen(buf);
+    j = k = l = 0;
+    if (i > 0)
+    {
+        for (i=0; i<reccnt; i++)
+        {
+            l = occurrences(buf, rows[i]);
+            if (l > 0)
+            {
+                j += l;
+                k++;
+            }
+        }
+        sprintf(buf, "%s\" is %d in %d record.", buf, j, k);
+        putmsg(" Contains of the \"", buf, "");
+#ifdef __MINGW_VERSION
+        pause(1);
+#else
+        sleep(1);
+#endif
+    }
+}
+
+
 void count(bool column)
 {
     register int i, j;
@@ -6836,7 +7118,7 @@ void count(bool column)
             strcat(s, "in ");
             strcat(s, stru[field]);
         }
-        putmsg(" Occurence of the \"", regstr, s);
+        putmsg(" Occurrence of the \"", regstr, s);
 #ifdef __MINGW_VERSION
         pause(1);
 #else
@@ -7429,7 +7711,6 @@ void edit(void)
 
     curr = (curr <= reccnt) ? curr : 0;
     ctop = topset(curr, r);
-    field = 0;
     curcol= 0;
     clsbody();
     while (!quit)
@@ -7741,6 +8022,21 @@ void edit(void)
             searchfield(curr, field);
             if ((curr-ctop) >= r)
                ctop = curr - (r-1);
+            break;
+        case CTRL_N:
+            counter();
+            break;
+        case CTRL_P:
+            fsndx(FALSE);
+            if ((curr-ctop) >= r)
+               ctop = curr - (r-1);
+            break;
+        case ALT_M:
+            if (!phonetic)
+               hunset = !hunset;
+            break;
+        case ALT_N:
+            fsndx(TRUE);
             break;
         case CTRL_C:
             copy();
@@ -8116,6 +8412,7 @@ void segregate(bool rev)
         rows[j] = rows[reccnt];
         reccnt = j;
         curr = 0;
+        field = 0;
         edit();
         reccnt = tmpdat.total;
         for (i=0; i<j; i++)
@@ -8206,6 +8503,7 @@ void fuzzy(void)
         rows[j] = rows[reccnt];
         reccnt = j;
         curr = 0;
+        field = 0;
         edit();
         reccnt = tmpdat.total;
         for (i=0; i<j; i++)
@@ -8402,13 +8700,14 @@ void subfunc1(void)
         " (C-)Enter:  edit field/s       \t Ctrl/Alt-E:  modify field/s",
         "    Letter:  search (? mask)    \t Ctrl/Alt-U:  uppercase/init",
         " ?+letters:  look only alnum    \t Ctrl/Alt-L:  lower/initial",
-        "  Ctrl-F/D:  regexp search      \t C/A-arrows:  reorder fields",
+        "  Ctrl-F/D:  regexp search /AND \t C/A-arrows:  reorder fields",
         "     Alt-F:  seek curr field    \t Shft-arrow:  align left/right",
         " Tab/C-Tab:  find next          \t  Shft-Home:  adjust center",
         "  Shft-Tab:  previous           \t  Alt-Up/Dn:  move back/forward",
+        "    Ctrl-P:  next phonetic      \t    Alt-N/M:  all soundex /Hu",
         "Bksp/S-Del:  del fstr back/first\t Ctrl/Alt-Q:  search equivalent",
         "  Del/Home:  clear fstr         \t    Alt-I/D:  ins/remove field",
-        "    Ctrl-G:  goto line          \t Ctrl/Alt-O:  count subs/field",
+        "    Ctrl-G:  goto line          \tC-N / C/A-O:  count subs/field",
         "Ctrl/Alt-S:  replace/change     \t   C/A-Home:  go max/longest",
         " Alt-C/X/Y:  calculate/fld/cols \t    C/A-End:  go min/shortest",
 #if !defined(__unix) || defined(__DJGPP__)
@@ -8426,11 +8725,11 @@ void subfunc1(void)
     int i;
     
 #ifdef __MINGW_VERSION
-    int j=18;
+    int j=19;
     if (COLS <72)
         	return;
 #else
-    int j=17;
+    int j=18;
 #endif
     wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-72)/2, j+2, 72);
 #ifndef __MINGW_VERSION
@@ -8987,6 +9286,7 @@ int main(int argc, char **argv)
           return -1;
        }
     }
+    sndx_init();
 #ifdef __MINGW_VERSION
     SetConsoleTitle("TSVdb v."VERSION);
 #endif
