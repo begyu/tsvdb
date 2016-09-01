@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 1.2.3 2016/08/15 $
+ * $Id: tcsvdb.c,v 1.3.0 2016/09/01 $
  */
 
-#define VERSION "1.2.3"
+#define VERSION "1.3"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -506,6 +506,9 @@ static bool colorset = FALSE;
 static bool inside = FALSE;
 static bool phonetic = FALSE;
 static bool hunset = FALSE;
+static bool slk = FALSE;
+static bool slkon = FALSE;
+static WINDOW *slkptr = NULL;
 static long int filesize = 0L;
 static int origy, origx;
 
@@ -7562,6 +7565,8 @@ void resize_event()
 {
     int x, y;
 
+    if (slk)
+        slk_clear();
     delwin(wtitl);
     delwin(wmain);
     delwin(wstatus);
@@ -7572,8 +7577,8 @@ void resize_event()
     COLS = x;
     wtitl = subwin(stdscr, th, bw, 0, 0);
     wmain = subwin(stdscr, mh, bw, th, 0);
-    wresize(wbody, y-4, x);
-    wstatus = subwin(stdscr, sh, bw, th + mh + bh, 0);
+    wresize(wbody, y-(slk ? 5 : 4), x);
+    wstatus = subwin(stdscr, sh, bw, th + mh + bh-(slk ? 1 : 0), 0);
     colorbox(wtitl, TITLECOLOR, 0);
     colorbox(wmain, MAINMENUCOLOR, 0);
     colorbox(wbody, BODYCOLOR, 0);
@@ -7602,6 +7607,10 @@ void resize_event()
     curs_set(1);
     titlemsg(datfname);
     flagmsg();
+    if (slkon)
+    {
+        slk_restore();
+    }
 }
 #else
   #define MAXHEIGHT 60
@@ -7628,6 +7637,8 @@ void resize(int dx, int dy)
     else
         y = (LINES > 25) ? LINES+dy : LINES;
 
+    if (slk)
+        slk_clear();
     delwin(wtitl);
     delwin(wmain);
     delwin(wstatus);
@@ -7645,11 +7656,11 @@ void resize(int dx, int dy)
     wtitl = subwin(stdscr, th, bw, 0, 0);
     wmain = subwin(stdscr, mh, bw, th, 0);
 #ifndef PDCW
-    wbody = subwin(stdscr, bh, bw, th + mh, 0);
+    wbody = subwin(stdscr, bh-(slk ? 1 : 0), bw, th + mh, 0);
 #else
-    wresize(wbody, y-4, x);
+    wresize(wbody, y-(slk ? 5 : 4), x);
 #endif
-    wstatus = subwin(stdscr, sh, bw, th + mh + bh, 0);
+    wstatus = subwin(stdscr, sh, bw, th + mh + bh-(slk ? 1 : 0), 0);
     colorbox(wtitl, TITLECOLOR, 0);
     colorbox(wmain, MAINMENUCOLOR, 0);
     colorbox(wbody, BODYCOLOR, 0);
@@ -7679,6 +7690,10 @@ void resize(int dx, int dy)
     flagmsg();
     doupdate();
     wnoutrefresh(wbody);
+    if (slkon)
+    {
+        slk_restore();
+    }
 }
 
 void incw(void)
@@ -7715,6 +7730,8 @@ void edit(void)
     clsbody();
     while (!quit)
     {
+        if (slkon)
+            	slk_restore();
         j = 0;
         for (i=ctop; i<(ctop+r); i++)
         {
@@ -7735,6 +7752,9 @@ void edit(void)
             	c = waitforkey();
         else
             	unget = FALSE;
+        if (slk)
+            	slk_clear();
+        
         switch (c)
         {
         case KEY_UP:
@@ -7816,6 +7836,19 @@ void edit(void)
             else
                ctop = 0;
             break;
+        case KEY_F(10):
+            if (slk)
+            {
+               i = selbox("Exit from program?", ync, 2);
+               if (i != 1)
+                  	break;
+               leave = TRUE;
+            }
+            else
+               	break;
+        case KEY_F(2):
+            if (!slk)
+               	break;
         case KEY_ESC:
             quit = TRUE;
             break;
@@ -7881,6 +7914,9 @@ void edit(void)
                    	ctop = topset(curr, r);
             }
             break;
+        case KEY_F(5):
+            if (!slk)
+               	break;
 /*        case KEY_TAB:*/
         case 9:
             if (strlen(fstr))
@@ -7928,6 +7964,9 @@ void edit(void)
                wrefresh(wstatus);
             }
             break;
+        case KEY_F(6):
+            if (!slk)
+               	break;
         case KEY_BTAB:
             if (strlen(fstr))
             {
@@ -7935,6 +7974,10 @@ void edit(void)
                if (curr < ctop)
                   ctop = curr;
             }
+            break;
+        case KEY_F(7):
+            if (slk)
+               	schange();
             break;
         case KEY_DC:
             fchr = fstr[0];
@@ -8002,6 +8045,10 @@ void edit(void)
             }
             break;
 #endif
+        case KEY_F(4):
+            if (!slk)
+               	break;
+            curr = 0;
         case CTRL_F:
             getfstr();
             search(curr, RXFORW);
@@ -8055,8 +8102,25 @@ void edit(void)
             safe = (safe == TRUE) ? FALSE : TRUE;
             titlemsg(datfname);
             break;
+        case KEY_F(8):
+            if (filtered)
+            {
+               fchr = fstr[0];
+               fstr[0] = '\0';
+               regex = FALSE;
+               memset(flags, 0, MAXROWS);
+               wmove(wstatus, 0, 20);
+               wclrtoeol(wstatus);
+               wrefresh(wstatus);
+               filtered = FALSE;
+               break;
+            }
+        case KEY_F(9):
+            if (!slk)
+               	break;
         case ALT_A:
-            filtered = TRUE;
+            if (c != KEY_F(8))
+               	filtered = TRUE;
         case CTRL_A:
             memset(flags, 0, MAXROWS);
             if (strlen(fstr))
@@ -8114,6 +8178,15 @@ void edit(void)
             break;
         case KEY_F(1):
             HELP;
+            break;
+        case KEY_F(3):
+            if (ro)
+            {
+                putmsg("File \"", datfname, "\" is read-only!");
+                break;
+            }
+            if (slkon && modified)
+                (void)savefile(datfname, 1);
             break;
         case CTRL_G:
             gorec();
@@ -8596,6 +8669,7 @@ void sub0(void), sub1(void), sub2(void);
 void subfunc1(void), subfunc2(void);
 void reghelp(void), edithelp(void);
 void txthelp(void), limits(void);
+void chgslk(void);
 
 /***************************** menus initialization ***********************/
 
@@ -8659,6 +8733,7 @@ menu SubMenu2[] =
     { "Whole", prghelp, "Help index" },
     { "Limits", limits, "Maximums & conditions" },
     { "Colors", changecolor, "Change color set" },
+    { "set_SLK", chgslk, "Set or hide soft label keys" },
 #ifdef __MINGW_VERSION
     { "+", incw, "Enlarge window" },
     { "-", decw, "Decrease window" },
@@ -8684,6 +8759,13 @@ void sub1(void)
 
 void sub2(void)
 {
+    int i;
+
+    if ((slk == FALSE) && (SubMenu2[11].name[0] == 'A'))
+    {
+        for (i=8; i<12; i++)
+             SubMenu2[i] = SubMenu2[i+1];
+    }
     domenu(SubMenu2);
 }
 
@@ -8970,6 +9052,7 @@ static char *hlpstrs[] =
     "          or \"-L\" with header",
     "-d <,|;>  Set separator to ',' or ';'",
     "-e        Edit as text",
+    "-f        Func keys on",
     "-h        Help",
     "-v        Version",
     "",
@@ -9082,6 +9165,44 @@ void subfunc2(void)
     wrefresh(wbody);
 }
 
+void chgslk(void)
+{
+    if (!slk)
+        return;
+
+    slkon = !slkon;
+    if (slkon)
+    {
+        SP->slk_winptr = slkptr;
+        slk_restore();
+        slk_attron(A_BOLD | COLOR_PAIR(MARKCOLOR));
+        slk_touch();
+        slk_noutrefresh();
+    }
+    else
+    {
+        slk_clear();
+        slkptr = SP->slk_winptr;
+        SP->slk_winptr = NULL;
+    }
+}
+
+void setslk(void)
+{
+    int i;
+    const char *slklabs[] = {"1 Help", "2 Menu", "3 Save", "4 Find", "5 Next",
+                             "6 Prev", "7 Repl", "8 Mark"," 9 Filt", "10 Quit"};
+
+    for (i=0; i<10; i++)
+        	(void)slk_set(i+1, slklabs[i], 1);
+#ifdef __MINGW_VERSION
+    incw();
+    decw();
+#endif
+    chgslk();
+    chgslk();
+}
+
 void changecolor(void)
 {
     int i, j;
@@ -9115,21 +9236,26 @@ void changecolor(void)
     menudim(mp, &i, &j);
     repaintmainmenu(j, mp);
     redraw();
+    slk_clear();
+    slk_attron(A_BOLD | COLOR_PAIR(MARKCOLOR));
+    if (slkon)
+        slk_restore();
 }
 
 
 /*** start main ***/
 
-int main(int argc, char **argv)
+int main(int ac, char **av)
 {
     int i = 0;
     int c;
+    char *p = NULL;
     char s[MAXSTRLEN] = "";
 
-    strncpy(progname, argv[0], MAXSTRLEN-1);
+    strncpy(progname, av[0], MAXSTRLEN-1);
     curr = 0;
     opterr = 0;
-    while ((c=getopt(argc,argv,"HhRrVvXxYyZzQqTtBbEeN:n:D:d:S:s:L:l:?")) != -1)
+    while ((c=getopt(ac,av,"HhRrVvXxYyZzQqTtBbEeFfN:n:D:d:S:s:L:l:?")) != -1)
     {
       switch (c)
       {
@@ -9245,9 +9371,12 @@ int main(int argc, char **argv)
           }
         case 'h':
         case 'H':
-          printf("\nUsage: %s [-r|x|y|z|q|t|b|e|h|v] [-n{row}] [-[s|l]{str}] "
-            "[-d{sep}] [file]\n",
-            (char *)basename(progname));
+          strcpy(s, basename(progname));
+          p = strstr(s, ".exe");
+          if (p != NULL)
+             	p[0] = '\0';
+          printf("\nUsage: %s [-r|x|y|z|q|t|b|e|f|h|v] [-n{row}] "
+                 "[-[s|l]{str}] [-d{,|;}] [file]\n", s);
           if (toupper(c) == 'H')
               help();
           exit(c==':' ? -1 : 0);
@@ -9255,12 +9384,16 @@ int main(int argc, char **argv)
         case 'E':
           i = -1;
           break;
+        case 'f':
+        case 'F':
+          slk = slkon = TRUE;
+          break;
         default:
           break;
       }
     }
-    if (optind < argc)
-        strcpy(s, argv[optind++]);
+    if (optind < ac)
+        strcpy(s, av[optind++]);
     else
         strcpy(s, FNAME);
     setlocale(LC_ALL, "C");
@@ -9274,7 +9407,11 @@ int main(int argc, char **argv)
        copyfile(s, fstr, (i==-3));
        return 0;
     }
+    if (slk)
+        slk_init(55);
     init();
+    if (slk)
+        setslk();
     if (loadfile(s) == 0)
        strcpy(datfname, s);
     else
