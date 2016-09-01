@@ -8733,7 +8733,7 @@ menu SubMenu2[] =
     { "Whole", prghelp, "Help index" },
     { "Limits", limits, "Maximums & conditions" },
     { "Colors", changecolor, "Change color set" },
-    { "set_SLK", chgslk, "Set or hide soft label keys" },
+    { "labels", chgslk, "Set or hide soft label keys" },
 #ifdef __MINGW_VERSION
     { "+", incw, "Enlarge window" },
     { "-", decw, "Decrease window" },
@@ -8760,10 +8760,14 @@ void sub1(void)
 void sub2(void)
 {
     int i;
-
-    if ((slk == FALSE) && (SubMenu2[11].name[0] == 'A'))
+#ifdef __MINGW_VERSION
+ #define MAXS2 11
+#else
+ #define MAXS2 9
+#endif
+    if ((slk == FALSE) && (SubMenu2[MAXS2].name[0] == 'A'))
     {
-        for (i=8; i<12; i++)
+        for (i=8; i<(MAXS2+1); i++)
              SubMenu2[i] = SubMenu2[i+1];
     }
     domenu(SubMenu2);
