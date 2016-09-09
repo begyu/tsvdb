@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 1.3.0 2016/09/01 $
+ * $Id: tcsvdb.c,v 1.4.0 2016/09/09 $
  */
 
-#define VERSION "1.3"
+#define VERSION "1.4"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -445,6 +445,14 @@ void bye(void);
 #define MAXNLEN  19
 #define MAXFLEN  33
 
+#ifdef PDCW
+  #define MAXHEIGHT 36
+  #define MAXWIDTH 132
+#else
+  #define MAXHEIGHT 60
+  #define MAXWIDTH 160
+#endif
+
 #define BUFDEF char buf[MAXSTRLEN+1]
 
 #define MIN(a, b)  (((a) < (b)) ? (a) : (b))
@@ -511,6 +519,8 @@ static bool slkon = FALSE;
 static WINDOW *slkptr = NULL;
 static long int filesize = 0L;
 static int origy, origx;
+static int d_row = 0;
+static int d_y = 0;
 
 #define TABCSEP '\t'
 #define TABSSEP "\t"
@@ -1035,7 +1045,6 @@ static void mainmenu(menu *mp)
             old = cur;
             wrefresh(wmain);
         }
-
         switch (c = (key != ERR ? key : waitforkey()))
         {
         case KEY_DOWN:
@@ -6017,6 +6026,10 @@ void selected(void)
             return;
 /*        execlp("tsvdb", tmpfname, (char *)0);*/
         strcpy(buf, progname);
+        strcat(buf, " -w");
+        p = buf;
+        p += strlen(buf);
+        (void)itoa(d_y, p, 10);
         strcat(buf, " ");
         strcat(buf, tmpfname);
         system(buf);
@@ -7559,8 +7572,6 @@ void donum(void)
 
 #ifdef __MINGW_VERSION
 #ifdef PDCW
-  #define MAXHEIGHT 36
-  #define MAXWIDTH 132
 void resize_event()
 {
     int x, y;
@@ -7612,9 +7623,6 @@ void resize_event()
         slk_restore();
     }
 }
-#else
-  #define MAXHEIGHT 60
-  #define MAXWIDTH 160
 #endif
 void resize(int dx, int dy)
 {
@@ -7648,6 +7656,7 @@ void resize(int dx, int dy)
     initscr();
     initcolor();
 #endif
+    d_y = (y-LINES);
     resize_term(y, x);
     LINES = y;
     COLS = x;
@@ -8623,6 +8632,10 @@ void prghelp(void)
     fclose(f);
     def_prog_mode();
     strcpy(cmd, progname);
+    strcat(cmd, " -w");
+    p = cmd;
+    p += strlen(cmd);
+    (void)itoa(d_y, p, 10);
     strcat(cmd, " -tyzq ");
     strcat(cmd, buf);
     system(cmd);
@@ -9055,6 +9068,7 @@ static char *hlpstrs[] =
     "-l <str>  List str found",
     "          or \"-L\" with header",
     "-d <,|;>  Set separator to ',' or ';'",
+    "-w <num>  Set scr height + or -num rows",
     "-e        Edit as text",
     "-f        Func keys on",
     "-h        Help",
@@ -9077,7 +9091,7 @@ void opthelp(void)
     int i;
     int j=17;
     
-    wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-40)/2, j+2, 40);
+    wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-42)/2, j+2, 42);
 #ifndef __MINGW_VERSION
     wborder(wmsg, '|', '|', '-', '-', '+', '+', '+', '+');
 #endif
@@ -9259,7 +9273,7 @@ int main(int ac, char **av)
     strncpy(progname, av[0], MAXSTRLEN-1);
     curr = 0;
     opterr = 0;
-    while ((c=getopt(ac,av,"HhRrVvXxYyZzQqTtBbEeFfN:n:D:d:S:s:L:l:?")) != -1)
+    while ((c=getopt(ac,av,"HhRrVvXxYyZzQqTtBbEeFfN:n:D:d:S:s:L:l:w:?")) != -1)
     {
       switch (c)
       {
@@ -9357,7 +9371,7 @@ int main(int ac, char **av)
                   break;
               }
               else
-                  fprintf (stderr, "Expected record number.\n");
+                  fprintf(stderr, "Expected record number.\n");
           }
         case 'd':
         case 'D':
@@ -9371,7 +9385,25 @@ int main(int ac, char **av)
                   break;
               }
               else
-                  fprintf (stderr, "Expected ',' or ';' char.\n");
+                  fprintf(stderr, "Expected ',' or ';' char.\n");
+          }
+        case 'w':
+        case 'W':
+          if (toupper(c) == 'W')
+          {
+#ifdef __MINGW_VERSION
+              if (isdigit(optarg[0])
+                  || (optarg[0] == '-') || (optarg[0] == '+'))
+              {
+                  d_row = LINES + atoi(optarg);
+                  break;
+              }
+              else
+                  fprintf(stderr, "Expected number.\n");
+#else
+              fprintf(stderr, "Not available!\n");
+              break;
+#endif
           }
         case 'h':
         case 'H':
@@ -9416,6 +9448,13 @@ int main(int ac, char **av)
     init();
     if (slk)
         setslk();
+#ifdef __MINGW_VERSION
+    if (d_row != 0)
+    {
+        resize(0, d_row);
+        d_row = 0;
+    }
+#endif
     if (loadfile(s) == 0)
        strcpy(datfname, s);
     else
