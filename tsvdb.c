@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 1.4.0 2016/09/09 $
+ * $Id: tcsvdb.c,v 1.5.0 2016/09/15 $
  */
 
-#define VERSION "1.4"
+#define VERSION "1.5"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -1045,6 +1045,7 @@ static void mainmenu(menu *mp)
             old = cur;
             wrefresh(wmain);
         }
+
         switch (c = (key != ERR ? key : waitforkey()))
         {
         case KEY_DOWN:
@@ -6459,7 +6460,7 @@ void align(int n, int y, int m)
 {
     register int i, j;
     int k, l;
-    int beg, dis;
+    int beg, dis, clen;
     int from, to;
     BUFDEF;
 
@@ -6494,15 +6495,15 @@ void align(int n, int y, int m)
         beg = k;
         if (buf[beg] == '"')
             beg++;
-        dis = 0;
+        clen = 0;
         while (k < l)
         {
-            dis++;
+            clen++;
             if (buf[k] == csep)
                 break;
             k++;
         }
-        dis = len[n]-dis;
+        dis = len[n]-clen;
         switch (m)
         {
         case 1:
@@ -6539,6 +6540,31 @@ void align(int n, int y, int m)
                     buf[j] = ' ';
             }
             break;
+        case 4:
+            if (clen == len[n])
+            {
+                for (j=(beg+clen-2); j>beg; j--)
+                {
+                    if (buf[j] == '_')
+                    {
+                        for (k=j; k<l; k++)
+                            buf[k] = buf[k+1];
+                    }
+                    else
+                        break;
+                }
+            }
+            else
+            {
+                for (j=l+dis; j>=(beg+clen-1); j--)
+                {
+                    if (j >= (beg+len[n]-1))
+                        buf[j] = buf[j-dis];
+                    else
+                        buf[j] = '_';
+                }
+            }
+            break;
         }
         j = strlen(buf);
         if (rows[i] != NULL)
@@ -6551,7 +6577,7 @@ void align(int n, int y, int m)
 void doindent(void)
 {
     int i, j;
-    char *b[] = {"Left", "Center", "Right", "None", ""};
+    char *b[] = {"Left", "Center", "Right", "Fill", ""};
 
     if (ro)
         return;
@@ -6573,7 +6599,7 @@ void doindent(void)
         //} while (j<1 || j>3);
         */
         j = selbox("Align", b, 1);
-        if (j<1 || j>3)
+        if (j<1 || j>4)
             	return;
         if (j == 2)
             align(i, -1, 1);
@@ -8217,6 +8243,10 @@ void edit(void)
                 align(field, curr, 2);
             }
             break;
+        case KEY_SEND:
+            if (!ro)
+                align(field, curr, 4);
+            break;
         case ALT_UP:
             xchange(FALSE);
             break;
@@ -8632,10 +8662,12 @@ void prghelp(void)
     fclose(f);
     def_prog_mode();
     strcpy(cmd, progname);
+#ifndef XCURSES
     strcat(cmd, " -w");
     p = cmd;
     p += strlen(cmd);
     (void)itoa(d_y, p, 10);
+#endif
     strcat(cmd, " -tyzq ");
     strcat(cmd, buf);
     system(cmd);
@@ -8801,7 +8833,7 @@ void subfunc1(void)
         " ?+letters:  look only alnum    \t Ctrl/Alt-L:  lower/initial",
         "  Ctrl-F/D:  regexp search /AND \t C/A-arrows:  reorder fields",
         "     Alt-F:  seek curr field    \t Shft-arrow:  align left/right",
-        " Tab/C-Tab:  find next          \t  Shft-Home:  adjust center",
+        " Tab/C-Tab:  find next          \t S-Home/End:  adjust center/end",
         "  Shft-Tab:  previous           \t  Alt-Up/Dn:  move back/forward",
         "    Ctrl-P:  next phonetic      \t    Alt-N/M:  all soundex /Hu",
         "Bksp/S-Del:  del fstr back/first\t Ctrl/Alt-Q:  search equivalent",
@@ -9273,7 +9305,7 @@ int main(int ac, char **av)
     strncpy(progname, av[0], MAXSTRLEN-1);
     curr = 0;
     opterr = 0;
-    while ((c=getopt(ac,av,"HhRrVvXxYyZzQqTtBbEeFfN:n:D:d:S:s:L:l:w:?")) != -1)
+    while ((c=getopt(ac,av,"HhRrVvXxYyZzQqTtBbEeFfN:n:D:d:S:s:L:l:W:w:?")) != -1)
     {
       switch (c)
       {
@@ -9349,11 +9381,11 @@ int main(int ac, char **av)
           || (toupper(optopt) == 'S')
           || (toupper(optopt) == 'L')
           || (toupper(optopt) == 'D'))
-              fprintf (stderr, "Option -%c requires an argument.\n", optopt);
+              fprintf(stderr, "Option -%c requires an argument.\n", optopt);
           else if (isprint (optopt))
-              fprintf (stderr, "Unknown option '-%c'.\n", optopt);
+              fprintf(stderr, "Unknown option '-%c'.\n", optopt);
           else
-              fprintf (stderr, "Unknown option character '%c'.\n", optopt);
+              fprintf(stderr, "Unknown option character '%c'.\n", optopt);
 /*
 //        case ':':
 //          if (optopt != '?')
