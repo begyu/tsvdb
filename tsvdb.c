@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 1.5.0 2016/09/15 $
+ * $Id: tcsvdb.c,v 1.6.0 2016/09/20 $
  */
 
-#define VERSION "1.5"
+#define VERSION "1.6"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -519,7 +519,9 @@ static bool slkon = FALSE;
 static WINDOW *slkptr = NULL;
 static long int filesize = 0L;
 static int origy, origx;
+#ifdef __MINGW_VERSION
 static int d_row = 0;
+#endif
 static int d_y = 0;
 
 #define TABCSEP '\t'
@@ -5708,6 +5710,34 @@ void schange()
 }
 
 
+#ifdef __MINGW_VERSION
+int set_clipboard(char *text, int size)
+{
+    HANDLE clip;
+    char *data;
+    int  rc = ERROR;
+
+    if (OpenClipboard(NULL))
+    {
+        EmptyClipboard();
+        clip = GlobalAlloc(GMEM_DDESHARE, size);
+        if (clip != NULL)
+        {
+            data = GlobalLock(clip);
+            if (data != NULL)
+            {
+                memcpy(data, text, size);
+                GlobalUnlock(clip);
+                SetClipboardData(CF_OEMTEXT, clip);
+                rc = OK;
+            }
+        }
+        CloseClipboard();
+    }
+    return(rc);
+}
+#endif
+
 void copy()
 {
     register int i, j;
@@ -5745,6 +5775,9 @@ void copy()
         j++;
     }
     clp[j] = '\0';
+#ifdef __MINGW_VERSION
+    (void)set_clipboard(clp, j+1);
+#endif
 }
 
 void paste()
@@ -5773,6 +5806,11 @@ void paste()
                break;
         }
     }
+    if (j < field)
+    {
+        strcat(buf, ssep);
+        i++;
+    }
     j = 0;
     while (1)
     {
@@ -5780,6 +5818,7 @@ void paste()
         if ((c == csep) || (c == '\0') || (c == '\n') || (c == '\r'))
         {
             l = strlen(buf);
+            l++;
             for (k=l; k>i; k--)
                 buf[k] = buf[k-1];
         }
@@ -5795,6 +5834,11 @@ void paste()
         if (j >= (len[field]-1))
             break;
     }
+    j = strlen(rows[curr]);
+    if (i >= j)
+    {
+        buf[i] = '\0';
+    }
     i = strlen(buf);
     if (rows[curr] != NULL)
        free(rows[curr]);
@@ -5803,6 +5847,40 @@ void paste()
     modified = TRUE;
     flagmsg();
 }    
+
+#ifdef __MINGW_VERSION
+char *get_clipboard(void)
+{
+    HANDLE clip;
+    char *text = NULL;
+
+    if (IsClipboardFormatAvailable(CF_OEMTEXT) && OpenClipboard(NULL))
+    {
+        clip = GetClipboardData(CF_OEMTEXT);
+        if (clip != NULL)
+        {
+            text = GlobalLock(clip);
+            if (text != NULL)
+            {
+                text = strdup(text);
+                GlobalUnlock(clip);
+            }
+        }
+        CloseClipboard();
+    }
+    if (MAXSTRLEN < strlen(text))
+        text[MAXSTRLEN] = '\0';
+    return(text);
+}
+
+void wpaste()
+{
+    char *p = get_clipboard();
+    if (p != NULL)
+        strcpy(clp, p);
+    paste();
+}
+#endif
 
 int selectfield(int n)
 {
@@ -8126,6 +8204,11 @@ void edit(void)
         case CTRL_V:
             paste();
             break;
+#ifdef __MINGW_VERSION
+        case ALT_V:
+            wpaste();
+            break;
+#endif
         case CTRL_X:
             if (wr == TRUE)
             {
@@ -8826,7 +8909,11 @@ void subfunc1(void)
     char *s[] =
     {
         "  Ctrl-Ins:  insert line (C-+)  \t Ctrl/Alt-A:  mark/filter all",
+#ifdef __MINGW_VERSION
+        "   Alt-Ins:  duplicate   (A-+)  \t   Ctrl-C/V:  copy/paste (A-V)",
+#else
         "   Alt-Ins:  duplicate   (A-+)  \t   Ctrl-C/V:  copy/paste",
+#endif
         "  Ctrl-Del:  delete line        \t      Alt-P:  change colours",
         " (C-)Enter:  edit field/s       \t Ctrl/Alt-E:  modify field/s",
         "    Letter:  search (? mask)    \t Ctrl/Alt-U:  uppercase/init",
