@@ -3567,7 +3567,6 @@ int parsefile(char *fname)
             if (j > (MAXSTRLEN-1))
                 break;
         }
-        buf[j] = 0x0A;
         buf[j] = '\0';
         strcpy(head, buf);
         j = strlen(buf);
