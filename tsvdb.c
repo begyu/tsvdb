@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 1.6.0 2016/09/20 $
+ * $Id: tcsvdb.c,v 1.7.0 2016/10/10 $
  */
 
-#define VERSION "1.6"
+#define VERSION "1.7"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -32,6 +32,8 @@
   #include <libgen.h>
 #endif
 
+#define __MINGW_VERSION __MINGW32_VERSION
+
 #ifdef __MINGW_VERSION
   #include <windows.h>
   static bool terminable = TRUE;
@@ -42,7 +44,7 @@ extern "C" {
 #endif
 
 
-#if 1
+#if 0
 #include <errno.h>
 
 char *itoa(int value, char *string, int radix)
@@ -516,6 +518,7 @@ static bool phonetic = FALSE;
 static bool hunset = FALSE;
 static bool slk = FALSE;
 static bool slkon = FALSE;
+static bool parse = FALSE;
 static WINDOW *slkptr = NULL;
 static long int filesize = 0L;
 static int origy, origx;
@@ -3432,6 +3435,249 @@ void crypt(int n)
     titlemsg(datfname);
 }
 
+
+int max4idx(int dat[])
+{
+    register int i, j;
+    int x=0;
+
+    for (i=0, j=0; i<4; i++)
+        if (dat[i] > j)
+        {
+            j = dat[i];
+            x = i;
+        }
+    return (x);
+}
+
+int parsefile(char *fname)
+{
+    int i, j, k, l, m, n;
+    int lon[4][MAXCOLS];
+    int sep[4] = {0, 0, 0, 0};
+    int cnt[4] = {0, 0, 0, 0};
+    int col[4] = {0, 0, 0, 0};
+    FILE *fp;
+    BUFDEF;
+    char c;
+    bool ateof = FALSE;
+    char *p;
+
+    if ((fp = fopen(fname, "r")) != NULL)
+    {
+        for (i=0; i<4; i++)
+             for (j=0; j<MAXCOLS; j++)
+                  lon[i][j] = 0;
+        cols = 0;
+        buf[0] = '\0';
+        while (!feof(fp))
+        {
+            fgets(buf, MAXSTRLEN, fp);
+            j = strlen(buf);
+            if (j)
+            {
+                for (i=0; i<4; i++)
+                {
+                     cnt[i] = 0;
+                }
+                m = n = 0;
+                for (i=0, k=0; i<j; i++)
+                {
+                    c = buf[i];
+                    switch (c)
+                    {
+                    case ' ':
+                        l = 0;
+                        break;
+                    case '\t':
+                        l = 1;
+                        break;
+                    case ',':
+                        l = 2;
+                        break;
+                    case ';':
+                        l = 3;
+                        break;
+                    case '\r':
+                    case '\n':
+                        l = n;
+                        break;
+                    default:
+                        l = 4;
+                        m++;
+                        break;
+                    }
+                    if (l != 4)
+                    {
+                        if ((l != n) && (n != 0))
+                        {
+                            m++;
+                            continue;
+                        }
+                        n = l;
+                        cnt[l]++;
+                        k = MIN(k, MAXCOLS);
+                        col[l] = MAX(k, col[l]);
+                        m = MAX(m, lon[l][k]);
+                        m = MIN(m, MAXFLEN);
+                        lon[l][k] = m;
+                        m = 0;
+                        k++;
+                        if (k > MAXCOLS)
+                            break;
+                    }
+                }
+                i = max4idx(cnt);
+                sep[i] += cnt[i];
+            }
+        }
+        m = max4idx(sep);
+        cols = col[m];
+        switch (m)
+        {
+        case 0:
+            headspac = TRUE;
+        case 1:
+            csep = TABCSEP;
+            ssep[0] = TABCSEP;
+            break;
+        case 2:
+            csep = COLCSEP;
+            ssep[0] = COLCSEP;
+            break;
+        case 3:
+            csep = SCLCSEP;
+            ssep[0] = SCLCSEP;
+            break;
+        }
+        buf[0] = '\0';
+        for (i=0, j=0; i<=cols; i++)
+        {
+            p = buf+j;
+            buf[j] = (char)('A'+i);
+            k = lon[m][i];
+            for (l=0; l<k; l++)
+            {
+                j++;
+                buf[j] = '_';
+            }
+            j++;
+            buf[j] = csep;
+            j++;
+            if (j > (MAXSTRLEN-1))
+                break;
+        }
+        buf[j] = '\0';
+        strcpy(head, buf);
+        j = strlen(buf);
+        if (j)
+        {
+            i = 0;
+            k = 0;
+            p = strtok(buf, ssep);
+            while(p != NULL)
+            {
+                strcpy(stru[i], p);
+                j = strlen(stru[i]);
+                if (j > MAXFLEN)
+                {
+                    stru[i][MAXFLEN] = 0;
+                    j = MAXFLEN;
+                }
+                strcat(stru[i], " ");
+                beg[i] = k;
+                len[i] = j+1;
+                k += j+1;
+                i++;
+                if (i >= MAXCOLS)
+                   break;
+                p = strtok(NULL, ssep);
+            }
+            cols = i-1;
+            stru[cols][len[cols]-1] = ' ';
+        }
+        fclose(fp);
+        if ((fp = fopen(fname, "r")) != NULL)
+        {
+            i = 0;
+            while (!ateof)
+            {
+                buf[0] = '\0';
+                fgets(buf, MAXSTRLEN, fp);
+                j = strlen(buf);
+                if (m == 0)
+                {
+                    for (k=j; k; k--)
+                        if (buf[k] == ' ')
+                            buf[k] = csep;
+                }
+                if (j)
+                {
+                    if ((p = strchr(buf, csep)) == NULL)
+                    {
+                        buf[j-1] = csep;
+                        buf[j] = '\0';
+                        j++;
+                    }
+                    p = (char *)malloc(j+1);
+                    if (p == NULL)
+                    {
+                        errormsg("ERROR: Memory full!");
+                        ateof = TRUE;
+                        break;
+                    }
+                    rows[i] = p;
+                    strcpy(rows[i], buf);
+                    i++;
+                    if (i >= MAXROWS)
+                    {
+                        errormsg("ERROR: File too big, truncated!");
+                        ateof = TRUE;
+                    }
+                }
+                else
+                    ateof = TRUE;
+            }
+            reccnt = i;
+            fseek(fp, 0L, SEEK_END);
+            filesize = ftell(fp);
+            fclose(fp);
+            rows[reccnt] = (char *)malloc(2);
+            strcpy(rows[reccnt], "\0");
+            //printf("\n\t     File:\t%s",fname);
+            //printf("\n\t  Columns:\t%d",cols);
+            //printf("\n\tSeparator:\t");
+            //printf(csep == '\t' ? "\\t" : ssep);
+            //printf("\n\t     Rows:\t%d",reccnt);
+        }
+        else
+        {
+            //printf("\n\tCan't open file '%s'!", fname);
+            return -1;
+        }
+    }
+    else
+    {
+        sprintf(buf, "ERROR: file '%s' not found", fname);
+        errormsg(buf);
+        return -1;
+    }
+    field=0;
+    curcol=0;
+    clsbody();
+    wrefresh(wbody);
+    j = 0;
+    for (i=0; i<bodylen(); i++)
+    {
+        if (i < reccnt)
+           displn(i, j+1);
+        j++;
+    }
+    strcpy(datfname, fname);
+    return 0;
+}
+
+
 int loadfile(char *fname)
 {
     register int i, j, k;
@@ -5932,7 +6178,7 @@ int selectfield(int n)
         case 'q':
         case KEY_ESC:
             i = -1;
-/*        case KEY_ENTER:*/
+        case KEY_ENTER:
         case '\n':
             exit = TRUE;
             break;
@@ -7965,7 +8211,7 @@ void edit(void)
         case KEY_ESC:
             quit = TRUE;
             break;
-/*        case KEY_ENTER:*/
+        case KEY_ENTER:
         case '\n':
             if (curr < reccnt)
             {
@@ -9190,6 +9436,7 @@ static char *hlpstrs[] =
     "-w <num>  Set scr height + or -num rows",
     "-e        Edit as text",
     "-f        Func keys on",
+    "-p        Parse file",
     "-h        Help",
     "-v        Version",
     "",
@@ -9208,7 +9455,7 @@ void opthelp(void)
 {
     WINDOW *wmsg;
     int i;
-    int j=17;
+    int j=18;
     
     wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-42)/2, j+2, 42);
 #ifndef __MINGW_VERSION
@@ -9388,11 +9635,14 @@ int main(int ac, char **av)
     int c;
     char *p = NULL;
     char s[MAXSTRLEN] = "";
+typedef int (*LDF)(char *);
+    LDF fload = loadfile;
 
     strncpy(progname, av[0], MAXSTRLEN-1);
     curr = 0;
     opterr = 0;
-    while ((c=getopt(ac,av,"HhRrVvXxYyZzQqTtBbEeFfN:n:D:d:S:s:L:l:W:w:?")) != -1)
+    while ((c=getopt(ac,av,"HhRrVvXxYyZzQqTtBbEeFfN:n:D:d:S:s:L:l:W:w:Pp?"))
+           != -1)
     {
       switch (c)
       {
@@ -9543,6 +9793,15 @@ int main(int ac, char **av)
         case 'F':
           slk = slkon = TRUE;
           break;
+        case 'p':
+        case 'P':
+          if (ac < 3)
+          {
+              fprintf(stderr, "Expected file name.\n");
+              exit(-1);
+          }
+          parse = TRUE;
+          fload = parsefile;
         default:
           break;
       }
@@ -9574,8 +9833,8 @@ int main(int ac, char **av)
         d_row = 0;
     }
 #endif
-    if (loadfile(s) == 0)
-       strcpy(datfname, s);
+    if (fload(s) == 0)
+        strcpy(datfname, s);
     else
     {
        if (create(s) != 0)
