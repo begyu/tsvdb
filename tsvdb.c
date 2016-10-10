@@ -3567,6 +3567,7 @@ int parsefile(char *fname)
             if (j > (MAXSTRLEN-1))
                 break;
         }
+        buf[j] = 0x0A;
         buf[j] = '\0';
         strcpy(head, buf);
         j = strlen(buf);
@@ -3596,6 +3597,7 @@ int parsefile(char *fname)
             cols = i-1;
             stru[cols][len[cols]-1] = ' ';
         }
+        strcat(head, "\n");
         fclose(fp);
         if ((fp = fopen(fname, "r")) != NULL)
         {
