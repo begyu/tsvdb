@@ -1,5 +1,5 @@
 /*
- * $Id: tcsvdb.c,v 1.7.0 2016/10/10 $
+ * $Id: tcsvdb.c,v 1.7.0 2016/10/11 $
  */
 
 #define VERSION "1.7"
@@ -32,7 +32,9 @@
   #include <libgen.h>
 #endif
 
+#ifdef __MINGW32_VERSION
 #define __MINGW_VERSION __MINGW32_VERSION
+#endif
 
 #ifdef __MINGW_VERSION
   #include <windows.h>
@@ -44,7 +46,7 @@ extern "C" {
 #endif
 
 
-#if 0
+#if 1
 #include <errno.h>
 
 char *itoa(int value, char *string, int radix)
