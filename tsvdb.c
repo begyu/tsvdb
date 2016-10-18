@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 1.7.0 2016/10/11 $
+ * $Id: tcsvdb.c,v 1.8.0 2016/10/18 $
  */
 
-#define VERSION "1.7"
+#define VERSION "1.8"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -523,6 +523,7 @@ static bool slkon = FALSE;
 static bool parse = FALSE;
 static WINDOW *slkptr = NULL;
 static long int filesize = 0L;
+static struct stat filestat;
 static int origy, origx;
 #ifdef __MINGW_VERSION
 static int d_row = 0;
@@ -3644,6 +3645,7 @@ int parsefile(char *fname)
             reccnt = i;
             fseek(fp, 0L, SEEK_END);
             filesize = ftell(fp);
+            stat(fname, &filestat);
             fclose(fp);
             rows[reccnt] = (char *)malloc(2);
             strcpy(rows[reccnt], "\0");
@@ -3823,6 +3825,7 @@ int loadfile(char *fname)
         reccnt = i;
         fseek(fp, 0L, SEEK_END);
         filesize = ftell(fp);
+        stat(fname, &filestat);
         fclose(fp);
         rows[reccnt] = (char *)malloc(2);
         strcpy(rows[reccnt], "\0");
@@ -4141,6 +4144,7 @@ int savefile(char *fname, int force)
     FILE *fp;
     char *tmp;
     BUFDEF;
+    struct stat fst;
 
     if (ro && !cry)
         return -1;
@@ -4160,7 +4164,9 @@ int savefile(char *fname, int force)
         size = ftell(fp);
         fclose(fp);
         (void)chmod(fname, S_IRUSR);
-        if (size != filesize)
+        stat(fname, &fst);
+        if ((fst.st_mtime != filestat.st_mtime)
+        || (size != filesize))
         {
             tmp = tmpnam(NULL);
             strcpy(buf, ".");
@@ -4169,6 +4175,7 @@ int savefile(char *fname, int force)
             strcat(buf, fname);
             strcpy(fname, buf);
             strcpy(datfname, buf);
+            putmsg("File has renamed in \"", fname, "\"!");
         }
         (void)chmod(fname, S_IWUSR);
     }
@@ -4195,6 +4202,7 @@ int savefile(char *fname, int force)
         fseek(fp, 0L, SEEK_END);
         filesize = ftell(fp);
         fclose(fp);
+        stat(fname, &filestat);
         msg(NULL);
     }
     else
