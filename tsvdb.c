@@ -9694,8 +9694,12 @@ typedef int (*LDF)(char *);
     strncpy(progname, av[0], MAXSTRLEN-1);
     for(i=1; i<ac; i++)
     {
-      if (strstr(av[i], "/?"))
-         	strcpy(av[i], "-h");
+      if ((strstr(av[i], "/X") != NULL)
+      ||  (strstr(av[i], "/?") != NULL))
+      {
+          strcpy(av[i], "-h");
+          break;
+      }
     }
     i = 0;
     curr = 0;
