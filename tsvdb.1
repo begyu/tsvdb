@@ -5,9 +5,15 @@ tsvdb \- Tab separated values database
 
 .SH SYNOPSIS
 .B tsvdb
-[\fI-r|x|y|z|t|b|h|v\fR] [\fI-n{recno}\fR]
+[\fI-r|x|y|z|t|b|f|h|v\fR] [\fI-n{num}\fR]
 [\fI-\fR[[\fIs|S\fR]|[\fIl|L\fR]]\fI{fstr}\fR]
-[\fI-d{[,|;]}\fR] [\fI-e\fR] [\fItsvdatafile\fR]
+[\fI-d{[,|;]}\fR] [\fItsvdatafile\fR]
+.br
+.br
+
+ or
+.B tsvdb
+\fI-e|f\fR {\fIfile\fR}
 .br
 
 .SH DESCRIPTION
@@ -21,6 +27,8 @@ The number of lines up to one million, and a maximum number of fields is 16.
 Open in read-only.
 .IP \fB\-x\fR
 Readonly, but swiched back with Ctrl-X key.
+.IP 	or	\fB\-X\fR
+	Ro, can edit only current.
 .IP \fB\-y\fR
 Locked mode.
 .IP \fB\-z\fR
@@ -41,10 +49,14 @@ Go to the first occurence of fstr.
 List of occurrences.
 .IP 	or	\fB\-L\ str\fR
 	List with header.
-.IP \fB\-d\ delim\fR
-Use delimiter (, or ;) char to CSV.
+.IP \fB\-d\ chr\fR
+Use separator (, or ;) char to CSV.
 .IP \fB\-e\fR
 Edit file as text.
+.IP \fB\-f\fR
+Set function key labels on.
+.IP \fB\-p\fR
+Parse file
 .IP \fB\-h\fR
 Syntax help.
 .IP \fB\-v\fR
@@ -53,4 +65,4 @@ Print version.
 .SH "SEE ALSO"
 .SM
 .IP http://tsvdb.sf.net/
-.IP http://en.wikipedia.org/wiki/Tab-separated_values
+.IP http://en.wikipedia.org/wiki/Tab-separated_values 
