@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 1.8.0 2016/10/18 $
+ * $Id: tcsvdb.c,v 1.9.0 2016/11/10 $
  */
 
-#define VERSION "1.8"
+#define VERSION "1.9"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -493,6 +493,7 @@ static int cols, reccnt, curr, field, curcol, ctop;
 static bool modified=FALSE;
 static bool ro = FALSE;
 static bool wr = FALSE;
+static bool swr = FALSE;
 static bool cry = FALSE;
 static bool crypted = FALSE;
 static bool locked = FALSE;
@@ -7375,6 +7376,32 @@ void delfield(void)
 }
 
 
+void dispfield(int x)
+{
+    int i, j;
+    char *fieldbuf[MAXCOLS+1];
+    BUFDEF;
+
+    strcpy(buf, rows[curr]);
+    i = strlen(buf);
+    buf[i-1] = csep;
+    buf[i] = '\0';
+    if (x == -1)
+    {
+        i = 0;
+        j = cols;
+    }
+    else
+        i = j = x;
+    strsplit(buf, fieldbuf, ssep);
+    for( ; i<=j; i++)
+    {
+        strcpy(buf, fieldbuf[i]);
+        putmsg("", buf, "");
+    }
+}
+
+
 /*
  * Get the number of occurrences of `needle` in `haystack`
  */
@@ -8467,6 +8494,14 @@ void edit(void)
             break;
 #endif
         case CTRL_X:
+            if ((swr == TRUE) && (curr < reccnt))
+            {
+                ro = FALSE;
+                modify(curr);
+                ro = TRUE;
+                curs_set(1);
+                break;
+            }
             if (wr == TRUE)
             {
                ro = (ro == TRUE) ? FALSE : TRUE;
@@ -8702,6 +8737,12 @@ void edit(void)
 #endif
             break;
 #endif
+        case KEY_F(11):
+            dispfield(-1);
+            break;
+        case KEY_F(12):
+            dispfield(field);
+            break;
         default:
             if ((c == 0x81) || (c == 0xEB) || (c == 0x1FB))
                c = 0x55; /* U */
@@ -9432,6 +9473,7 @@ static char *hlpstrs[] =
 {
     "-r        Read-only mode",
     "-x        Mixed mode",
+    "          or '-X' can edit only current",
     "-y        Locked mode",
     "-z        Safety on",
     "-q        Quit on",
@@ -9442,7 +9484,7 @@ static char *hlpstrs[] =
     "          or -s \"(regexp)\"",
     "          or -S \"(regexp)\" to extract",
     "-l <str>  List str found",
-    "          or \"-L\" with header",
+    "          or '-L' with header",
     "-d <,|;>  Set separator to ',' or ';'",
     "-w <num>  Set scr height + or -num rows",
     "-e        Edit as text",
@@ -9458,7 +9500,7 @@ void help(void)
 {
     int i;
 
-    for (i=0; hlpstrs[i]; i++)
+    for (i=0; hlpstrs[i+1]; i++)
         printf("\t%s\n", hlpstrs[i]);
 }
 
@@ -9466,7 +9508,7 @@ void opthelp(void)
 {
     WINDOW *wmsg;
     int i;
-    int j=18;
+    int j=21;
     
     wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-42)/2, j+2, 42);
 #ifndef __MINGW_VERSION
@@ -9642,7 +9684,7 @@ void changecolor(void)
 
 int main(int ac, char **av)
 {
-    int i = 0;
+    int i;
     int c;
     char *p = NULL;
     char s[MAXSTRLEN] = "";
@@ -9650,6 +9692,12 @@ typedef int (*LDF)(char *);
     LDF fload = loadfile;
 
     strncpy(progname, av[0], MAXSTRLEN-1);
+    for(i=1; i<ac; i++)
+    {
+      if (strstr(av[i], "/?"))
+         	strcpy(av[i], "-h");
+    }
+    i = 0;
     curr = 0;
     opterr = 0;
     while ((c=getopt(ac,av,"HhRrVvXxYyZzQqTtBbEeFfN:n:D:d:S:s:L:l:W:w:Pp?"))
@@ -9657,8 +9705,9 @@ typedef int (*LDF)(char *);
     {
       switch (c)
       {
-        case 'x':
         case 'X':
+          swr = TRUE;
+        case 'x':
           wr = TRUE;
         case 'r':
         case 'R':
@@ -9791,8 +9840,9 @@ typedef int (*LDF)(char *);
           p = strstr(s, ".exe");
           if (p != NULL)
              	p[0] = '\0';
-          printf("\nUsage: %s [-r|x|y|z|q|t|b|e|f|h|v] [-n{row}] "
-                 "[-[s|l]{str}] [-d{,|;}] [file]\n", s);
+          printf("Usage: %s [-r|x|y|z|q|t|b|f|h|v] [-n|w{row}] "
+                 "[-s|l{str}] [-d{,|;}] [file]\n\n"
+                 "   or:\t%s -e|p {file}\n\n", s, s);
           if (toupper(c) == 'H')
               help();
           exit(c==':' ? -1 : 0);
