@@ -9486,7 +9486,9 @@ static char *hlpstrs[] =
     "-l <str>  List str found",
     "          or '-L' with header",
     "-d <,|;>  Set separator to ',' or ';'",
+#ifndef XCURSES
     "-w <num>  Set scr height + or -num rows",
+#endif
     "-e        Edit as text",
     "-f        Func keys on",
     "-p        Parse file",
@@ -9508,7 +9510,11 @@ void opthelp(void)
 {
     WINDOW *wmsg;
     int i;
+#ifndef XCURSES
     int j=21;
+#else
+    int j=18;
+#endif
     
     wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-42)/2, j+2, 42);
 #ifndef __MINGW_VERSION
