@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 1.9.0 2016/11/10 $
+ * $Id: tcsvdb.c,v 2.0.0 2016/12/01 $
  */
 
-#define VERSION "1.9"
+#define VERSION "2.0"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -4276,6 +4276,9 @@ void clean()
     reccnt = 0;
 }
 
+
+void modstru(void);
+
 int create(char *fn)
 {
     BUFDEF;
@@ -4311,13 +4314,17 @@ int create(char *fn)
        }
        new = FALSE;
     }
+
     putmsg("", "To create a new database, enter the field names!", "");
     if (getfname(FALSE, HEADSTR, buf, 68))
     {
         if (strchr(buf, ' ') == NULL)
         {
             errormsg("ERROR: There is not enough field, must have at least two!");
-            return -1;
+            strcpy(buf, "A_______________________ B_______________________");
+            if (getfname(FALSE, HEADSTR, buf, 68))
+                if (strchr(buf, ' ') == NULL)
+                    return -1;
         }
         j = strlen(buf);
         if (j)
@@ -4357,7 +4364,6 @@ int create(char *fn)
             stru[cols][len[cols]] = '\0';
             if (new)
             {
-                strcpy(datfname, FNAME);
                 clean();
                 rows[0] = (char *)malloc(2);
                 strcpy(rows[0], "\n");
@@ -4376,6 +4382,7 @@ int create(char *fn)
         }
         else 
             return -1;
+        modstru();
     }
     return 0;
 }
@@ -9694,9 +9701,11 @@ int main(int ac, char **av)
     int c;
     char *p = NULL;
     char s[MAXSTRLEN] = "";
+    BUFDEF;
 typedef int (*LDF)(char *);
     LDF fload = loadfile;
 
+    buf[0] = '\0';
     strncpy(progname, av[0], MAXSTRLEN-1);
     for(i=1; i<ac; i++)
     {
@@ -9878,7 +9887,27 @@ typedef int (*LDF)(char *);
       }
     }
     if (optind < ac)
+    {
         strcpy(s, av[optind++]);
+        if (optind < ac)
+        {  
+           strcpy(buf, progname);
+           strcat(buf, " ");
+           if (locked)
+               strcat(buf, "-y ");
+           if (ro)
+               strcat(buf, "-r ");
+           if (safe)
+               strcat(buf, "-z ");
+           if (swr)
+               strcat(buf, "-x ");
+           while (optind < ac)
+           {
+               strcat(buf, " ");
+               strcat(buf, av[optind++]);
+           }
+        }
+    }
     else
         strcpy(s, FNAME);
     setlocale(LC_ALL, "C");
@@ -9924,6 +9953,8 @@ typedef int (*LDF)(char *);
 #ifdef __MINGW_VERSION
     EnableConsoleCloseButton();
 #endif
+    if (buf[0] != '\0')
+        system(buf);
     return 0;
 }
 
