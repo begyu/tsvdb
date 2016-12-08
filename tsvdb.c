@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 2.0.0 2016/12/01 $
+ * $Id: tcsvdb.c,v 2.1.0 2016/12/08 $
  */
 
-#define VERSION "2.0"
+#define VERSION "2.1"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -1750,6 +1750,9 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
         case KEY_UP:
         case KEY_DOWN:
         case '\t':
+        case KEY_SUP:
+        case KEY_SDOWN:
+        case CTL_ENTER:
             stop = TRUE;
             break;
 
@@ -1990,10 +1993,10 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
             wrefresh(wedit);
             break;
 //#if !defined(__unix) || defined(__DJGPP__)
-        case KEY_SUP:
+        case KEY_SRIGHT:
             xlate(buf, 0);
             break;
-        case KEY_SDOWN:
+        case KEY_SLEFT:
             xlate(buf, 1);
             break;
         case CTRL_X:
@@ -2117,7 +2120,6 @@ ins_char:
                     {
                         memmove((void *)(bp + 1), (const void *)bp,
                                 strlen(bp) + 1);
-
                         *bp++ = c;
                     }
                 }
@@ -2155,18 +2157,19 @@ WINDOW *winputbox(WINDOW *win, int nlines, int ncols)
     return winp;
 }
 
-int getstrings(char *desc[], char *buf[], int field, int length, int lim[])
+int getstrings(char *desc[], char *buf[], int currfield, int length, int lim[])
 {
     WINDOW *winput;
-    int oldy, oldx, maxy, maxx, nlines, ncols, i, n, l, mmax = 0;
+    int oldy, oldx, maxy, maxx, nlines, ncols, i, j, n, l, mmax = 0;
     int c = 0;
     int cx, cy;
+    char *p = NULL;
     bool stop = FALSE;
     bool fsel = FALSE;
 
-    if (field == -1)
+    if (currfield == -1)
     {
-        field = 0;
+        currfield = 0;
         fsel = TRUE;
     }
 
@@ -2176,7 +2179,7 @@ int getstrings(char *desc[], char *buf[], int field, int length, int lim[])
     i = (maxx/2)-2;
     for (n = 0; desc[n]; n++)
     {
-        if (field == 0)
+        if (currfield == 0)
         {
             if ((l = strlen(desc[n])) > mmax)
                 mmax = l;
@@ -2229,7 +2232,7 @@ repaint:
     }
     setcolor(winput, INPUTBOXCOLOR);
 
-    i = field;
+    i = currfield;
 
     while (!stop)
     {
@@ -2241,6 +2244,7 @@ repaint:
         switch (c = mvweditstr(winput, i+1, mmax+3, buf[i], length, l))
         {
         case KEY_ESC:
+        case CTL_ENTER:
             stop = TRUE;
             break;
 
@@ -2265,6 +2269,7 @@ repaint:
         case KEY_NPAGE:
             if (fsel == FALSE)
                 stop = TRUE;
+            field = i;
             break;
         case ALT_UP:
         case ALT_PGUP:
@@ -2299,6 +2304,26 @@ repaint:
         case ALT_P:
             changecolor();
             colorbox(winput, INPUTBOXCOLOR, 1);
+            goto repaint;
+        case KEY_SUP:
+            if (fsel)
+                break;
+            j = (i + n - 1) % n;
+            p = buf[i];
+            buf[i] = buf[j];
+            buf[j] = p;
+            currfield = i;
+            goto repaint;
+        case KEY_SDOWN:
+            if (fsel)
+                break;
+            j = i;
+            if (++j == n)
+                j = 0;
+            p = buf[i];
+            buf[i] = buf[j];
+            buf[j] = p;
+            currfield = i;
             goto repaint;
         }
     }
@@ -9266,6 +9291,8 @@ void subfunc1(void)
         prghelp();
     }
     delwin(wmsg);
+    touchwin(wstatus);
+    wrefresh(wstatus);
     touchwin(wbody);
     wrefresh(wbody);
 }
@@ -9278,15 +9305,15 @@ void edithelp(void)
         "   Home/End:\tgo to 1'st char/EOL",
         "    Up/Down:\tprevious/next field",
         "  PgUp/PgDn:\tsave & prev/next record",
-        "  Ctl-Up/Dn:\tscroll background",
+        " Ctrl-Up/Dn:\tscroll background",
         "   Del/Bksp:\tdelete char/backward",
         " Ctrl-End/W:\tdel from cursor/word back",
         " Ctl-arrows:\tskip word",
-        "   Ctrl-C/V:\tcopy/paste",
-        "     Ctrl-B:\tpaste fstr",
+        "   Ctrl-C/V:\tcopy/paste  Ctl-B: paste fstr",
         "Ctl/Alt-U/L:\tupper-/lowercase",
+        "Shift-Up/Dn:\tchange field's data",
 #ifdef __MINGW_VERSION
-        " Shft-Up/Dn:\tchange chars",
+        "Shft-arrows:\tchange chars",
 #endif
         "     Ctrl-D:\tformat date",
         "      Alt-C:\tcalculate",
@@ -9301,7 +9328,7 @@ void edithelp(void)
 #endif
         "        Esc:\tundo/cancel",
         "      Alt-P:\tchange colorset",
-        "      Enter:\tmodify record"
+        "(Ctl-)Enter:\tmodify record"
     };
     int i;
 #ifdef __MINGW_VERSION
@@ -9310,7 +9337,7 @@ void edithelp(void)
     int j=20;
 #endif
     
-    wmsg = mvwinputbox(wbody, (bodylen()-j)/4, (bodywidth()-42)/2, j+2, 42);
+    wmsg = mvwinputbox(wbody, (bodylen()-j)/4, (bodywidth()-46)/2, j+2, 46);
 #ifndef __MINGW_VERSION
     wborder(wmsg, '|', '|', '-', '-', '+', '+', '+', '+');
 #endif
@@ -9322,6 +9349,11 @@ void edithelp(void)
     delwin(wmsg);
     touchwin(wstatus);
     wrefresh(wstatus);
+    if (slk)
+    {
+        slk_touch();
+        slk_noutrefresh();
+    }
     touchwin(wbody);
     wrefresh(wbody);
 }
@@ -9532,6 +9564,13 @@ void opthelp(void)
     wrefresh(wmsg);
     (void)toupper(waitforkey());
     delwin(wmsg);
+    touchwin(wstatus);
+    wrefresh(wstatus);
+    if (slk)
+    {
+        slk_touch();
+        slk_noutrefresh();
+    }
     touchwin(wbody);
     wrefresh(wbody);
 }
