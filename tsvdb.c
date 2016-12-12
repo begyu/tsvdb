@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 2.1.0 2016/12/08 $
+ * $Id: tcsvdb.c,v 2.2.0 2016/12/10 $
  */
 
-#define VERSION "2.1"
+#define VERSION "2.2"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -7989,6 +7989,57 @@ void donum(void)
     flagmsg();
 }
 
+#ifdef XCURSES
+void resize_event()
+{
+    int x, y;
+
+    if (slk)
+        slk_clear();
+    delwin(wtitl);
+    delwin(wmain);
+    delwin(wstatus);
+    resize_term(0, 0);
+    refresh();
+    getmaxyx(stdscr, y, x);
+    LINES = y;
+    COLS = x;
+    wtitl = subwin(stdscr, th, bw, 0, 0);
+    wmain = subwin(stdscr, mh, bw, th, 0);
+    wbody = subwin(stdscr, bh-(slk ? 1 : 0), bw, th + mh, 0);
+    wstatus = subwin(stdscr, sh, bw, th + mh + bh-(slk ? 1 : 0), 0);
+    colorbox(wtitl, TITLECOLOR, 0);
+    colorbox(wmain, MAINMENUCOLOR, 0);
+    colorbox(wbody, BODYCOLOR, 0);
+    colorbox(wstatus, STATUSCOLOR, 0);
+    cbreak();
+    noecho();
+    curs_set(0);
+    nodelay(wbody, TRUE);
+    halfdelay(10);
+    keypad(wbody, TRUE);
+    scrollok(wbody, TRUE);
+    leaveok(stdscr, TRUE);
+    leaveok(wtitl, TRUE);
+    leaveok(wmain, TRUE);
+    leaveok(wstatus, TRUE);
+    mouse_set(ALL_MOUSE_EVENTS);
+    PDC_save_key_modifiers(TRUE);
+    PDC_return_key_modifiers(TRUE);
+    newterm(getenv("TERM"), stderr, stdin);
+    keypad(stdscr,  TRUE);
+    refresh();
+    if (getcwd(wdname, MAXSTRLEN) == NULL)
+        strcpy(wdname, ".");
+    curs_set(1);
+    titlemsg(datfname);
+    flagmsg();
+    if (slkon)
+    {
+        slk_restore();
+    }
+}
+#endif
 
 #ifdef __MINGW_VERSION
 #ifdef PDCW
@@ -8738,6 +8789,13 @@ void edit(void)
         case ALT_R:
             curr = redo(curr);
             break;
+#ifdef XCURSES
+        case KEY_RESIZE:
+            resize_event();
+            r = bodylen()-1;
+            b = reccnt-bodylen();
+            break;
+#endif
 #ifdef __MINGW_VERSION
 #ifdef PDCW
         case KEY_RESIZE:
