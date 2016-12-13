@@ -1,5 +1,5 @@
 /*
- * $Id: tcsvdb.c,v 2.2.0 2016/12/10 $
+ * $Id: tcsvdb.c,v 2.2.0 2016/12/13 $
  */
 
 #define VERSION "2.2"
@@ -9591,7 +9591,6 @@ static char *hlpstrs[] =
     "-p        Parse file",
     "-h        Help",
     "-v        Version",
-    "",
     NULL
 };
 
@@ -9610,7 +9609,7 @@ void opthelp(void)
 #ifndef XCURSES
     int j=21;
 #else
-    int j=18;
+    int j=20;
 #endif
     
     wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-42)/2, j+2, 42);
@@ -9957,8 +9956,8 @@ typedef int (*LDF)(char *);
           if (p != NULL)
              	p[0] = '\0';
           printf("Usage: %s [-r|x|y|z|q|t|b|f|h|v] [-n|w{row}] "
-                 "[-s|l{str}] [-d{,|;}] [file]\n\n"
-                 "   or:\t%s -e|p {file}\n\n", s, s);
+                 "[-s|l{str}] [-d{,|;}] [file]\n"
+                 "   or:\t%s -e|p {file}\n", s, s);
           if (toupper(c) == 'H')
               help();
           exit(c==':' ? -1 : 0);
