@@ -1,5 +1,5 @@
 /*
- * $Id: tcsvdb.c,v 2.2.0 2016/12/13 $
+ * $Id: tcsvdb.c,v 2.2.0 2016/12/15 $
  */
 
 #define VERSION "2.2"
@@ -9591,6 +9591,7 @@ static char *hlpstrs[] =
     "-p        Parse file",
     "-h        Help",
     "-v        Version",
+    "",
     NULL
 };
 
