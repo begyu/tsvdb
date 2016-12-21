@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 2.2.0 2016/12/15 $
+ * $Id: tcsvdb.c,v 2.3.0 2016/12/21 $
  */
 
-#define VERSION "2.2"
+#define VERSION "2.3"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -7819,6 +7819,76 @@ void modstru(void)
 }
 
 #if !defined(__unix) || defined(__DJGPP__)
+
+void l2u8(char *instr, char *outstr, bool rev)
+{
+  unsigned char l2[] = { 181, 144, 214, 224, 153, 138, 233, 154, 235,
+                         160, 130, 161, 162, 148, 139, 163, 129, 251 };
+  unsigned char u8[] = { 129, 137, 141, 147, 150, 144, 154, 156, 176,
+                         161, 169, 173, 179, 182, 145, 186, 188, 177 };
+  unsigned char c;
+  int i, j, k;
+
+  if (rev)
+  {
+      for (i=k=0; instr[i]; i++,k++)
+      {
+          c = instr[i];
+          outstr[k] = c;
+          if ((c == 195) || (c == 197))
+          {
+              i++;
+              for (j=0; j<18; j++)
+              {
+                  c = instr[i];
+                  if (c == u8[j])
+                  {
+                      outstr[k] = l2[j];
+                      break;
+                  }
+              }
+          }
+      }
+  }
+  else
+  {
+      for (i=k=0; instr[i]; i++,k++)
+      {
+          c = instr[i];
+          outstr[k] = c;
+          for (j=0; j<18; j++)
+          {
+              if (c == l2[j])
+              {
+                  outstr[k] = (j == 5) || (j == 8) ? 197 : 195;
+                  k++;
+                  outstr[k] = u8[j];
+                  break;
+              }
+          }
+      }
+  }
+  outstr[k] = 0;
+}
+
+void u8(int i, int j)
+{
+    BUFDEF;
+
+    strcpy(buf, rows[i]);
+    if (j > 3)
+    {
+        j = strlen(buf);
+        j *= 2;
+        if (rows[i] != NULL)
+           free(rows[i]);
+        rows[i] = (char *)malloc(j+1);
+        l2u8(buf, rows[i], FALSE);
+    }
+    else
+        l2u8(buf, rows[i], TRUE);
+}
+
 void lat2(char *c, int x)
 {
     int i, j;
@@ -7831,7 +7901,7 @@ void lat2(char *c, int x)
     if (ro) 
         return;
    
-    for (j = strlen(c); j > 0; j--)
+    for (j = strlen(c); j >= 0; j--)
     {
         if (x == 1)
             p = strchr(c0, c[j]);
@@ -7856,7 +7926,7 @@ void lat2(char *c, int x)
 
 void docode(void)
 {
-    char *b[] = {"From Latin-2", "To Latin-2", "", "", ""};
+    char *b[] = {"From Latin-2", "To Latin-2", "From UTF-8", "To UTF-8", ""};
     int i, j;
 
     if (ro || safe)
@@ -7867,7 +7937,10 @@ void docode(void)
         return;
     for (i=0; i<(reccnt); i++)
     {
-        lat2(rows[i], j);
+        if (j < 3)
+            lat2(rows[i], j);
+        else
+            u8(i, j);
     }
     redraw();
     flagmsg();
