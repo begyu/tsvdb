@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 2.3.0 2016/12/21 $
+ * $Id: tcsvdb.c,v 2.4.0 2016/12/31 $
  */
 
-#define VERSION "2.3"
+#define VERSION "2.4"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -226,8 +226,8 @@ void xlate(char *s, int x)
                 else if (s[i] == c[3][j])
                     s[i] = c[1][j];
                 break;
-            }         
-        }         
+            }
+        }
     }
 }
 
@@ -6136,7 +6136,7 @@ void paste()
     strcpy(rows[curr], buf);
     modified = TRUE;
     flagmsg();
-}    
+}
 
 #ifdef __MINGW_VERSION
 char *get_clipboard(void)
@@ -7818,12 +7818,16 @@ void modstru(void)
     }
 }
 
-#if !defined(__unix) || defined(__DJGPP__)
 
 void l2u8(char *instr, char *outstr, bool rev)
 {
+#if defined(__unix) || !defined(__DJGPP__)
+  unsigned char l2[] = {0xC1,0xC9,0xCD,0xD3,0xD6,0x90,0xDA,0xDC,0xB0,
+                        0xE1,0xE9,0xED,0xF3,0xF6,0x91,0xFA,0xFC,0xB1 };
+#else
   unsigned char l2[] = { 181, 144, 214, 224, 153, 138, 233, 154, 235,
                          160, 130, 161, 162, 148, 139, 163, 129, 251 };
+#endif
   unsigned char u8[] = { 129, 137, 141, 147, 150, 144, 154, 156, 176,
                          161, 169, 173, 179, 182, 145, 186, 188, 177 };
   unsigned char c;
@@ -7837,6 +7841,7 @@ void l2u8(char *instr, char *outstr, bool rev)
           outstr[k] = c;
           if ((c == 195) || (c == 197))
           {
+              modified = TRUE;
               i++;
               for (j=0; j<18; j++)
               {
@@ -7860,7 +7865,11 @@ void l2u8(char *instr, char *outstr, bool rev)
           {
               if (c == l2[j])
               {
-                  outstr[k] = (j == 5) || (j == 8) ? 197 : 195;
+                  modified = TRUE;
+                  if ((j == 5) || (j == 8) || (j == 14) || (j == 17))
+                      outstr[k] = 197;
+                  else
+                      outstr[k] = 195;
                   k++;
                   outstr[k] = u8[j];
                   break;
@@ -7878,12 +7887,12 @@ void u8(int i, int j)
     strcpy(buf, rows[i]);
     if (j > 3)
     {
+        l2u8(rows[i], buf, FALSE);
         j = strlen(buf);
-        j *= 2;
         if (rows[i] != NULL)
            free(rows[i]);
         rows[i] = (char *)malloc(j+1);
-        l2u8(buf, rows[i], FALSE);
+        strcpy(rows[i], buf);
     }
     else
         l2u8(buf, rows[i], TRUE);
@@ -7945,7 +7954,6 @@ void docode(void)
     redraw();
     flagmsg();
 }
-#endif
 
 
 void donum(void)
@@ -8852,8 +8860,29 @@ void edit(void)
             flagmsg();
             break;
         case ALT_W:
-            lat2(rows[curr], 0);
+            lat2(rows[curr], 2);
             flagmsg();
+            break;
+#endif
+#ifdef XCURSES
+        case CTRL_W:
+            j = 4;
+        case ALT_W:
+            if (j != 4)
+                j = 3;
+            i = selbox("Encodes the entire file?", ync, 2);
+            switch (i)
+            {
+                case 1:
+                    for (i=0; i<(reccnt); i++)
+                        u8(i, j);
+                    break;
+                case 2:
+                    u8(curr, j);
+                    break;
+            }
+            flagmsg();
+            j = 0;
             break;
 #endif
         case CTRL_R:
@@ -9392,7 +9421,7 @@ void subfunc1(void)
 #if !defined(__unix) || defined(__DJGPP__)
         "Ctrl/Alt-W:  to/from Latin-2    \t Ctrl-Up/Dn:  shift screen",
 #else
-        "        F1:  Keys help          \t Ctrl-Up/Dn:  shift screen",
+        "Ctrl/Alt-W:  to/from UTF-8      \t Ctrl-Up/Dn:  shift screen",
 #endif
 #ifdef __MINGW_VERSION
         "Ctrl/Alt-R:  undo/redo (max 10) \t Shft-Up/Dn:  inc/dec scr lines",
