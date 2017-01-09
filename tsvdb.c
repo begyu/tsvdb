@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 2.4.0 2016/12/31 $
+ * $Id: tcsvdb.c,v 2.5.0 2017/01/06 $
  */
 
-#define VERSION "2.4"
+#define VERSION "2.5"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -198,7 +198,6 @@ static void EnableConsoleCloseButton()
 }
 #endif
 
-//#if !defined(__unix) || defined(__DJGPP__)
 void xlate(char *s, int x)
 {
     char c[4][9] = {{0xA0,0x82,0xA1,0xA2,0x94,0x8B,0xA3,0x81,0xFB},
@@ -259,7 +258,6 @@ void cpch(char *c)
       c[0] = c1[i];
   }
 }
-//#endif
 
 
 bool is_leap_year(int year)
@@ -1992,7 +1990,6 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
             wrefresh(win);
             wrefresh(wedit);
             break;
-//#if !defined(__unix) || defined(__DJGPP__)
         case KEY_SRIGHT:
             xlate(buf, 0);
             break;
@@ -2002,8 +1999,6 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
         case CTRL_X:
             cpch(bp);
             break;
-//#endif
-/*#ifdef DJGPP*/
         case CTRL_Y:
             i = 0;
             tp = buf;
@@ -2057,7 +2052,6 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
                 i++;
             }
             break;
-/*#endif //DJGPP*/
         case ALT_P:
             stop = TRUE;
             break;
@@ -2520,11 +2514,17 @@ char *getfname(bool fn, char *desc, char *fname, int length)
 
 int casestr(char *str, bool upper, bool ascii)
 {
-#define MAXCHS 18
+#ifdef XCURSES
+ #define MAXCHS 9
+  char chr_lo[] = {0xE1,0xE9,0xED,0xF3,0xF6,0x91,0xFA,0xFC,0xB1};
+  char chr_hi[] = {0xC1,0xC9,0xCD,0xD3,0xD6,0x90,0xDA,0xDC,0xB0};
+#else
+ #define MAXCHS 18
   char chr_lo[] = {0xA0,0x82,0xA1,0xA2,0x94,0x8B,0xA3,0x81,0xFB,
                    0xE1,0xE9,0xED,0xF3,0xF6,0xF5,0xFA,0xFC,0xFB};
   char chr_hi[] = {0xB5,0x90,0xD6,0xE0,0x99,0x8A,0xE9,0x9A,0xEB,
                    0xC1,0xC9,0xCD,0xD3,0xD6,0xD5,0xDA,0xDC,0xDB};
+#endif
   char asc_lo[] = "aeiooouuuaeiooouuu";
   char asc_hi[] = "AEIOOOUUUAEIOOOUUU";
 /*  char chr_utflo[] = "ĂˇĂ©Ă­ĂłĂ¶Ĺ‘ĂşĂĽĹ±";*/
@@ -6636,20 +6636,17 @@ void reordall(bool left)
     msg(NULL);
 }
 
-void fieldcase(bool up, bool whole)
+void casefield(int current, bool up, bool whole)
 {
     char s[MAXSTRLEN+1];
     register int i, j;
 
-    if (ro)
-        return;
-
     for (i=0, j=0; j<field; i++)
-        if (rows[curr][i] == csep)
+        if (rows[current][i] == csep)
             j++;
 
     for (j=0; j<len[field]; j++)
-        s[j] = rows[curr][i+j];
+        s[j] = rows[current][i+j];
     s[j] = '\0';
 
     if (whole)
@@ -6661,7 +6658,36 @@ void fieldcase(bool up, bool whole)
     {
         if (s[j] == csep)
             break;
-        rows[curr][i+j] = s[j];
+        rows[current][i+j] = s[j];
+    }
+}
+
+void fieldcase(bool up, bool whole)
+{
+    register int i;
+    char msg[] = "Lower all fields?";
+
+    if (ro)
+        return;
+
+    if (up)
+    {
+       msg[0] = 'U';
+       msg[1] = 'p';
+       msg[2] = 'p';
+    }
+    i = selbox(msg, ync, 2);
+    switch (i)
+    {
+      case 1:
+         for (i=0; i<(reccnt); i++)
+             casefield(i, up, whole);
+         break;
+      case 2:
+             casefield(curr, up, whole);
+         break;
+      default:
+         return;
     }
     modified = TRUE;
     flagmsg();
@@ -7821,7 +7847,7 @@ void modstru(void)
 
 void l2u8(char *instr, char *outstr, bool rev)
 {
-#if defined(__unix) || !defined(__DJGPP__)
+#ifdef XCURSES
   unsigned char l2[] = {0xC1,0xC9,0xCD,0xD3,0xD6,0x90,0xDA,0xDC,0xB0,
                         0xE1,0xE9,0xED,0xF3,0xF6,0x91,0xFA,0xFC,0xB1 };
 #else
