@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 2.5.0 2017/01/06 $
+ * $Id: tcsvdb.c,v 2.6.0 2017/01/11 $
  */
 
-#define VERSION "2.5"
+#define VERSION "2.6"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -9061,14 +9061,42 @@ void txted(void)
     }
 }
 
-void segregate(bool rev)
+
+void find_field(void)
+{
+    register int i;
+    int j, k;
+    char *fieldbuf[MAXCOLS+1];
+    struct slre_cap cap = { NULL, 0 };
+    BUFDEF;
+
+    getfstr();
+    if (strlen(fstr))
+    {
+        j = 0;
+        for (i=0; i<reccnt; i++)
+        {
+            strsplit(rows[i], fieldbuf, ssep);
+            strcpy(buf, fieldbuf[field]);
+            if ((k = slre_match(fstr, buf, strlen(buf), &cap, 1, 0)) > 0)
+            {
+                j = k;
+                flags[i] = 1;
+            }
+        }
+        filtered = (bool)(j > 0);
+        curr = 0;
+    }
+    flagmsg();
+}
+
+void segregate(bool rev, bool column)
 {
     register int i, j;
 
-    if (cry)
-        	return;
-
-    if (!rev)
+    if (column)
+        find_field();
+    else if (!rev)
     {
         getfstr();
         if (strlen(fstr))
@@ -9139,12 +9167,42 @@ void segregate(bool rev)
 
 void tsv_select(void)
 {
-    segregate(FALSE);
+    int i, j;
+    char *b[] = {"All", "Field", "Clear", "", ""};
+
+    if (cry)
+        	return;
+
+    i = selbox("Select", b, 1);
+    switch (i)
+    {
+      case 1:
+         segregate(FALSE, FALSE);
+         break;
+      case 2:
+         j = selectfield(cols);
+         if (j != -1)
+         {
+             field = j;
+             segregate(FALSE, TRUE);
+         }
+         break;
+      case 3:
+         memset(flags, 0, MAXROWS);
+         filtered = FALSE;
+         flagmsg();
+         break;
+      default:
+         return;
+    }
 }
 
 void tsv_reverse(void)
 {
-    segregate(TRUE);
+    if (cry)
+        	return;
+
+    segregate(TRUE, FALSE);
 }
 
 
