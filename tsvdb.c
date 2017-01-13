@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 2.6.0 2017/01/11 $
+ * $Id: tcsvdb.c,v 2.7.0 2017/01/13 $
  */
 
-#define VERSION "2.6"
+#define VERSION "2.7"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -2577,9 +2577,10 @@ int capfstr(char *str, bool upper, bool ascii)
 {
   register int i, j;
   bool change;
+  char prechrs[] = " !\"#$%&'()*+,-./[\\]^_`{|}~";
   char s[] = "?";
 
-  change = (str[0] == 0x20) ? FALSE : TRUE;
+  change = (strchr(prechrs, str[0]) ? FALSE : TRUE);
   j = strlen(str);
   for (i=0; i<j; i++)
   {
@@ -2589,7 +2590,7 @@ int capfstr(char *str, bool upper, bool ascii)
           casestr(s, upper, ascii);
           str[i] = s[0];
       }
-      change = (str[i] == 0x20) ? TRUE : FALSE;
+      change = (strchr(prechrs, str[i]) ? TRUE : FALSE);
   }
   return 0;
 }
