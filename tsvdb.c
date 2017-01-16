@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 2.7.0 2017/01/13 $
+ * $Id: tcsvdb.c,v 2.8.0 2017/01/16 $
  */
 
-#define VERSION "2.7"
+#define VERSION "2.8"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -7994,6 +7994,9 @@ void donum(void)
     BUFDEF;
 
     if (ro || safe) 
+        	return;
+
+    if (reccnt <= 1) 
         	return;
 
     if ((i=yesno("Replace the column with sequence numbers? (Y/N):")) == 0)
