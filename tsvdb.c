@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 2.8.0 2017/01/16 $
+ * $Id: tcsvdb.c,v 2.9.0 2017/01/17 $
  */
 
-#define VERSION "2.8"
+#define VERSION "2.9"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -8559,6 +8559,7 @@ void edit(void)
             if (!slk)
                	break;
         case KEY_BTAB:
+        case CTRL_B:
             if (strlen(fstr))
             {
                search(curr, regex ? RXBACK : -2);
@@ -9499,7 +9500,7 @@ void subfunc1(void)
         "  Ctrl-F/D:  regexp search /AND \t C/A-arrows:  reorder fields",
         "     Alt-F:  seek curr field    \t Shft-arrow:  align left/right",
         " Tab/C-Tab:  find next          \t S-Home/End:  adjust center/end",
-        "  Shft-Tab:  previous           \t  Alt-Up/Dn:  move back/forward",
+        "  Shft-Tab:  previous  (Ctrl-B) \t  Alt-Up/Dn:  move back/forward",
         "    Ctrl-P:  next phonetic      \t    Alt-N/M:  all soundex /Hu",
         "Bksp/S-Del:  del fstr back/first\t Ctrl/Alt-Q:  search equivalent",
         "  Del/Home:  clear fstr         \t    Alt-I/D:  ins/remove field",
