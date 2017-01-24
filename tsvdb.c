@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 2.9.0 2017/01/17 $
+ * $Id: tcsvdb.c,v 3.0.0 2017/01/24 $
  */
 
-#define VERSION "2.9"
+#define VERSION "3.0"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -520,6 +520,7 @@ static bool hunset = FALSE;
 static bool slk = FALSE;
 static bool slkon = FALSE;
 static bool parse = FALSE;
+static bool autf = TRUE;
 static WINDOW *slkptr = NULL;
 static long int filesize = 0L;
 static struct stat filestat;
@@ -7993,10 +7994,10 @@ void donum(void)
     char *fields[MAXCOLS+1];
     BUFDEF;
 
-    if (ro || safe) 
+    if (ro || safe)
         	return;
 
-    if (reccnt <= 1) 
+    if (reccnt <= 1)
         	return;
 
     if ((i=yesno("Replace the column with sequence numbers? (Y/N):")) == 0)
@@ -8967,6 +8968,8 @@ void edit(void)
             dispfield(field);
             break;
         default:
+            if (autf == FALSE)
+               	break;
             if ((c == 0x81) || (c == 0xEB) || (c == 0x1FB))
                c = 0x55; /* U */
             else if (c == 0x90)
@@ -9376,7 +9379,7 @@ void sub0(void), sub1(void), sub2(void);
 void subfunc1(void), subfunc2(void);
 void reghelp(void), edithelp(void);
 void txthelp(void), limits(void);
-void chgslk(void);
+void chgslk(void), chgauto(void);
 
 /***************************** menus initialization ***********************/
 
@@ -9432,6 +9435,7 @@ menu SubMenu1[] =
 
 menu SubMenu2[] =
 {
+    { "Autoseek", chgauto, "Switch auto seek on/off" },
     { "Keys", subfunc1, "General keys" },
     { "input keys", edithelp, "Keys in edit mode" },
     { "Edit keys", txthelp, "Keys in texteditor" },
@@ -9464,17 +9468,23 @@ void sub1(void)
     domenu(SubMenu1);
 }
 
+void chgauto(void)
+{
+    autf = !autf;
+    putmsg("Autoseek is ", (autf ? "On" : "Off"), "!");
+}
+
 void sub2(void)
 {
     int i;
 #ifdef __MINGW_VERSION
- #define MAXS2 11
+ #define MAXS2 12
 #else
- #define MAXS2 9
+ #define MAXS2 10
 #endif
     if ((slk == FALSE) && (SubMenu2[MAXS2].name[0] == 'A'))
     {
-        for (i=8; i<(MAXS2+1); i++)
+        for (i=9; i<(MAXS2+1); i++)
              SubMenu2[i] = SubMenu2[i+1];
     }
     domenu(SubMenu2);
@@ -9706,6 +9716,7 @@ void limits(void)
         "    Number of fields: ",
         "Length of field name: ",
         "     Field separator: ",
+        "           Auto-seek: ",
         "           Read only: ",
         "              Safety: ",
         "              Locked: ",
@@ -9718,13 +9729,14 @@ void limits(void)
         MAXCOLS,
         MAXFLEN,
         csep,
+        autf,
         ro,
         safe,
         locked,
         cry
     };
     int i;
-    int j=9;
+    int j=10;
     
     wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-34)/2, j+2, 34);
 #ifndef __MINGW_VERSION
@@ -9760,11 +9772,11 @@ void limits(void)
 static char *hlpstrs[] =
 {
     "-r        Read-only mode",
-    "-x        Mixed mode",
-    "          or '-X' can edit only current",
+    "-x        Mixed mode (-X edit only curr)",
     "-y        Locked mode",
     "-z        Safety on",
     "-q        Quit on",
+    "-a        Autoseek off",
     "-t        Top",
     "-b        Bottom",
     "-n <num>  Go to num'th row",
@@ -10007,7 +10019,7 @@ typedef int (*LDF)(char *);
     i = 0;
     curr = 0;
     opterr = 0;
-    while ((c=getopt(ac,av,"HhRrVvXxYyZzQqTtBbEeFfN:n:D:d:S:s:L:l:W:w:Pp?"))
+    while ((c=getopt(ac,av,"HhRrVvXxYyZzQqTtAaBbEeFfN:n:D:d:S:s:L:l:W:w:Pp?"))
            != -1)
     {
       switch (c)
@@ -10037,6 +10049,10 @@ typedef int (*LDF)(char *);
         case 'V':
           printf("\nTSVdb v.%s %s by begyu (%s)\n", VERSION, __DATE__, URL);
           exit(0);
+          break;
+        case 'a':
+        case 'A':
+          autf = FALSE;
           break;
         case 't':
         case 'T':
@@ -10147,7 +10163,7 @@ typedef int (*LDF)(char *);
           p = strstr(s, ".exe");
           if (p != NULL)
              	p[0] = '\0';
-          printf("Usage: %s [-r|x|y|z|q|t|b|f|h|v] [-n|w{row}] "
+          printf("Usage: %s [-r|x|y|z|q|a|t|b|f|h|v] [-n|w{row}] "
                  "[-s|l{str}] [-d{,|;}] [file]\n"
                  "   or:\t%s -e|p {file}\n", s, s);
           if (toupper(c) == 'H')
