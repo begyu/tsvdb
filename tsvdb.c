@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 3.0.0 2017/01/24 $
+ * $Id: tcsvdb.c,v 3.1.0 2017/02/20 $
  */
 
-#define VERSION "3.0"
+#define VERSION "3.1"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -513,7 +513,7 @@ static bool filtered = FALSE;
 static bool headspac = FALSE;
 static bool hunsort = FALSE;
 static bool insert = FALSE;
-static bool colorset = FALSE;
+static int colorset = 0;
 static bool inside = FALSE;
 static bool phonetic = FALSE;
 static bool hunset = FALSE;
@@ -842,6 +842,52 @@ static void initcolo2(void)
     init_pair(FSTRCOLOR        & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
     init_pair(EDITBOXTOOCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
     init_pair(INFOCOLOR        & ~A_ATTR, COLOR_MAGENTA, COLOR_CYAN);
+#endif
+}
+
+static void initcolo3(void)
+{
+#ifdef A_COLOR
+    if (has_colors())
+        start_color();
+    init_pair(TITLECOLOR       & ~A_ATTR, COLOR_BLUE, COLOR_CYAN);      
+    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_GREEN, COLOR_CYAN);    
+    init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);
+    init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_GREEN, COLOR_CYAN);    
+    init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);   
+    init_pair(BODYCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);      
+    init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_WHITE, COLOR_CYAN);   
+    init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_BLUE, COLOR_YELLOW);
+    init_pair(EDITBOXCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);
+    init_pair(CURRCOLOR        & ~A_ATTR, COLOR_GREEN, COLOR_BLUE);
+    init_pair(CURRREVCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
+    init_pair(MARKCOLOR        & ~A_ATTR, COLOR_CYAN, COLOR_BLACK);
+    init_pair(FSTRCOLOR        & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
+    init_pair(EDITBOXTOOCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
+    init_pair(INFOCOLOR        & ~A_ATTR, COLOR_BLUE, COLOR_CYAN);
+#endif
+}
+
+static void initcolo4(void)
+{
+#ifdef A_COLOR
+    if (has_colors())
+        start_color();
+    init_pair(TITLECOLOR       & ~A_ATTR, COLOR_BLUE, COLOR_CYAN);      
+    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_GREEN, COLOR_CYAN);    
+    init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_YELLOW, COLOR_BLACK);
+    init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_GREEN, COLOR_BLUE);    
+    init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_BLACK);   
+    init_pair(BODYCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_CYAN);      
+    init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_WHITE, COLOR_CYAN);   
+    init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_BLUE, COLOR_GREEN);
+    init_pair(EDITBOXCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);
+    init_pair(CURRCOLOR        & ~A_ATTR, COLOR_GREEN, COLOR_BLUE);
+    init_pair(CURRREVCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_BLACK);
+    init_pair(MARKCOLOR        & ~A_ATTR, COLOR_RED, COLOR_CYAN);
+    init_pair(FSTRCOLOR        & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
+    init_pair(EDITBOXTOOCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
+    init_pair(INFOCOLOR        & ~A_ATTR, COLOR_BLUE, COLOR_CYAN);
 #endif
 }
 
@@ -3009,12 +3055,22 @@ void sort_back(int n)
 
 void flagmsg(void)
 {
+    char nulla[] = "0";
+
     setcolor(wmain, INFOCOLOR);
     if (modified)
     {
         setcolor(wtitl, FSTRCOLOR);
         mvwaddstr(wtitl, 0, 0, "*");
         mvwaddstr(wmain, 0, bw-5, "Mod");
+        if (undoptr == MAXUNDO)
+            mvwaddstr(wmain, 0, bw-2, "10");
+        else
+        {
+            mvwaddstr(wmain, 0, bw-2, (undelpos != 0) ? "X" : " ");
+            nulla[0] = (undoptr >= 0) ? '1'+undoptr : ' ';
+            mvwaddstr(wmain, 0, bw-1, nulla);
+        }
 #ifdef __MINGW_VERSION
         if (terminable)
         {
@@ -3030,6 +3086,9 @@ void flagmsg(void)
         mvwaddstr(wmain, 0, bw-5, "   ");
     }
     wrefresh(wtitl);
+    nulla[0] = (char)('0'+colorset);
+    mvwaddstr(wmain, 0, bw-28, "C-");
+    mvwaddstr(wmain, 0, bw-26, nulla);
     mvwaddstr(wmain, 0, bw-24, phonetic ? "Sndx" : "     ");
     mvwaddstr(wmain, 0, bw-19, hunset ? "Hu" : "   ");
     mvwaddstr(wmain, 0, bw-16, filtered ? "Sel" : "    ");
@@ -9816,7 +9875,7 @@ void opthelp(void)
     int j=20;
 #endif
     
-    wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-42)/2, j+2, 42);
+    wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-43)/2, j+2, 43);
 #ifndef __MINGW_VERSION
     wborder(wmsg, '|', '|', '-', '-', '+', '+', '+', '+');
 #endif
@@ -9961,11 +10020,24 @@ void changecolor(void)
     if (!has_colors())
         	return;
 
-    if (colorset)
-        	initcolor();
-    else
-        	initcolo2();
-    colorset = !colorset;
+    colorset++;
+    switch (colorset)
+    {
+    case 4:
+        colorset = 0;
+    case 0:
+        initcolor();
+        break;
+    case 1:
+        initcolo2();
+        break;
+    case 2:
+        initcolo3();
+        break;
+    case 3:
+        initcolo4();
+        break;
+    }
     colorbox(wtitl, TITLECOLOR, 0);
     colorbox(wmain, MAINMENUCOLOR, 0);
     colorbox(wbody, BODYCOLOR, 0);
