@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 3.1.0 2017/02/20 $
+ * $Id: tcsvdb.c,v 3.2.0 2017/02/21 $
  */
 
-#define VERSION "3.1"
+#define VERSION "3.2"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -91,10 +91,12 @@ char *itoa(int value, char *string, int radix)
 
 #include <signal.h>
 
+/*
 void siginthandler(int param)
 {
     return;
 }
+*/
 
 
 int putmsg(char *, char *, char *);
@@ -435,6 +437,7 @@ void reghelp(void);
 #define REGHLP reghelp()
 void opthelp(void);
 
+void resize_event(void);
 void changecolor(void);
 void disphint(int);
 void flagmsg(void);
@@ -525,6 +528,8 @@ static WINDOW *slkptr = NULL;
 static long int filesize = 0L;
 static struct stat filestat;
 static int origy, origx;
+static int miny = 25;
+static int minx = 40;
 #ifdef __MINGW_VERSION
 static int d_row = 0;
 #endif
@@ -1200,6 +1205,16 @@ static void mainmenu(menu *mp)
             break;
 #endif
 
+#if defined(XCURSES) || defined(PDCW)
+        case KEY_RESIZE:
+            resize_event();
+            touchwin(wbody);
+            wrefresh(wbody);
+            repaintmainmenu(barlen, mp);
+            old = -1;
+            break;
+#endif
+
         default:
             cur0 = cur;
 
@@ -1546,6 +1561,17 @@ void domenu(menu *mp)
                 key = KEY_DOWN;
                 continue;
             }
+            break;
+#endif
+
+#if defined(XCURSES) || defined(PDCW)
+        case KEY_RESIZE:
+            resize_event();
+            touchwin(wbody);
+            wrefresh(wbody);
+            repaintmenu(wmenu, mp);
+            old = -1;
+            key = KEY_MAX+1;
             break;
 #endif
 
@@ -2114,6 +2140,20 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
         case CTRL_T:
             c = 219;
             goto ins_char;
+
+#if defined(XCURSES) || defined(PDCW)
+        case KEY_RESIZE:
+            resize_event();
+            touchwin(wbody);
+            wrefresh(wbody);
+            touchwin(win);
+            wrefresh(win);
+            touchwin(wedit);
+            wrefresh(wedit);
+            c = KEY_MAX+1;
+            break;
+#endif
+
         default:
             if (c == erasechar())       /* backspace, ^H */
             {
@@ -4186,6 +4226,16 @@ int selbox(char *msg, char **butts, int b)
             break;
 #endif
 
+#if defined(XCURSES) || defined(PDCW)
+        case KEY_RESIZE:
+            resize_event();
+            touchwin(wbody);
+            wrefresh(wbody);
+            touchwin(wdmsg);
+            wrefresh(wdmsg);
+            break;
+#endif
+
         default:
             if (isalpha(c))
             {
@@ -4572,6 +4622,17 @@ void brows(void)
                 curr++;
             break;
 #endif
+
+#if defined(XCURSES) || defined(PDCW)
+        case KEY_RESIZE:
+            resize_event();
+            j = bodylen()-1;
+            k = reccnt-bodylen()+1;
+            touchwin(wbody);
+            wrefresh(wbody);
+            break;
+#endif
+
         case 'Q':
         case 'q':
         case KEY_ESC:
@@ -8173,6 +8234,9 @@ void resize_event()
     resize_term(0, 0);
     refresh();
     getmaxyx(stdscr, y, x);
+    y = MAX(miny, y);
+    x = MAX(minx, x);
+    resize_term(y, x);
     LINES = y;
     COLS = x;
     wtitl = subwin(stdscr, th, bw, 0, 0);
@@ -8226,6 +8290,9 @@ void resize_event()
     resize_term(0, 0);
     refresh();
     getmaxyx(stdscr, y, x);
+    y = MAX(miny, y);
+    x = MAX(minx, x);
+    resize_term(y, x);
     LINES = y;
     COLS = x;
     wtitl = subwin(stdscr, th, bw, 0, 0);
@@ -10324,7 +10391,8 @@ typedef int (*LDF)(char *);
 #ifdef __MINGW_VERSION
     SetConsoleTitle("TSVdb v."VERSION);
 #endif
-    signal(SIGINT, siginthandler);
+/*    signal(SIGINT, siginthandler);*/
+    signal(SIGINT, SIG_IGN);
     startmenu(MainMenu, datfname);
 #ifdef __MINGW_VERSION
     EnableConsoleCloseButton();
