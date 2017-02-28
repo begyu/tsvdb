@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 3.2.0 2017/02/21 $
+ * $Id: tcsvdb.c,v 3.3.0 2017/02/28 $
  */
 
-#define VERSION "3.2"
+#define VERSION "3.3"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -528,8 +528,10 @@ static WINDOW *slkptr = NULL;
 static long int filesize = 0L;
 static struct stat filestat;
 static int origy, origx;
+#if defined(XCURSES) || defined(PDCW)
 static int miny = 25;
 static int minx = 40;
+#endif
 #ifdef __MINGW_VERSION
 static int d_row = 0;
 #endif
@@ -1985,7 +1987,7 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
                     memmove((void *)(bp + j), (const void *)bp,
                             strlen(bp) + j);
                 }
-                for (i=0; i<=j; i++)
+                for (i=0; i<j; i++)
                 {
                     *bp++ = clp[i];
                 }
