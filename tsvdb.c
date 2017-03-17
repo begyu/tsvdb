@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 3.3.0 2017/02/28 $
+ * $Id: tcsvdb.c,v 3.4.0 2017/03/17 $
  */
 
-#define VERSION "3.3"
+#define VERSION "3.4"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -1752,7 +1752,7 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
     int cury, curx, begy, begx, oldattr;
     WINDOW *wedit;
     int c = 0;
-    int i, j;
+    int i, j, k;
 #if USE_WIDECH
     wint_t ch;
 #endif
@@ -1980,6 +1980,7 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
             break;
         case CTRL_V:
             j = strlen(clp);
+            k = strlen(buf);
             if (((bp+j) - buf) < (field - 1))
             {
                 if (insert)
@@ -1991,11 +1992,14 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
                 {
                     *bp++ = clp[i];
                 }
+                if (!insert && ((bp-buf) >= k))
+                    	*bp = '\0';
             }
             defdisp = FALSE;
             break;
         case CTRL_B:
             j = strlen(fstr);
+            k = strlen(buf);
             if (((bp+j) - buf) < (field - 1))
             {
                 if (insert)
@@ -2007,6 +2011,8 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
                 {
                     *bp++ = fstr[i];
                 }
+                if (!insert && ((bp-buf) >= k))
+                    	*bp = '\0';
             }
             defdisp = FALSE;
             break;
