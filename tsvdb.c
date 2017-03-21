@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 3.4.0 2017/03/17 $
+ * $Id: tcsvdb.c,v 3.5.0 2017/03/21 $
  */
 
-#define VERSION "3.4"
+#define VERSION "3.5"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -834,13 +834,13 @@ static void initcolo2(void)
 #ifdef A_COLOR
     if (has_colors())
         start_color();
-    init_pair(TITLECOLOR       & ~A_ATTR, COLOR_MAGENTA, COLOR_CYAN);      
-    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_GREEN, COLOR_CYAN);    
+    init_pair(TITLECOLOR       & ~A_ATTR, COLOR_MAGENTA, COLOR_YELLOW);      
+    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_GREEN, COLOR_YELLOW);    
     init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
     init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_BLUE, COLOR_YELLOW);    
     init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);   
     init_pair(BODYCOLOR        & ~A_ATTR, COLOR_BLACK, COLOR_WHITE);      
-    init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_BLUE, COLOR_CYAN);   
+    init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_BLUE, COLOR_YELLOW);   
     init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_BLUE, COLOR_GREEN);
     init_pair(EDITBOXCOLOR     & ~A_ATTR, COLOR_RED, COLOR_WHITE);
     init_pair(CURRCOLOR        & ~A_ATTR, COLOR_CYAN, COLOR_BLUE);
@@ -848,7 +848,7 @@ static void initcolo2(void)
     init_pair(MARKCOLOR        & ~A_ATTR, COLOR_MAGENTA, COLOR_WHITE);
     init_pair(FSTRCOLOR        & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
     init_pair(EDITBOXTOOCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
-    init_pair(INFOCOLOR        & ~A_ATTR, COLOR_MAGENTA, COLOR_CYAN);
+    init_pair(INFOCOLOR        & ~A_ATTR, COLOR_MAGENTA, COLOR_YELLOW);
 #endif
 }
 
@@ -857,13 +857,13 @@ static void initcolo3(void)
 #ifdef A_COLOR
     if (has_colors())
         start_color();
-    init_pair(TITLECOLOR       & ~A_ATTR, COLOR_BLUE, COLOR_CYAN);      
-    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_GREEN, COLOR_CYAN);    
+    init_pair(TITLECOLOR       & ~A_ATTR, COLOR_WHITE, COLOR_BLUE);      
+    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_GREEN, COLOR_BLUE);    
     init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);
     init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_GREEN, COLOR_CYAN);    
     init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);   
     init_pair(BODYCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);      
-    init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_WHITE, COLOR_CYAN);   
+    init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_WHITE, COLOR_BLUE);   
     init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_BLUE, COLOR_YELLOW);
     init_pair(EDITBOXCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);
     init_pair(CURRCOLOR        & ~A_ATTR, COLOR_GREEN, COLOR_BLUE);
@@ -895,6 +895,29 @@ static void initcolo4(void)
     init_pair(FSTRCOLOR        & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
     init_pair(EDITBOXTOOCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
     init_pair(INFOCOLOR        & ~A_ATTR, COLOR_BLUE, COLOR_CYAN);
+#endif
+}
+
+static void initcolo5(void)
+{
+#ifdef A_COLOR
+    if (has_colors())
+        start_color();
+    init_pair(TITLECOLOR       & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
+    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
+    init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_BLACK, COLOR_WHITE);
+    init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
+    init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_BLACK, COLOR_WHITE);
+    init_pair(BODYCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
+    init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
+    init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_BLACK, COLOR_WHITE);
+    init_pair(EDITBOXCOLOR     & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
+    init_pair(CURRCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
+    init_pair(CURRREVCOLOR     & ~A_ATTR, COLOR_BLACK, COLOR_WHITE);
+    init_pair(MARKCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_WHITE);
+    init_pair(FSTRCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
+    init_pair(EDITBOXTOOCOLOR  & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
+    init_pair(INFOCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
 #endif
 }
 
@@ -3130,6 +3153,7 @@ void flagmsg(void)
     else
     {
         setcolor(wtitl, TITLECOLOR);
+        setcolor(wmain, MAINMENUCOLOR);
         mvwaddstr(wtitl, 0, 0, "_");
         mvwaddstr(wmain, 0, bw-5, "   ");
     }
@@ -7858,6 +7882,96 @@ void findequal(bool column)
 }
 
 
+static bool noeq = FALSE;
+static int fld2 = -1;
+
+void compare()
+{
+    register int i, j;
+    int currcol;
+    bool mark = FALSE;
+    BUFDEF;
+    char *fields[MAXCOLS+1];
+
+    
+    if (curr >= reccnt)
+    {
+        curr = reccnt;
+        fld2 = -1;
+        return;
+    }
+
+    if (fld2 == -1)
+    {
+        noeq = FALSE;
+        currcol = field;
+        field = (field == 0) ? 1 : 0;
+        fld2 = selectfield(cols);
+        field = currcol;
+        if ((fld2 == -1) || (fld2 == field))
+        {
+            putmsg("", "Choose a different column!", "");
+            fld2 = -1;
+            return;
+        }
+        if (selbox("Search for not equal?", ync, 2) == 1)
+            noeq = TRUE;
+#ifdef __MINGW_VERSION
+        pause(1);
+#else
+        sleep(1);
+#endif
+        if (selbox("Mark them all out?", ync, 2) == 1)
+            mark = TRUE;
+    }
+
+    for (i=(mark ? 0 : curr+1); i<reccnt; i++)
+    {
+        strcpy(buf, rows[i]);
+        strsplit(buf, fields, ssep);
+        for (j=strlen(fields[field])-1; j>0; j--)
+        {    
+            if (fields[field][j] < ' ')
+                fields[field][j] = '\0';
+            else
+                break;
+        }
+        for (j=strlen(fields[fld2])-1; j>0; j--)
+        {    
+            if (fields[fld2][j] < ' ')
+                fields[fld2][j] = '\0';
+            else
+                break;
+        }
+        if (mark)
+        {
+            if (strcmp(fields[fld2], fields[field]) == 0)
+               flags[i] = noeq ? 0 : 1;
+            else
+               flags[i] = noeq ? 1 : 0;
+        }
+        else
+        {
+            if (strcmp(fields[fld2], fields[field]) == 0)
+            {
+                 if (noeq)
+                     continue;
+                 curr = i;
+                 return;
+            }
+            else if (noeq)
+                 {
+                     curr = i;
+                     return;
+                 }
+        }
+    }
+    if (!mark)
+        	curr = reccnt;
+    fld2 = -1;
+}
+
+
 int topset(int top, int y)
 {
     register int i;
@@ -9020,6 +9134,10 @@ void edit(void)
             findequal(TRUE);
             ctop = topset(curr, r);
             break;
+        case ALT_G:
+            compare();
+            ctop = topset(curr, r);
+            break;
 #if !defined(__unix) || defined(__DJGPP__)
         case CTRL_W:
             lat2(rows[curr], 1);
@@ -9648,7 +9766,7 @@ void subfunc1(void)
         "    Ctrl-P:  next phonetic      \t    Alt-N/M:  all soundex /Hu",
         "Bksp/S-Del:  del fstr back/first\t Ctrl/Alt-Q:  search equivalent",
         "  Del/Home:  clear fstr         \t    Alt-I/D:  ins/remove field",
-        "    Ctrl-G:  goto line          \tC-N / C/A-O:  count subs/field",
+        "Ctrl/Alt-G:  goto/compare fields\tC-N / C/A-O:  count subs/field",
         "Ctrl/Alt-S:  replace/change     \t   C/A-Home:  go max/longest",
         " Alt-C/X/Y:  calculate/fld/cols \t    C/A-End:  go min/shortest",
 #if !defined(__unix) || defined(__DJGPP__)
@@ -10098,7 +10216,7 @@ void changecolor(void)
     colorset++;
     switch (colorset)
     {
-    case 4:
+    case 5:
         colorset = 0;
     case 0:
         initcolor();
@@ -10112,7 +10230,11 @@ void changecolor(void)
     case 3:
         initcolo4();
         break;
+    case 4:
+        initcolo5();
     }
+    clear();
+    refresh();
     colorbox(wtitl, TITLECOLOR, 0);
     colorbox(wmain, MAINMENUCOLOR, 0);
     colorbox(wbody, BODYCOLOR, 0);
