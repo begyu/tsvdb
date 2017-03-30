@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 3.5.0 2017/03/21 $
+ * $Id: tcsvdb.c,v 3.6.0 2017/03/30 $
  */
 
-#define VERSION "3.5"
+#define VERSION "3.6"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -1049,7 +1049,7 @@ static void repaintmenu(WINDOW *wmenu, menu *mp)
                 setcolor(wmenu, INPUTBOXCOLOR);
             else
                 setcolor(wmenu, SUBMENUCOLOR);
-            if (safe && ((p->name[0] == 'M') || strstr(p->name, "Tex")))
+            if (safe && (strstr(p->name, "Mod") || strstr(p->name, "Tex")))
                 setcolor(wmenu, INPUTBOXCOLOR);
 #if !defined(__unix) || defined(__DJGPP__)
             if (safe && strstr(p->name, "cod"))
@@ -1457,7 +1457,7 @@ void domenu(menu *mp)
                         setcolor(wmenu, INPUTBOXCOLOR);
                     else
                         setcolor(wmenu, SUBMENUCOLOR);
-                    if (safe && ((mp[old].name[0] == 'M')
+                    if (safe && (strstr(mp[old].name, "Mod")
                                  || strstr(mp[old].name, "Tex")))
                         setcolor(wmenu, INPUTBOXCOLOR);
                 }
@@ -4086,6 +4086,90 @@ int getfile(char *fname)
         j++;
     }
     strcpy(datfname, fname);
+    return 0;
+}
+
+int mergefile(char *fname)
+{
+    int i = 0;
+    int j = 0;
+    int k = 0;
+    FILE *fp;
+    BUFDEF;
+    bool ateof = FALSE;
+    char *p;
+
+    if ((fp = fopen(fname, "r")) != NULL)
+    {
+        buf[0] = '\0';
+        fgets(buf, MAXSTRLEN, fp);
+        k = strcmp(head, buf);
+        if (k != 0)
+        {
+            errormsg("ERROR: Bad header!");
+            return -1;
+        }
+        while (!ateof)
+        {
+            buf[0] = '\0';
+            fgets(buf, MAXSTRLEN, fp);
+            j = strlen(buf);
+            if (j)
+            {
+                if (j < 2)
+                    continue;
+                for (i=0; i<reccnt; i++)
+                {
+                    k = strcmp(rows[i], buf);
+                    if (k >= 0)
+                        break;
+                }
+                if (k != 0)
+                {
+                    p = (char *)malloc(j+1);
+                    if (p == NULL)
+                    {
+                        errormsg("ERROR: Memory full!");
+                        ateof = TRUE;
+                        break;
+                    }
+                    modified = TRUE;
+                    reccnt++;
+                    for (k=reccnt; k>i; k--)
+                        rows[k] = rows[k-1];
+                    rows[i] = p;
+                    strcpy(rows[i], buf);
+                    if (reccnt >= MAXROWS)
+                    {
+                        errormsg("ERROR: File too big, truncated!");
+                        ateof = TRUE;
+                    }
+                }
+            }
+            else
+                ateof = TRUE;
+        }
+        fclose(fp);
+        rows[reccnt] = (char *)malloc(2);
+        strcpy(rows[reccnt], "\0");
+    }
+    else
+    {
+        sprintf(buf, "ERROR: file '%s' not found", fname);
+        errormsg(buf);
+        return -1;
+    }
+    field=0;
+    curcol=0;
+    clsbody();
+    wrefresh(wbody);
+    j = 0;
+    for (i=0; i<bodylen(); i++)
+    {
+        if (i < reccnt)
+           displn(i, j+1);
+        j++;
+    }
     return 0;
 }
 
@@ -7967,8 +8051,10 @@ void compare()
         }
     }
     if (!mark)
-        	curr = reccnt;
-    fld2 = -1;
+    {
+        curr = reccnt;
+        fld2 = -1;
+    }
 }
 
 
@@ -9293,6 +9379,22 @@ void DoAppend(void)
     }
 }
 
+void DoMerge(void)
+{
+    if (ro || cry)
+        	return;
+
+    strcpy(fnam, "?");
+    if (getfname(TRUE, "Get from file:", fnam, 50))
+    {
+        if (mergefile(fnam) == 0)
+        {
+            putmsg("File: ", fnam, " merged.");
+            flagmsg();
+        }
+    }
+}
+
 
 void txted(void)
 {
@@ -9650,6 +9752,7 @@ menu SubMenu0[] =
     { "Save", DoSave, "Save data file" },
     { "Import", DoAppend, "Append data" },
     { "eXport", selected, "Restricted set (restart)" },
+    { "Merge", DoMerge, "Catenate similar files" },
     { "Text", txted, "Edit as text" },
     { "Exit", bye, "Quit" },
     { "", (FUNC)0, "" }
