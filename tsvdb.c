@@ -6308,7 +6308,7 @@ void copy()
 #endif
 }
 
-void paste()
+void paste(bool lim)
 {
     int i, j, k, l;
     char c;
@@ -6351,7 +6351,7 @@ void paste()
                 buf[k] = buf[k-1];
         }
         c = clp[j];
-        if (c == '\0')
+        if (!lim && (c == '\0'))
         {
             buf[i] = ' ';
             break;
@@ -6406,7 +6406,7 @@ void wpaste()
     char *p = get_clipboard();
     if (p != NULL)
         strcpy(clp, p);
-    paste();
+    paste(FALSE);
 }
 #endif
 
@@ -6516,7 +6516,6 @@ int selectfield(int n)
 void calc(bool repl)
 {
     double sx, dx;
-    int i;
 
     clp[0] = '\0';
     copy();
@@ -6532,11 +6531,7 @@ void calc(bool repl)
             return;
         dx = atof(clp);
         if (dx != sx)
-        {
-            i = strlen(clp);
-            clp[i] = '\0';
-            paste();
-        }
+            paste(TRUE);
     }
     else
     {
@@ -9021,7 +9016,7 @@ void edit(void)
             copy();
             break;
         case CTRL_V:
-            paste();
+            paste(FALSE);
             break;
 #ifdef __MINGW_VERSION
         case ALT_V:
