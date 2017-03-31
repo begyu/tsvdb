@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 3.6.0 2017/03/30 $
+ * $Id: tcsvdb.c,v 3.7.0 2017/03/31 $
  */
 
-#define VERSION "3.6"
+#define VERSION "3.7"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -6516,6 +6516,7 @@ int selectfield(int n)
 void calc(bool repl)
 {
     double sx, dx;
+    int i;
 
     clp[0] = '\0';
     copy();
@@ -6531,7 +6532,11 @@ void calc(bool repl)
             return;
         dx = atof(clp);
         if (dx != sx)
+        {
+            i = strlen(clp);
+            clp[i] = '\0';
             paste();
+        }
     }
     else
     {
