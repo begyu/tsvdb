@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 3.7.0 2017/03/31 $
+ * $Id: tcsvdb.c,v 3.7.1 2017/04/04 $
  */
 
-#define VERSION "3.7"
+#define VERSION "3.7.1"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -4107,6 +4107,7 @@ int mergefile(char *fname)
         if (k != 0)
         {
             errormsg("ERROR: Bad header!");
+            fclose(fp);
             return -1;
         }
         while (!ateof)
@@ -6380,7 +6381,7 @@ void paste(bool lim)
 char *get_clipboard(void)
 {
     HANDLE clip;
-    char *text = NULL;
+    char *text = "";
 
     if (IsClipboardFormatAvailable(CF_OEMTEXT) && OpenClipboard(NULL))
     {
