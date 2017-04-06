@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 3.7.1 2017/04/04 $
+ * $Id: tcsvdb.c,v 3.8.0 2017/04/06 $
  */
 
-#define VERSION "3.7.1"
+#define VERSION "3.8"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -511,6 +511,7 @@ static int regexcase = 0;
 static int unkeys[] = {KEY_RIGHT, '\n', '\n', '\t', KEY_END, KEY_UP, 0};
 static int unkeypos = -1;
 static int sortpos = 0;
+static int stwopos = 0;
 static bool numsort = FALSE;
 static bool filtered = FALSE;
 static bool headspac = FALSE;
@@ -2637,14 +2638,14 @@ int casestr(char *str, bool upper, bool ascii)
   char chr_lo[] = {0xE1,0xE9,0xED,0xF3,0xF6,0x91,0xFA,0xFC,0xB1};
   char chr_hi[] = {0xC1,0xC9,0xCD,0xD3,0xD6,0x90,0xDA,0xDC,0xB0};
 #else
- #define MAXCHS 18
-  char chr_lo[] = {0xA0,0x82,0xA1,0xA2,0x94,0x8B,0xA3,0x81,0xFB,
-                   0xE1,0xE9,0xED,0xF3,0xF6,0xF5,0xFA,0xFC,0xFB};
-  char chr_hi[] = {0xB5,0x90,0xD6,0xE0,0x99,0x8A,0xE9,0x9A,0xEB,
-                   0xC1,0xC9,0xCD,0xD3,0xD6,0xD5,0xDA,0xDC,0xDB};
+ #define MAXCHS 19
+  char chr_lo[] = {0xA0,0x82,0xA1,0xA2,0x94,0x8B,0xA3,0x81,0xFB,0x84,
+                   0xE1,0xE9,0xED,0xF3,0xF6,0xF5,0xFA,0xFC,0xFB,0xC4};
+  char chr_hi[] = {0xB5,0x90,0xD6,0xE0,0x99,0x8A,0xE9,0x9A,0xEB,0x8E,
+                   0xC1,0xC9,0xCD,0xD3,0xD6,0xD5,0xDA,0xDC,0xDB,0xE4};
 #endif
-  char asc_lo[] = "aeiooouuuaeiooouuu";
-  char asc_hi[] = "AEIOOOUUUAEIOOOUUU";
+  char asc_lo[] = "aeiooouuuaeiooouuua";
+  char asc_hi[] = "AEIOOOUUUAEIOOOUUUA";
 /*  char chr_utflo[] = "ĂˇĂ©Ă­ĂłĂ¶Ĺ‘ĂşĂĽĹ±";*/
 /*  char chr_utfhi[] = "ĂĂ‰ĂŤĂ“Ă–ĹĂšĂśĹ°";*/
   register int i, j;
@@ -2984,9 +2985,7 @@ int hstrcmp(const char *s1, const char *s2)
 
 int qsort_stringlist(const void *e1, const void *e2)
 {
-    int i = 0;
-    int j = 0;
-    register int k;
+    register int i, j, k;
     char *p1 = *(char **)(e1);
     char *p2 = *(char **)(e2);
     char s1[MAXNLEN+1] = "";
@@ -3046,18 +3045,45 @@ int qsort_stringlist(const void *e1, const void *e2)
     return hstrcmp(*(char **)(e1)+i, *(char **)(e2)+j);
 }
 
+
+int strsplit(const char *, char *[], const char *);
+void strtrim(char *);
+
+int qsort_strtwolist(const void *e1, const void *e2)
+{
+    register int i;
+    char *s1fbuf[MAXCOLS+1];
+    char *s2fbuf[MAXCOLS+1];
+
+    strsplit(*(char **)(e1), s1fbuf, ssep);
+    strsplit(*(char **)(e2), s2fbuf, ssep);
+    for (i=0; i<=cols; i++)
+    {
+        if ((i == sortpos) || (i == stwopos))
+        {
+            strtrim(s1fbuf[i]);
+            strtrim(s2fbuf[i]);
+        }
+    }
+    i = hstrcmp(s1fbuf[sortpos], s2fbuf[sortpos]);
+    i *= 100;
+    i += hstrcmp(s1fbuf[stwopos], s2fbuf[stwopos]);
+    return i;
+}
+
 void sort(int n)
 {
     msg(WSTR);
-    qsort(rows, n, sizeof(char *), qsort_stringlist);
+    if (stwopos == -1)
+        qsort(rows, n, sizeof(char *), qsort_stringlist);
+    else
+        qsort(rows, n, sizeof(char *), qsort_strtwolist);
     msg(NULL);
 }
 
 int qs_stringlist_rev(const void *e1, const void *e2)
 {
-    int i = 0;
-    int j = 0;
-    register int k;
+    register int i, j, k;
     char *p1 = *(char **)(e1);
     char *p2 = *(char **)(e2);
     char s1[MAXNLEN+1] = "";
@@ -3116,10 +3142,35 @@ int qs_stringlist_rev(const void *e1, const void *e2)
     return hstrcmp(*(char **)(e2)+i, *(char **)(e1)+j);
 }
 
+int qsort_strtwoback(const void *e1, const void *e2)
+{
+    register int i;
+    char *s1fbuf[MAXCOLS+1];
+    char *s2fbuf[MAXCOLS+1];
+
+    strsplit(*(char **)(e1), s1fbuf, ssep);
+    strsplit(*(char **)(e2), s2fbuf, ssep);
+    for (i=0; i<=cols; i++)
+    {
+        if ((i == sortpos) || (i == stwopos))
+        {
+            strtrim(s1fbuf[i]);
+            strtrim(s2fbuf[i]);
+        }
+    }
+    i = hstrcmp(s2fbuf[sortpos], s1fbuf[sortpos]);
+    i *= 100;
+    i += hstrcmp(s2fbuf[stwopos], s1fbuf[stwopos]);
+    return i;
+}
+
 void sort_back(int n)
 {
     msg(WSTR);
-    qsort(rows, n, sizeof(char *), qs_stringlist_rev);
+    if (stwopos == -1)
+        qsort(rows, n, sizeof(char *), qs_stringlist_rev);
+    else
+        qsort(rows, n, sizeof(char *), qsort_strtwoback);
     msg(NULL);
 }
 
@@ -6878,12 +6929,15 @@ void reordall(bool left)
 void casefield(int current, bool up, bool whole)
 {
     char s[MAXSTRLEN+1];
+    unsigned char c;
     register int i, j;
 
     for (i=0, j=0; j<field; i++)
-        if (rows[current][i] == csep)
+    {
+        c = rows[current][i];
+        if (c == csep || c == '\r' || c == '\n' || c == '\0')
             j++;
-
+    }
     for (j=0; j<len[field]; j++)
         s[j] = rows[current][i+j];
     s[j] = '\0';
@@ -7045,6 +7099,7 @@ void trail()
 void dosortby(void)
 {
     register int i, j;
+    BUFDEF;
 
     if (ro && !locked)
         return;
@@ -7052,8 +7107,23 @@ void dosortby(void)
     i = selectfield(cols);
     if (i != -1)
     {
-        putmsg("Sorted by ", stru[i], " field.");
         sortpos = i;
+        stwopos = -1;
+        if (selbox("Use a secondary field?", ync, 2) == 1)
+        {
+            stwopos = selectfield(cols);
+            while (stwopos == sortpos)
+                   stwopos = selectfield(cols);
+            if (stwopos != -1)
+            {
+                strcpy(buf, stru[sortpos]);
+                strcat(buf, "+");
+                strcat(buf, stru[stwopos]);
+                putmsg("Sorted by ", buf, "");
+            }
+        }
+        if (stwopos == -1)
+            putmsg("Sorted by ", stru[sortpos], " field.");
         hunsort = FALSE;
         if (numsort == FALSE)
         {
@@ -8260,9 +8330,9 @@ void lat2(char *c, int x)
     int i, j;
     char *p;
     char c0[] =
-    "\xA0\x82\xA1\xA2\x94\x8B\xA3\x81\xB5\x90\xD6\xE0\x99\x8A\xE9\x9A\xEB";
+"\xA0\x82\xA1\xA2\x94\x8B\xA3\x81\xB5\x90\xD6\xE0\x99\x8A\xE9\x9A\xEB\x84\x8E";
     char c1[] =
-    "\xE1\xE9\xED\xF3\xF6\xF5\xFA\xFC\xC1\xC9\xCD\xD3\xD6\xD5\xDA\xDC\xDB";
+"\xE1\xE9\xED\xF3\xF6\xF5\xFA\xFC\xC1\xC9\xCD\xD3\xD6\xD5\xDA\xDC\xDB\xC4\xE4";
    
     if (ro) 
         return;
