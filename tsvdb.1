@@ -5,15 +5,16 @@ tsvdb \- Tab separated values database
 
 .SH SYNOPSIS
 .B tsvdb
-[\fI-r|x|y|z|t|b|f|h|v\fR] [\fI-n{num}\fR]
-[\fI-\fR[[\fIs|S\fR]|[\fIl|L\fR]]\fI{fstr}\fR]
-[\fI-d{[,|;]}\fR] [\fItsvdatafile\fR]
+[\fI-r\fR|\fIx\fR|\fIy\fR|\fIz\fR|\fIq\fR|\fIa\fR|\fIt\fR|\fIb\fR|\fIf\fR|\fIh\fR|\fIv\fR]
+[\fI-n\fR{\fIrow\fR[\fI:col\fR]}]
+[\fI-\fR[[\fIs\fR|\fIS\fR]|[\fIl|L\fR]]{\fIfstr\fR}]
+[\fI-d\fR{[\fI,\fR|\fI;\fR]}] [\fItsvdatafile\fR]
 .br
 .br
 
  or
 .B tsvdb
-\fI-e|p\fR {\fIfile\fR}
+\fI-e\fR|\fIp\fR {\fIfile\fR}
 .br
 
 .SH DESCRIPTION
@@ -33,20 +34,22 @@ Readonly, but swiched back with Ctrl-X key.
 Locked mode.
 .IP \fB\-z\fR
 Set safety on (alter Ctrl-Z).
+.IP \fB\-q\fR
+Quit on.
 .IP \fB\-a\fR
 Set auto-seek off.
 .IP \fB\-t\fR
 Go to first record.
 .IP \fB\-b\fR
 Go bottom.
-.IP \fB\-n\ recno\fR
-Go to the n'th row.
+.IP \fB\-n\ recno[:col]\fR
+Go to the n'th row (and column).
 .IP \fB\-s\ fstr\fR
 Go to the first occurence of fstr.
 .IP 	or	\fB\-s\ (fstr)\fR
 	Search with Regular Expression.
 .IP 	or	\fB\-S\ (fstr)\fR
-	Search regexp to extract.
+	Select found.
 .IP \fB\-l\ str\fR
 List of occurrences.
 .IP 	or	\fB\-L\ str\fR
@@ -57,6 +60,8 @@ Use separator (, or ;) char to CSV.
 Edit file as text.
 .IP \fB\-f\fR
 Set function key labels on.
+.IP \fB\-F\fR
+Func keys, hide bar.
 .IP \fB\-p\fR
 Parse file
 .IP \fB\-h\fR
@@ -67,4 +72,7 @@ Print version.
 .SH "SEE ALSO"
 .SM
 .IP http://tsvdb.sf.net/
+.IP https://tsvdb.sourceforge.io
+.IP https://github.com/begyu/tsvdb
 .IP http://en.wikipedia.org/wiki/Tab-separated_values
+.IP https://wwww.cesanta.com 
