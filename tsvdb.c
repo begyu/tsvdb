@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 3.8.0 2017/04/06 $
+ * $Id: tcsvdb.c,v 3.9.0 2017/04/20 $
  */
 
-#define VERSION "3.8"
+#define VERSION "3.9"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -491,6 +491,7 @@ static char stru[MAXCOLS+1][MAXSTRLEN];
 static int beg[MAXCOLS+1];
 static int len[MAXCOLS+1];
 static int cols, reccnt, curr, field, curcol, ctop;
+static int startcol = -1;
 static bool modified=FALSE;
 static bool ro = FALSE;
 static bool wr = FALSE;
@@ -523,6 +524,7 @@ static bool phonetic = FALSE;
 static bool hunset = FALSE;
 static bool slk = FALSE;
 static bool slkon = FALSE;
+static bool slkall= FALSE;
 static bool parse = FALSE;
 static bool autf = TRUE;
 static WINDOW *slkptr = NULL;
@@ -8723,10 +8725,14 @@ void edit(void)
 
     curr = (curr <= reccnt) ? curr : 0;
     ctop = topset(curr, r);
-    curcol= 0;
+    curcol = 0;
+    if ((startcol != -1) && (startcol <= cols))
+        field = startcol;
     clsbody();
     while (!quit)
     {
+        if (slkall)
+            	slk = FALSE;
         if (slkon)
             	slk_restore();
         j = 0;
@@ -8751,6 +8757,8 @@ void edit(void)
             	unget = FALSE;
         if (slk)
             	slk_clear();
+        if (slkall)
+            	slk = TRUE;
         
         switch (c)
         {
@@ -9803,7 +9811,7 @@ void bye(void)
 void sub0(void), sub1(void), sub2(void);
 void subfunc1(void), subfunc2(void);
 void reghelp(void), edithelp(void);
-void txthelp(void), limits(void);
+void txthelp(void), funchelp(void), limits(void);
 void chgslk(void), chgauto(void);
 
 /***************************** menus initialization ***********************/
@@ -9865,6 +9873,7 @@ menu SubMenu2[] =
     { "Keys", subfunc1, "General keys" },
     { "input keys", edithelp, "Keys in edit mode" },
     { "Edit keys", txthelp, "Keys in texteditor" },
+    { "f-keys", funchelp, "Function keys" },
     { "regeXp", reghelp, "Regular expression help" },
     { "Options", opthelp, "Command line options" },
     { "Whole", prghelp, "Help index" },
@@ -10086,6 +10095,46 @@ void txthelp(void)
     wrefresh(wbody);
 }
 
+void funchelp(void)
+{
+    WINDOW *wmsg;
+    char *s[] =
+    {
+        " 1:\tHelp",
+        " 2:\tMenu",
+        " 3:\tSave",
+        " 4:\tFind",
+        " 5:\tNext",
+        " 6:\tPrevious",
+        " 7:\tReplace",
+        " 8:\tMark",
+        " 9:\tFilter",
+        "10:\tQuit",
+    };
+    int i;
+    int j=10;
+    
+    if ((!slkon) && (!slkall))
+    {
+        putmsg("", "Func keys is off!", "");
+        return;
+    }
+    wmsg = mvwinputbox(wbody, (bodylen()-j)/5, (bodywidth()-18)/3, j+2, 18);
+#ifndef __MINGW_VERSION
+    wborder(wmsg, '|', '|', '-', '-', '+', '+', '+', '+');
+#endif
+    for (i=0; i<j; i++)
+        mvwaddstr(wmsg, i+1, 2, s[i]);
+    wrefresh(wmsg);
+    (void)toupper(waitforkey());
+    delwin(wmsg);
+    touchwin(wstatus);
+    wrefresh(wstatus);
+    touchwin(wbody);
+    wrefresh(wbody);
+}
+
+
 void reghelp(void)
 {
     WINDOW *wmsg;
@@ -10164,7 +10213,7 @@ void limits(void)
     int i;
     int j=10;
     
-    wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-34)/2, j+2, 34);
+    wmsg = mvwinputbox(wbody, (bodylen()-j)/4, (bodywidth()-34)/3, j+2, 34);
 #ifndef __MINGW_VERSION
     wborder(wmsg, '|', '|', '-', '-', '+', '+', '+', '+');
 #endif
@@ -10205,10 +10254,10 @@ static char *hlpstrs[] =
     "-a        Autoseek off",
     "-t        Top",
     "-b        Bottom",
-    "-n <num>  Go to num'th row",
+    "-n <num>  Go to num'th row (or row:col)",
     "-s <str>  Search str",
     "          or -s \"(regexp)\"",
-    "          or -S \"(regexp)\" to extract",
+    "          or -S to select",
     "-l <str>  List str found",
     "          or '-L' with header",
     "-d <,|;>  Set separator to ',' or ';'",
@@ -10216,7 +10265,7 @@ static char *hlpstrs[] =
     "-w <num>  Set scr height + or -num rows",
 #endif
     "-e        Edit as text",
-    "-f        Func keys on",
+    "-f        Func keys on (-F hide)",
     "-p        Parse file",
     "-h        Help",
     "-v        Version",
@@ -10526,7 +10575,14 @@ typedef int (*LDF)(char *);
           }
           else
           {
-              casestr(fstr, TRUE, TRUE);
+              if (c == 'S')
+              {
+                  strncpy(regstr, fstr, MAXFLEN);
+                  unkeys[2] = 'l';
+                  unkeys[3] = '\n';
+              }
+              else
+                  casestr(fstr, TRUE, TRUE);
               unkeys[4] = '\n';
               unkeys[5] = '\0';
           }
@@ -10562,7 +10618,16 @@ typedef int (*LDF)(char *);
               {
                   curr = atoi(optarg);
                   if (curr > 0)
+                  {
                       curr--;
+                      ontop = TRUE;
+                      p = strchr(optarg, ':');
+                      if (p != NULL)
+                      {
+                          p++;
+                          startcol = atoi(p)-1;
+                      }
+                  }
                   break;
               }
               else
@@ -10617,8 +10682,10 @@ typedef int (*LDF)(char *);
           i = -1;
           break;
         case 'f':
-        case 'F':
           slk = slkon = TRUE;
+          break;
+        case 'F':
+          slkall = TRUE;
           break;
         case 'p':
         case 'P':
