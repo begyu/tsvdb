@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 3.9.0 2017/04/20 $
+ * $Id: tcsvdb.c,v 4.0.0 2017/04/26 $
  */
 
-#define VERSION "3.9"
+#define VERSION "4.0"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -9728,6 +9728,228 @@ void fuzzy(void)
 }
 
 
+int inhlp(void)
+{
+#define HLPLINES 200
+char *tsvhlp[HLPLINES+1] = {
+"G\tKEY__________\tFUNC_______________________________",
+"0\t           1:\tGeneral",
+"0\t           2:\tEditbox",
+"0\t           3:\tRegexp",
+"0\t           4:\tEditor",
+"0\t           5:\tOptions",
+"0\t           C:\tCtrl",
+"0\t           A:\tAlt",
+"0\t           S:\tShift",
+"0\t      arrows:\tleft, right",
+"1\tC-A\tmark all",
+"1\tA-A\tfilter all",
+"1\tC-arrows\treorder fields",
+"1\tA-arrows\treorder all fields",
+"1\t  Bksp\tdel fstr backward",
+"1\tC-B\tseek backward",
+"1\tC-C\tcopy",
+"1\tA-C\tcalculate",
+"1\tC-D\tregexp search with AND",
+"1\tA-D\tremove field",
+"1\t  Del\tclear fstr",
+"1\tC-Del\tdelete line",
+"1\tA-Del\tundo line (max 1)",
+"1\tS-Del\tdelete the first char of the fstr",
+"1\tC-Dn\tshift screen up",
+"1\tA-Dn\tmove forward",
+"1\tS-Dn\tdec scr lines",
+"1\tC-E\tmodify field",
+"1\tA-E\tmodify fields",
+"1\tC-End\tgo min",
+"1\tA-End\tgo shortest",
+"1\tS-End\tfill field",
+"1\t  Enter\tedit fields",
+"1\tC-Enter\tedit field",
+"1\t  F1\tKeys help",
+"1\t  F2\tMenu",
+"1\t  F3\tSave",
+"1\t  F4\tFind",
+"1\t  F5\tNext",
+"1\t  F6\tPrevious",
+"1\t  F7\tReplace string",
+"1\t  F8\tMark",
+"1\t  F9\tFilter",
+"1\t  F10\tQuit",
+"1\t  F11\tdisp all fields",
+"1\t  F12\tput current field",
+"1\tC-F\tregexp search",
+"1\tA-F\tseek curr field",
+"1\tC-G\tgoto line",
+"1\tA-G\tfind/mark (not)equal fields",
+"1\t  Home\tclear fstr",
+"1\tC-Home\tgo max",
+"1\tA-Home\tgo longest",
+"1\tS-Home\tadjust center",
+"1\tA-I\tinsert field",
+"1\tC-Ins\tinsert line (C-+)",
+"1\tA-Ins\tduplicate (A-+)",
+"1\tC-L\tlowercase",
+"1\tA-L\tlowercase initial",
+"1\tS-left\talign left",
+"1\t  Letter\tsearch (? mask) and add fstr",
+"1\t  ?+letters\tlook only alnum",
+"1\tA-M\tset/reset Hu",
+"1\tC-N\tcount all subs",
+"1\tA-N\tselect soundex",
+"1\tC-O\tcount substr regexp",
+"1\tA-O\tcount regexp in field",
+"1\tC-P\tphonetic search",
+"1\tA-P\tchange colours",
+"1\tC-Q\tsearch equivalent",
+"1\tA-Q\tsearch equivalent",
+"1\tC-R\tundo (max 10)",
+"1\tA-R\tredo (max 10)",
+"1\tS-right\talign right",
+"1\tC-S\treplace",
+"1\tA-S\tchange",
+"1\tA-T\tundo line (max 1)",
+"1\t  Tab\tfind next",
+"1\tC-Tab\tfind next",
+"1\tS-Tab\tfind previous",
+"1\tC-U\tuppercase",
+"1\tA-U\tuppercase initial",
+"1\tC-Up\tshift screen down",
+"1\tA-Up\tmove backward",
+"1\tS-Up\tinc scr lines",
+"1\tC-V\tpaste",
+"1\tA-V\tpaste from win clipboard",
+"1\tC-W\tto Latin-2",
+"1\tA-W\tfrom Latin-2",
+"1\tA-X\tcalculate fld",
+"1\tA-Y\tcalculate cols",
+"1\tC-Z\tunlock",
+"1\tS- +\tinc scr width",
+"1\tS- -\tdec scr width",
+"2\tA-arrows\tmove inputbox (A-PgDn)",
+"2\tS-arrows\tchange chars",
+"2\t  Bksp\tdelete char backward",
+"2\tC-B\tpaste fstr",
+"2\tC-C\tcopy",
+"2\tA-C\tcalculate",
+"2\tC-D\tformat date",
+"2\tA-D\tchange dot & colon",
+"2\tC-Dn\tscroll background",
+"2\tS-Dn\tchange field's data with prev",
+"2\t  Del\tdelete char",
+"2\t  Down\tnext field",
+"2\t  End\tgo to EOL",
+"2\tC-End\tdel from cursor",
+"2\t  Enter\tmodify record",
+"2\t  Esc\tundo/cancel",
+"2\t  Home\tgo to 1'st char",
+"2\tC-L\tlowercase",
+"2\tA-L\tlowercase initial",
+"2\tC-left\tskip word back",
+"2\tC-O\to^",
+"2\tC-P\tO^",
+"2\tA-P\tchange colorset",
+"2\t  PgDn\tsave & next record",
+"2\tC-PgDn\tdec num, dat (S-)",
+"2\t  PgUp\tsave & prev record",
+"2\tC-PgUp\tinc num, dat (S+)",
+"2\tC-R\tu^",
+"2\tC-right\tskip word fwd",
+"2\tC-U\tuppercase",
+"2\tA-U\tuppercase initial",
+"2\t  Up\tprevious",
+"2\tC-Up\tscroll background",
+"2\tS-Up\tchange field's data with next",
+"2\tC-T\tU^",
+"2\tC-V\tpaste",
+"2\tC-W\tdel word back",
+"2\tC-X\taccent",
+"2\tC-Y\tpunctuation",
+"3\t(?i)\tat the beginning case-insensitive",
+"3\t^\tmatch beginning of a buffer",
+"3\t$\tmatch end of a buffer",
+"3\t()\tgrouping and substring capturing",
+"3\t.\tany character",
+"3\t*\tzero or more times (greedy)",
+"3\t*?    \t0|>0 (non-greedy)",
+"3\t+\tone or more times (greedy)",
+"3\t+?    \t1|>1 (non-greedy)",
+"3\t?\tzero or once (non-greedy)",
+"3\t[...]\tany character from set. ([a-z])",
+"3\t[^...]\tany character but ones from set",
+"3\t\\b\tbackspace char",
+"3\t\\d\tdecimal digit",
+"3\t\\f\tform feed",
+"3\t\\meta\tone of the meta char: ^$().[]*+?|\\",
+"3\t\\n\tnew line character",
+"3\t\\r\tline feed",
+"3\t\\s\tmatch whitespace",
+"3\t\\S\tnon-whitespace",
+"3\t\\t\thorizontal tab",
+"3\t\\v\tvertical tab",
+"3\tx|y   \tx or y (alternation operator)",
+"3\t\\xHH\tbyte with hex value 0xHH, e.g.\\x4a",
+"4\tEsc / F1\thelp",
+"4\t^A\tgo to line",
+"4\t^B\tbegin of block",
+"4\t^C\tcopy block",
+"4\t^D\tdelete block",
+"4\t^E\tend of block",
+"4\t^F\tfind",
+"4\t^G\tget from file",
+"4\t^J\tpgup",
+"4\t^K\tpgdn",
+"4\t^N\tsearch again",
+"4\t^O\tgo bottom of text",
+"4\t^P\tput to file",
+"4\t^Q\tquote char",
+"4\t^R\treplace string",
+"4\t^S\tsave file",
+"4\t^T\tgo top of text",
+"4\t^V\tmove block",
+"4\t^X\texit",
+"4\t^Y\tdelete line",
+"5\t-a\tset autoseek off",
+"5\t-b\tgo bottom",
+"5\t-d <,|;>\tset separator to ',' or ';'",
+"5\t-e\tedit as text",
+"5\t-f\tset function keys on",
+"5\t-F\tf-keys on, hide bar",
+"5\t-h\thelp",
+"5\t-l <str>\tlist str found",
+"5\t-L <str>\tlist with header",
+"5\t-n <n>[:c]\tgo to n'th row (c column)",
+"5\t-p\tparse file",
+"5\t-q\tquit on",
+"5\t-r\tread-only mode",
+"5\t-s <str>\tsearch str",
+"5\t-s ""(regexp)""\tfind regexp",
+"5\t-S <str>\tselect",
+"5\t-t\tgo top",
+"5\t-v\tversion",
+"5\t-w\tset screen height + or -rows",
+"5\t-x\tmixed mode",
+"5\t-X\tRO, but edit only current",
+"5\t-y\tlocked mode",
+"5\t-z\tsafety on",
+""};
+
+int i;
+FILE *fh;
+
+    if ((fh = fopen(PRGHLP, "a")) != NULL)
+    {
+        for(i=0; i<HLPLINES; i++)
+        {
+            fputs(tsvhlp[i], fh);
+            fputc('\n', fh);
+        }
+        fclose(fh);
+        return 0;
+    }
+    return -1;
+}
+
 void prghelp(void)
 {
     FILE *f = NULL;
@@ -9754,10 +9976,13 @@ void prghelp(void)
     f = fopen(buf, "r");
     if (f == NULL)
     {
-        putmsg("File \"",PRGHLP,"\" file not found!");
-        return;
+        // putmsg("File \"",PRGHLP,"\" file not found!");
+        if (inhlp() != 0)
+            return;
+        strcpy(buf, PRGHLP);
     }
-    fclose(f);
+    else
+        fclose(f);
     def_prog_mode();
     strcpy(cmd, progname);
 #ifndef XCURSES
