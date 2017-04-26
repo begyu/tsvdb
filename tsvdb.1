@@ -7,7 +7,7 @@ tsvdb \- Tab separated values database
 .B tsvdb
 [\fI-r\fR|\fIx\fR|\fIy\fR|\fIz\fR|\fIq\fR|\fIa\fR|\fIt\fR|\fIb\fR|\fIf\fR|\fIh\fR|\fIv\fR]
 [\fI-n\fR{\fIrow\fR[\fI:col\fR]}]
-[\fI-\fR[[\fIs\fR|\fIS\fR]|[\fIl|L\fR]]{\fIfstr\fR}]
+[\fI-\fR[[\fIs\fR|\fIS\fR]|[\fIl\fR|\fIL\fR]]{\fIfstr\fR}]
 [\fI-d\fR{[\fI,\fR|\fI;\fR]}] [\fItsvdatafile\fR]
 .br
 .br
@@ -48,7 +48,7 @@ Go to the n'th row (and column).
 Go to the first occurence of fstr.
 .IP 	or	\fB\-s\ (fstr)\fR
 	Search with Regular Expression.
-.IP 	or	\fB\-S\ (fstr)\fR
+.IP 	or	\fB\-S\ fstr\fR
 	Select found.
 .IP \fB\-l\ str\fR
 List of occurrences.
