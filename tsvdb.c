@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 4.0.0 2017/04/26 $
+ * $Id: tcsvdb.c,v 4.1.0 2017/05/30 $
  */
 
-#define VERSION "4.0"
+#define VERSION "4.1"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -1033,6 +1033,7 @@ static void repaintmenu(WINDOW *wmenu, menu *mp)
             if (((c = strchr(DISABLEDHOT, (char)(p->name[0]))) != NULL)
                && (!strstr(p->name, "Col")) 
                && (!strstr(p->name, "fuZ")) 
+               && (!strstr(p->name, "f-k")) 
                && (!strstr(p->name, "seL")))
                 setcolor(wmenu, INPUTBOXCOLOR);
             else
@@ -1440,6 +1441,7 @@ void domenu(menu *mp)
                     if (((c = strchr(DISABLEDHOT, (char)(mp[old].name[0]))) != NULL)
                        && (!strstr(mp[old].name, "Col"))
                        && (!strstr(mp[old].name, "fuZ"))
+                       && (!strstr(mp[old].name, "f-k"))
                        && (!strstr(mp[old].name, "seL")))
                         setcolor(wmenu, INPUTBOXCOLOR);
                     else
@@ -5643,7 +5645,7 @@ void newrec(int y, bool dupl)
         return;
     }
     i = dupl ? strlen(rows[y]) : 2;
-    p = (char *)malloc(i);
+    p = (char *)malloc(i+1);
     if (p == NULL)
     {
         msg("Memory full!");
@@ -9819,8 +9821,8 @@ char *tsvhlp[HLPLINES+1] = {
 "1\tS-Up\tinc scr lines",
 "1\tC-V\tpaste",
 "1\tA-V\tpaste from win clipboard",
-"1\tC-W\tto Latin-2 (UTF-8)",
-"1\tA-W\tfrom Latin-2 (UTF-8)",
+"1\tC-W\tto Latin-2",
+"1\tA-W\tfrom Latin-2",
 "1\tA-X\tcalculate fld",
 "1\tA-Y\tcalculate cols",
 "1\tC-Z\tunlock",
@@ -9923,7 +9925,7 @@ char *tsvhlp[HLPLINES+1] = {
 "5\t-q\tquit on",
 "5\t-r\tread-only mode",
 "5\t-s <str>\tsearch str",
-"5\t-s \"(regexp)\"\tfind regexp",
+"5\t-s ""(regexp)""\tfind regexp",
 "5\t-S <str>\tselect",
 "5\t-t\tgo top",
 "5\t-v\tversion",
@@ -9937,7 +9939,7 @@ char *tsvhlp[HLPLINES+1] = {
 int i;
 FILE *fh;
 
-    if ((fh = fopen(PRGHLP, "w")) != NULL)
+    if ((fh = fopen(PRGHLP, "a")) != NULL)
     {
         for(i=0; i<HLPLINES; i++)
         {
