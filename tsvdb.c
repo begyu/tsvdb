@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 4.1.0 2017/05/30 $
+ * $Id: tcsvdb.c,v 4.2.0 2017/05/31 $
  */
 
-#define VERSION "4.1"
+#define VERSION "4.2"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -7750,7 +7750,9 @@ void delfield(void)
 void dispfield(int x)
 {
     int i, j;
-    char *fieldbuf[MAXCOLS+1];
+    char *fieldbuf[MAXCOLS+1] =
+      {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+       NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
     BUFDEF;
 
     strcpy(buf, rows[curr]);
@@ -7765,8 +7767,10 @@ void dispfield(int x)
     else
         i = j = x;
     strsplit(buf, fieldbuf, ssep);
-    for( ; i<=j; i++)
+    for ( ; i<=j; i++)
     {
+        if (fieldbuf[i] == NULL)
+            return;
         strcpy(buf, fieldbuf[i]);
         putmsg("", buf, "");
     }
