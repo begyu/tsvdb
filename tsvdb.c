@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 4.2.0 2017/05/31 $
+ * $Id: tcsvdb.c,v 4.2.1 2017/06/03 $
  */
 
-#define VERSION "4.2"
+#define VERSION "4.2.1"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -2346,6 +2346,18 @@ repaint:
         mvwprintw(winput, i + 1, 2, "%s", desc[i]);
         setcolor(winput, SUBMENUCOLOR);
         mvwprintw(winput, i + 1, mmax + 3, "%s", padstr(buf[i], length));
+#ifdef XCURSES
+        wmove(winput, i+1, mmax+3);
+        padstr(buf[i], length);
+        for (j=0; j<length; j++)
+        {
+             if (buf[i][j] == 0)
+                 break;
+             waddch(winput, (unsigned char)(buf[i][j]));
+        }
+        for (; j<length; j++)
+             waddch(winput, ' ');
+#endif
     }
     setcolor(winput, INPUTBOXCOLOR);
 
