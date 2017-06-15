@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 4.3.0 2017/06/09 $
+ * $Id: tcsvdb.c,v 4.4.0 2017/06/15 $
  */
 
-#define VERSION "4.3"
+#define VERSION "4.4"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -1691,7 +1691,8 @@ static void repainteditbox(WINDOW *win, int x, char *buf, int lim)
 #endif
     int maxx;
 #ifdef XCURSES
-    int i, c;
+    int i;
+    unsigned char c;
 #endif
 
 #ifdef PDCURSES
@@ -1708,9 +1709,9 @@ static void repainteditbox(WINDOW *win, int x, char *buf, int lim)
     for (i=0; i<maxx; i++)
     {
         c = buf[i];
-        if ((c == 0) || (c < 0x20))
+        if (c < 0x20)
             break;
-        waddch(win, (unsigned char)(c));
+        waddch(win, c);
     }
     for (; i<maxx; i++)
         waddch(win, ' ');
@@ -1727,9 +1728,9 @@ static void repainteditbox(WINDOW *win, int x, char *buf, int lim)
         for (i=0; i<maxx; i++)
         {
             c = buf[i+lim];
-            if ((c == 0) || (c < 0x20))
+            if (c < 0x20)
                 break;
-            waddch(win, (unsigned char)(c));
+            waddch(win, c);
         }
         for (; i<maxx; i++)
             waddch(win, ' ');
@@ -2281,6 +2282,9 @@ int getstrings(char *desc[], char *buf[], int currfield, int length, int lim[])
     WINDOW *winput;
     int oldy, oldx, maxy, maxx, nlines, ncols, i, j, n, l, mmax = 0;
     int c = 0;
+#ifdef XCURSES
+    unsigned char ch;
+#endif
     int cx, cy;
     char *p = NULL;
     bool stop = FALSE;
@@ -2354,10 +2358,10 @@ repaint:
         padstr(buf[i], length);
         for (j=0; j<length; j++)
         {
-             c = buf[i][j];
-             if ((c == 0) || (c < 0x20))
+             ch = buf[i][j];
+             if (ch < 0x20)
                  break;
-             waddch(winput, (unsigned char)(c));
+             waddch(winput, ch);
         }
         for (; j<length; j++)
              waddch(winput, ' ');
