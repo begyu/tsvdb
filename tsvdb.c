@@ -1713,7 +1713,7 @@ static void repainteditbox(WINDOW *win, int x, char *buf, int lim)
     for (i=0; i<maxx; i++)
     {
         c = buf[i];
-        if (c == 0)
+        if (c < 0x20)
             break;
         waddch(win, c);
     }
@@ -1732,7 +1732,7 @@ static void repainteditbox(WINDOW *win, int x, char *buf, int lim)
         for (i=0; i<maxx; i++)
         {
             c = buf[i+lim];
-            if (c == 0)
+            if (c < 0x20)
                 break;
             waddch(win, c);
         }
@@ -2363,7 +2363,7 @@ repaint:
         for (j=0; j<length; j++)
         {
              ch = buf[i][j];
-             if (ch == 0)
+             if (ch < 0x20)
                  break;
              waddch(winput, ch);
         }
