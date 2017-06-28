@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 4.4.0 2017/06/15 $
+ * $Id: tcsvdb.c,v 4.5.0 2017/06/28 $
  */
 
-#define VERSION "4.4"
+#define VERSION "4.5"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -722,6 +722,7 @@ void rmerror(void);
 # define MAINMENUREVCOLOR (3 | A_BOLD | A_REVERSE)
 # define SUBMENUCOLOR     (4 | A_BOLD)
 # define SUBMENUREVCOLOR  (5 | A_BOLD | A_REVERSE)
+# define SUBMENUR_2COLOR  (5 | A_REVERSE)
 # define BODYCOLOR        6
 # define STATUSCOLOR      (7 | A_BOLD)
 # define INPUTBOXCOLOR    8
@@ -731,6 +732,7 @@ void rmerror(void);
 # define MARKCOLOR        (12 | A_BOLD)
 # define FSTRCOLOR        (13 | A_BOLD)
 # define EDITBOXTOOCOLOR  (14 | A_BOLD)
+# define EDITBOXT_2COLOR  (14)
 # define INFOCOLOR        (15 | A_BOLD)
 #else
 # define TITLECOLOR       0       /* color pair indices */
@@ -738,6 +740,7 @@ void rmerror(void);
 # define MAINMENUREVCOLOR (A_BOLD | A_REVERSE)
 # define SUBMENUCOLOR     (A_BOLD)
 # define SUBMENUREVCOLOR  (A_BOLD | A_REVERSE)
+# define SUBMENUR_2COLOR  (A_REVERSE)
 # define BODYCOLOR        0
 # define STATUSCOLOR      (A_BOLD)
 # define INPUTBOXCOLOR    0
@@ -747,6 +750,7 @@ void rmerror(void);
 # define MARKCOLOR        (A_BOLD)
 # define FSTRCOLOR        (A_BOLD)
 # define EDITBOXTOOCOLOR  (A_BOLD)
+# define EDITBOXT_2COLOR  0
 # define INFOCOLOR        (A_BOLD)
 #endif
 
@@ -888,7 +892,7 @@ static void initcolo4(void)
     init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_YELLOW, COLOR_BLACK);
     init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_GREEN, COLOR_BLUE);    
     init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_BLACK);   
-    init_pair(BODYCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_CYAN);      
+    init_pair(BODYCOLOR        & ~A_ATTR, COLOR_BLACK, COLOR_CYAN);      
     init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_WHITE, COLOR_CYAN);   
     init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_BLUE, COLOR_GREEN);
     init_pair(EDITBOXCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);
@@ -910,16 +914,16 @@ static void initcolo5(void)
     init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
     init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_BLACK, COLOR_WHITE);
     init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
-    init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_BLACK, COLOR_WHITE);
+    init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_WHITE, COLOR_WHITE);
     init_pair(BODYCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
     init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
     init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_BLACK, COLOR_WHITE);
     init_pair(EDITBOXCOLOR     & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
     init_pair(CURRCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
     init_pair(CURRREVCOLOR     & ~A_ATTR, COLOR_BLACK, COLOR_WHITE);
-    init_pair(MARKCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_WHITE);
+    init_pair(MARKCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
     init_pair(FSTRCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
-    init_pair(EDITBOXTOOCOLOR  & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
+    init_pair(EDITBOXT_2COLOR  & ~A_ATTR, COLOR_WHITE, COLOR_WHITE);
     init_pair(INFOCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
 #endif
 }
@@ -1709,7 +1713,7 @@ static void repainteditbox(WINDOW *win, int x, char *buf, int lim)
     for (i=0; i<maxx; i++)
     {
         c = buf[i];
-        if (c < 0x20)
+        if (c == 0)
             break;
         waddch(win, c);
     }
@@ -1728,7 +1732,7 @@ static void repainteditbox(WINDOW *win, int x, char *buf, int lim)
         for (i=0; i<maxx; i++)
         {
             c = buf[i+lim];
-            if (c < 0x20)
+            if (c == 0)
                 break;
             waddch(win, c);
         }
@@ -2359,7 +2363,7 @@ repaint:
         for (j=0; j<length; j++)
         {
              ch = buf[i][j];
-             if (ch < 0x20)
+             if (ch == 0)
                  break;
              waddch(winput, ch);
         }
