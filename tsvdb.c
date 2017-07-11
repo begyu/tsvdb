@@ -9659,8 +9659,7 @@ void range(int column)
     i = strlen(str1);
     j = strlen(str2);
     str2[j] = '\xFF';
-    j++;
-    str2[j] = '\0';
+    str2[j+1] = '\0';
     if ((i>0) && (j>0))
     {
         j = 0;
