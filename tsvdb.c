@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 4.5.0 2017/06/28 $
+ * $Id: tcsvdb.c,v 4.6.0 2017/07/11 $
  */
 
-#define VERSION "4.5"
+#define VERSION "4.6"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -9636,10 +9636,91 @@ void segregate(bool rev, bool column)
     }
 }
 
+void range(int column)
+{
+    register int i, j;
+    int k1, k2;
+    char *fieldname[3];
+    char *fieldbuf[3];
+    char str1[MAXFLEN] = "";
+    char str2[MAXFLEN] = "";
+    char *fieldsel[MAXCOLS+1];
+    BUFDEF;
+
+    fieldname[0] = "From:";
+    fieldname[1] = "  To:";
+    fieldname[2] = 0;
+    fieldbuf[0] = str1;
+    fieldbuf[1] = str2;
+    fieldbuf[2] = 0;
+
+    getstrings(fieldname, fieldbuf, 0, MAXFLEN+1, NULL);
+    
+    i = strlen(str1);
+    j = strlen(str2);
+    str2[j] = '\xFF';
+    j++;
+    str2[j] = '\0';
+    if ((i>0) && (j>0))
+    {
+        j = 0;
+        for (i=0; i<reccnt; i++)
+        {
+            strsplit(rows[i], fieldsel, ssep);
+            strcpy(buf, fieldsel[column]);
+            k1 = strcmp(buf, str1);
+            k2 = strcmp(str2, buf);
+            if ((k1 >= 0) && (k2 >= 0))
+            {
+                j = 1;
+                flags[i] = 1;
+            }
+        }
+        filtered = (bool)(j > 0);
+    }
+    else
+    {
+        memset(flags, 0, MAXROWS);
+        filtered = FALSE;
+    }
+
+    if (filtered)
+    {
+        tmpdat.total = reccnt;
+        for (i=0, j=0; i<=reccnt; i++)
+        {
+            tmpdat.ptr[i] = rows[i];
+            tmpdat.idx[i] = -1;
+            tmpdat.flag[i] = flags[i];
+            if (flags[i])
+            {
+                rows[j] = rows[i];
+                tmpdat.idx[j] = i;
+                flags[j] = 1;
+                j++;
+            }
+        }
+        rows[j] = rows[reccnt];
+        reccnt = j;
+        curr = 0;
+        field = 0;
+        edit();
+        reccnt = tmpdat.total;
+        for (i=0; i<j; i++)
+            	tmpdat.ptr[tmpdat.idx[i]] = rows[i];
+        for (i=0; i<=reccnt; i++)
+        {
+            rows[i] = tmpdat.ptr[i];
+            flags[i] = tmpdat.flag[i];
+        }
+    }
+    flagmsg();
+}
+
 void tsv_select(void)
 {
     int i, j;
-    char *b[] = {"All", "Field", "Clear", "", ""};
+    char *b[] = {"All", "Field", "Between", "Clear", ""};
 
     if (cry)
         	return;
@@ -9659,6 +9740,11 @@ void tsv_select(void)
          }
          break;
       case 3:
+         j = selectfield(cols);
+         if (j != -1)
+             range(j);
+         break;
+      case 4:
          memset(flags, 0, MAXROWS);
          filtered = FALSE;
          flagmsg();
