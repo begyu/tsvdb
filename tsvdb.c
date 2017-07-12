@@ -1,5 +1,5 @@
 /*
- * $Id: tcsvdb.c,v 4.6.0 2017/07/11 $
+ * $Id: tcsvdb.c,v 4.6.0 2017/07/12 $
  */
 
 #define VERSION "4.6"
@@ -9655,18 +9655,22 @@ void range(int column)
     fieldbuf[2] = 0;
 
     getstrings(fieldname, fieldbuf, 0, MAXFLEN+1, NULL);
-    
+    casestr(str1, TRUE, TRUE);
+    casestr(str2, TRUE, TRUE);
+  
     i = strlen(str1);
     j = strlen(str2);
     str2[j] = '\xFF';
-    str2[j+1] = '\0';
-    if ((i>0) && (j>0))
+    j++;
+    str2[j] = '\0';
+    if (i>0)
     {
         j = 0;
         for (i=0; i<reccnt; i++)
         {
             strsplit(rows[i], fieldsel, ssep);
             strcpy(buf, fieldsel[column]);
+            casestr(buf, TRUE, TRUE);
             k1 = strcmp(buf, str1);
             k2 = strcmp(str2, buf);
             if ((k1 >= 0) && (k2 >= 0))
