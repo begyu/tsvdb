@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 4.6.1 2017/07/21 $
+ * $Id: tcsvdb.c,v 4.7.0 2017/07/24 $
  */
 
-#define VERSION "4.6.1"
+#define VERSION "4.7"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -2683,8 +2683,8 @@ int casestr(char *str, bool upper, bool ascii)
                    0xC1,0xC9,0xCD,0xD3,0xD6,0xD5,0xDA,0xDC,0xDB,0xC4};
  #endif
 #endif
-  char asc_lo[] = "aeiooouuuaeiooouuua";
-  char asc_hi[] = "AEIOOOUUUAEIOOOUUUA";
+  char asc_lo[] = "aeiooouuuaaeiooouuua";
+  char asc_hi[] = "AEIOOOUUUAAEIOOOUUUA";
 /*  char chr_utflo[] = "ĂˇĂ©Ă­ĂłĂ¶Ĺ‘ĂşĂĽĹ±";*/
 /*  char chr_utfhi[] = "ĂĂ‰ĂŤĂ“Ă–ĹĂšĂśĹ°";*/
   register int i, j;
@@ -9428,9 +9428,9 @@ void edit(void)
         default:
             if (autf == FALSE)
                	break;
-            if ((c == 0x81) || (c == 0xEB) || (c == 0x1FB))
+            if ((c == 0x81) || (c == 0xEB) || (c == 0xFA) || (c == 0x1FB))
                c = 0x55; /* U */
-            else if (c == 0x90)
+            else if ((c == 0xE9) || (c == 0x90))
                     c = 0x45; /* E */
             if (!iscntrl(c))
             {
