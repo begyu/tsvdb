@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 4.7.0 2017/07/24 $
+ * $Id: tcsvdb.c,v 4.8.0 2017/08/24 $
  */
 
-#define VERSION "4.7"
+#define VERSION "4.8"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -1348,7 +1348,15 @@ void titlemsg(char *msg)
 
 void bodymsg(char *msg)
 {
+    register int i, j;
+
+#ifndef XCURSES
     waddstr(wbody, msg);
+#else
+    j = strlen(msg);
+    for (i=0; i<MIN(j,bw); i++)
+         waddch(wbody, (unsigned char)(msg[i]));
+#endif
     wrefresh(wbody);
 }
 
@@ -10679,16 +10687,18 @@ void subfunc2(void)
         "Simple tab separated text database",
         " Based on PDCurses TUIdemo sample",
         " With SLRE lib http://cesanta.com",
+        " & 'e' https://github.com/mtve/e",
         "       "URL
     };
     
-    wmsg = mvwinputbox(wbody, (bodylen()-5)/3, (bodywidth()-40)/2, 7, 40);
+    wmsg = mvwinputbox(wbody, (bodylen()-5)/3, (bodywidth()-40)/2, 8, 40);
     wborder(wmsg, '|', '|', '-', '-', '+', '+', '+', '+');
     mvwaddstr(wmsg, 1,13, s[0]);
     mvwaddstr(wmsg, 2, 3, s[1]);
     mvwaddstr(wmsg, 3, 3, s[2]);
     mvwaddstr(wmsg, 4, 3, s[3]);
     mvwaddstr(wmsg, 5, 3, s[4]);
+    mvwaddstr(wmsg, 6, 3, s[5]);
     wrefresh(wmsg);
 #ifdef __MINGW_VERSION
     pause(1);
@@ -10712,7 +10722,7 @@ void subfunc2(void)
         || ((BUTTON_STATUS(button) & BUTTON_ACTION_MASK) == BUTTON_CLICKED))
         {
             getbegyx(wmsg, begy, begx);
-            if ((MOUSE_Y_POS == begy+5)
+            if ((MOUSE_Y_POS == begy+6)
             &&  (MOUSE_X_POS > begx+8) && (MOUSE_X_POS < begx+30))
             {
 #ifdef __MINGW_VERSION
