@@ -1,5 +1,5 @@
 /*
- * $Id: tcsvdb.c,v 4.8.0 2017/08/24 $
+ * $Id: tcsvdb.c,v 4.8.0 2017/08/25 $
  */
 
 #define VERSION "4.8"
@@ -1348,14 +1348,14 @@ void titlemsg(char *msg)
 
 void bodymsg(char *msg)
 {
+#ifdef XCURSES
     register int i, j;
 
-#ifndef XCURSES
-    waddstr(wbody, msg);
-#else
     j = strlen(msg);
     for (i=0; i<MIN(j,bw); i++)
          waddch(wbody, (unsigned char)(msg[i]));
+#else
+    waddstr(wbody, msg);
 #endif
     wrefresh(wbody);
 }
@@ -9248,13 +9248,15 @@ void edit(void)
             HELP;
             break;
         case KEY_F(3):
-            if (ro)
-            {
-                putmsg("File \"", datfname, "\" is read-only!");
-                break;
-            }
             if (slkon && modified)
+            {
+                if (ro)
+                {
+                    putmsg("File \"", datfname, "\" is read-only!");
+                    break;
+                }
                 (void)savefile(datfname, 1);
+            }
             break;
         case CTRL_G:
             gorec();
@@ -10722,8 +10724,8 @@ void subfunc2(void)
         || ((BUTTON_STATUS(button) & BUTTON_ACTION_MASK) == BUTTON_CLICKED))
         {
             getbegyx(wmsg, begy, begx);
-            if ((MOUSE_Y_POS == begy+6)
-            &&  (MOUSE_X_POS > begx+8) && (MOUSE_X_POS < begx+30))
+            if ((MOUSE_Y_POS > begy) && (MOUSE_Y_POS < begy+7)
+            &&  (MOUSE_X_POS > begx) && (MOUSE_X_POS < begx+39))
             {
 #ifdef __MINGW_VERSION
                 brows = "explorer.exe";
