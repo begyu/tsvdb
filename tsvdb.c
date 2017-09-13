@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 4.9.0 2017/09/08 $
+ * $Id: tcsvdb.c,v 4.9.1 2017/09/13 $
  */
 
-#define VERSION "4.9"
+#define VERSION "4.9.1"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -7939,11 +7939,27 @@ loop:
                     mvwaddch(wban, row+1, j+col+1,
                              map[enc(*sp)][row] & 1<<col ? chr : ' ');
     for (row=1; row<9; row++)
+    {
+#ifdef PDCW
+        mvwaddch(wban, row, 1+8*len, '|');
+#else
         mvwaddch(wban, row, 1+8*len, ACS_VLINE);
+#endif
+    }
     wrefresh(wban);
     j = waitforkey();
     switch (j)
     {
+#ifdef PDCURSES
+      case KEY_MOUSE:
+          getmouse();
+          if (MOUSE_WHEEL_UP)
+              j = KEY_LEFT;
+          else if (MOUSE_WHEEL_DOWN)
+              j = KEY_RIGHT;
+          else
+              break;
+#endif
       case KEY_RIGHT:
       case KEY_DOWN:
         if (k < strlen(s))
