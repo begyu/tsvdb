@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 4.9.1 2017/09/13 $
+ * $Id: tcsvdb.c,v 5.0.0 2017/09/13 $
  */
 
-#define VERSION "4.9.1"
+#define VERSION "5.0"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -7952,16 +7952,17 @@ loop:
     {
 #ifdef PDCURSES
       case KEY_MOUSE:
-          getmouse();
-          if (MOUSE_WHEEL_UP)
-              j = KEY_LEFT;
-          else if (MOUSE_WHEEL_DOWN)
-              j = KEY_RIGHT;
-          else
-              break;
+        getmouse();
+        request_mouse_pos();
+        if (MOUSE_WHEEL_DOWN)
+            goto jobbra;
+        else if (MOUSE_WHEEL_UP)
+            goto balra;
+        break;
 #endif
       case KEY_RIGHT:
       case KEY_DOWN:
+jobbra:
         if (k < strlen(s))
         {
             k++;
@@ -7972,6 +7973,7 @@ loop:
         break;
       case KEY_LEFT:
       case KEY_UP:
+balra:
         if (k > 0)
         {
             k--;
