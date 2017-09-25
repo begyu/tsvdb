@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 5.0.0 2017/09/13 $
+ * $Id: tcsvdb.c,v 5.1.0 2017/09/25 $
  */
 
-#define VERSION "5.0"
+#define VERSION "5.1"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -405,6 +405,7 @@ extern bool calcerr;
 #define CTRL_E 0x05
 #define CTRL_F 0x06
 #define CTRL_G 0x07
+#define CTRL_K 0x0B
 #define CTRL_L 0x0C
 #define CTRL_N 0x0E
 #define CTRL_O 0x0F
@@ -490,6 +491,8 @@ static char flags[MAXROWS+1];
 static char stru[MAXCOLS+1][MAXSTRLEN];
 static int beg[MAXCOLS+1];
 static int len[MAXCOLS+1];
+static int macro[MAXCOLS+1] = {0};
+static int macroptr = -1;
 static int cols, reccnt, curr, field, curcol, ctop;
 static int startcol = -1;
 static bool modified=FALSE;
@@ -1803,6 +1806,7 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
 #if USE_WIDECH
     wint_t ch;
 #endif
+    bool unget= FALSE;
 
     if ((field >= MAXSTRLEN) || (buf == NULL) ||
         ((int)strlen(buf) > field - 1))
@@ -1833,18 +1837,34 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
         idle();
         repainteditbox(wedit, bp - buf, buf, lim);
 
-        switch (c = wgetch(wedit))
+        if (macroptr > 0)
+        {
+            unget = TRUE;
+            c = macro[macroptr];
+            if (macroptr <= macro[0])
+                macroptr++;
+            else
+            {
+                macroptr = 0;
+                unget = FALSE;
+            }
+        }
+        if (unget == FALSE)
+            	c = wgetch(wedit);
+        else
+            	unget = FALSE;
+        switch (c)
         {
         case ERR:
             break;
 
-        case 129: //0x81=''
-        case 144: //0x90=''
-        case 395: //0x8B='‹'
-        case 394: //0x8A='Š'
+        case 129: //0x81='ü'
+        case 144: //0x90='É'
+        case 395: //0x8B='ő'
+        case 394: //0x8A='Ő'
         case 507: //0xFB='ű'
 #ifdef __MINGW_VERSION
-        case 491: //0xEB='ë'  //collision with A-DN!
+        case 491: //0xEB='Ű'  //collision with A-DN!
 #endif
             goto ins_char;
             break;
@@ -2209,6 +2229,12 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
             break;
 #endif
 
+        case ALT_K:
+            if (macroptr == 0)
+            {
+                macroptr = 1;
+            }
+            break;
         default:
             if (c == erasechar())       /* backspace, ^H */
             {
@@ -2693,8 +2719,8 @@ int casestr(char *str, bool upper, bool ascii)
 #endif
   char asc_lo[] = "aeiooouuuaaeiooouuua";
   char asc_hi[] = "AEIOOOUUUAAEIOOOUUUA";
-/*  char chr_utflo[] = "ĂˇĂ©Ă­ĂłĂ¶Ĺ‘ĂşĂĽĹ±";*/
-/*  char chr_utfhi[] = "ĂĂ‰ĂŤĂ“Ă–ĹĂšĂśĹ°";*/
+/*  char chr_utflo[] = "├í├ę├ş├│├Â┼Ĺ├║├╝┼▒";*/
+/*  char chr_utfhi[] = "├ü├ë├Ź├ô├ľ┼É├Ü├ť┼░";*/
   register int i, j;
   int w=strlen(str);
   unsigned char c;
@@ -2768,7 +2794,7 @@ int hstrcmp(const char *s1, const char *s2)
     char e1[MAXSTRLEN];
     char e2[MAXSTRLEN];
 #define MAXCH 60
-    char abc[]="Aµ BCCDDE‚FGGHIÖˇJKLLMNNOŕ˘™”Š‹PQRSSTTUéŁšëűVWXYZZ[\\]^_`„";
+    char abc[]="AÁáBCCDDEÉéFGGHIÍíJKLLMNNOÓóÖöŐőPQRSSTTUÚúÜüŰűVWXYZZ[\\]^_`ä";
     char abd[]="AAABCDEFGGGHIJKLLLMNOPQRSTTTUUUUVWXYZabcccddddefghijklmnopA";
 
     if (hunsort == FALSE)
@@ -3257,6 +3283,7 @@ void flagmsg(void)
     }
     wrefresh(wtitl);
     nulla[0] = (char)('0'+colorset);
+    mvwaddstr(wmain, 0, bw-34, (macroptr!=-1) ? "Macro" : "     ");
     mvwaddstr(wmain, 0, bw-28, "C-");
     mvwaddstr(wmain, 0, bw-26, nulla);
     mvwaddstr(wmain, 0, bw-24, phonetic ? "Sndx" : "     ");
@@ -3505,7 +3532,7 @@ int numcompr(const char *s3, char *s2)
     if (!(isdigit(s3[0]) && isdigit(s3[1]) && isdigit(s3[2])))
         	return -1;
 #ifdef DJGPP
-    if ((s3[0] == 'ˇ') || (s3[1] == 'ˇ') || (s3[2] == 'ˇ'))
+    if ((s3[0] == 'í') || (s3[1] == 'í') || (s3[2] == 'í'))
         	return -1;
 #endif
 
@@ -7794,8 +7821,8 @@ char vec[] = " 0123456789"
              "abcdefghijklmnopqrstuvwxyz"
              "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
              ".,:!/\\|+-*="
-             " ‚ˇ˘”‹Łű„"
-             "µÖŕ™ŠéšëĆ";
+             "áéíóöőúüűä"
+             "ÁÉÍÓÖŐÚÜŰĂ";
 
 enum {
     A = 1<<0,
@@ -8017,7 +8044,7 @@ void dispfield(int x)
         strcpy(buf, fieldbuf[i]);
         if (x != -1)
 #ifdef __MINGW_VERSION
-            banner(buf, 'Ű');
+            banner(buf, '█');
 #else
             banner(buf, '#');
 #endif
@@ -8963,6 +8990,35 @@ void decw(void)
 #endif
 
 
+void domacro(void)
+{
+    int i,c;
+
+    msg("Press ESC to end!");
+    i = macro[0];
+    if (i)
+    {
+        macro[0] = 0;
+        macroptr = -1;
+    }
+    else
+    {
+        macroptr = 0;
+        for (i=1; i<=MAXCOLS; i++)
+        {
+            c = waitforkey();
+            if (c == KEY_MOUSE)
+               	continue;
+            if (c == KEY_ESC)
+               	break;
+            macro[0] = i;
+            macro[i] = c;
+        }
+    }
+    msg(NULL);
+}
+
+
 #ifdef NCURSES
 #define ALT_INS KEY_IL
 #define CTL_INS KEY_SIC
@@ -9007,6 +9063,18 @@ void edit(void)
         statusln();
         flagmsg();
         displn(curr, curr-ctop+1);
+        if (macroptr > 0)
+        {
+            unget = TRUE;
+            c = macro[macroptr];
+            if (macroptr <= macro[0])
+                macroptr++;
+            else
+            {
+                macroptr = 0;
+                unget = FALSE;
+            }
+        }
         if (unget == FALSE)
             	c = waitforkey();
         else
@@ -9598,6 +9666,18 @@ void edit(void)
         case ALT_R:
             curr = redo(curr);
             break;
+        case CTRL_K:
+            if (selbox(((macroptr==-1) ? "Record macro?" : "Clear macro?"),
+                       ync, 2) != 1)
+               break;
+            domacro();
+            break;
+        case ALT_K:
+            if (macroptr == 0)
+            {
+                macroptr = 1;
+            }
+            break;
 #ifdef XCURSES
         case KEY_RESIZE:
             resize_event();
@@ -10077,7 +10157,7 @@ void fuzzy(void)
 
 int inhlp(void)
 {
-#define HLPLINES 200
+#define HLPLINES 203
 char *tsvhlp[HLPLINES+1] = {
 "G\tKEY__________\tFUNC_______________________________",
 "0\t           1:\tGeneral",
@@ -10136,6 +10216,8 @@ char *tsvhlp[HLPLINES+1] = {
 "1\tA-I\tinsert field",
 "1\tC-Ins\tinsert line (C-+)",
 "1\tA-Ins\tduplicate (A-+)",
+"1\tC-K\trecord/clear macro",
+"1\tA-K\tplay macro",
 "1\tC-L\tlowercase",
 "1\tA-L\tlowercase initial",
 "1\tS-left\talign left",
@@ -10190,6 +10272,7 @@ char *tsvhlp[HLPLINES+1] = {
 "2\t  Enter\tmodify record",
 "2\t  Esc\tundo/cancel",
 "2\t  Home\tgo to 1'st char",
+"2\tA-K\tplay macro",
 "2\tC-L\tlowercase",
 "2\tA-L\tlowercase initial",
 "2\tC-left\tskip word back",
@@ -10531,19 +10614,20 @@ void subfunc1(void)
 #endif
 #ifdef __MINGW_VERSION
         "Ctrl/Alt-R:  undo/redo (max 10) \t Shft-Up/Dn:  inc/dec scr lines",
-        " A-T/A-Del:  undo line (max 1)  \t  Shft- +/-:  inc/dec scr width"
+        " A-T/A-Del:  undo line (max 1)  \t  Shft- +/-:  inc/dec scr width",
 #else
-        "Ctrl/Alt-R:  undo/redo (max 10) \t  A-T/A-Del:  undo line (max 1)"
+        "Ctrl/Alt-R:  undo/redo (max 10) \t  A-T/A-Del:  undo line (max 1)",
 #endif
+        "Ctrl/Alt-K:  Set/play key macro \t        Esc:  menu"
     };
     int i;
     
 #ifdef __MINGW_VERSION
-    int j=19;
+    int j=20;
     if (COLS <72)
         	return;
 #else
-    int j=18;
+    int j=19;
 #endif
     wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-72)/2, j+2, 72);
 #ifndef __MINGW_VERSION
@@ -10593,7 +10677,7 @@ void edithelp(void)
         " Alt-arrows:\tmove inputbox",
 #endif
         "        Esc:\tundo/cancel",
-        "      Alt-P:\tchange colorset",
+        "    Alt-K/P:\tplay macro / change colorset",
         "(Ctl-)Enter:\tmodify record"
     };
     int i;
@@ -10763,6 +10847,7 @@ void limits(void)
         "    Number of fields: ",
         "Length of field name: ",
         "     Field separator: ",
+        "        Macro length: ",
         "           Auto-seek: ",
         "           Read only: ",
         "              Safety: ",
@@ -10776,6 +10861,7 @@ void limits(void)
         MAXCOLS,
         MAXFLEN,
         csep,
+        macro[0],
         autf,
         ro,
         safe,
@@ -10783,7 +10869,7 @@ void limits(void)
         cry
     };
     int i;
-    int j=10;
+    int j=11;
     
     wmsg = mvwinputbox(wbody, (bodylen()-j)/4, (bodywidth()-34)/3, j+2, 34);
 #ifndef __MINGW_VERSION
