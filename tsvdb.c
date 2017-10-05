@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 5.1.0 2017/09/25 $
+ * $Id: tcsvdb.c,v 5.2.0 2017/10/05 $
  */
 
-#define VERSION "5.1"
+#define VERSION "5.2"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -813,6 +813,29 @@ static void rmline(WINDOW *win, int nr)   /* keeps box lines intact */
     wrefresh(win);
 }
 
+static void initcolo0(void)
+{
+#ifdef A_COLOR
+    if (has_colors())
+        start_color();
+    init_pair(TITLECOLOR       & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
+    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
+    init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_BLACK, COLOR_WHITE);
+    init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
+    init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_WHITE, COLOR_WHITE);
+    init_pair(BODYCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
+    init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
+    init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_BLACK, COLOR_WHITE);
+    init_pair(EDITBOXCOLOR     & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
+    init_pair(CURRCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
+    init_pair(CURRREVCOLOR     & ~A_ATTR, COLOR_BLACK, COLOR_WHITE);
+    init_pair(MARKCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
+    init_pair(FSTRCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
+    init_pair(EDITBOXT_2COLOR  & ~A_ATTR, COLOR_WHITE, COLOR_WHITE);
+    init_pair(INFOCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
+#endif
+}
+
 static void initcolor(void)
 {
 #ifdef A_COLOR
@@ -839,7 +862,30 @@ static void initcolor(void)
 #endif
 }
 
+
 static void initcolo2(void)
+{
+#ifdef A_COLOR
+    if (has_colors())
+        start_color();
+    init_pair(TITLECOLOR       & ~A_ATTR, COLOR_BLACK, COLOR_GREEN);      
+    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_WHITE, COLOR_GREEN);    
+    init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
+    init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_WHITE, COLOR_CYAN);    
+    init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);   
+    init_pair(BODYCOLOR        & ~A_ATTR, COLOR_RED, COLOR_YELLOW);      
+    init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_WHITE, COLOR_GREEN);   
+    init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_RED, COLOR_WHITE);
+    init_pair(EDITBOXCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);
+    init_pair(CURRCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLUE);
+    init_pair(CURRREVCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
+    init_pair(MARKCOLOR        & ~A_ATTR, COLOR_GREEN, COLOR_YELLOW);
+    init_pair(FSTRCOLOR        & ~A_ATTR, COLOR_YELLOW, COLOR_GREEN);
+    init_pair(EDITBOXTOOCOLOR  & ~A_ATTR, COLOR_WHITE, COLOR_GREEN);
+    init_pair(INFOCOLOR        & ~A_ATTR, COLOR_GREEN, COLOR_GREEN);
+#endif
+}
+static void initcolo3(void)
 {
 #ifdef A_COLOR
     if (has_colors())
@@ -862,7 +908,7 @@ static void initcolo2(void)
 #endif
 }
 
-static void initcolo3(void)
+static void initcolo4(void)
 {
 #ifdef A_COLOR
     if (has_colors())
@@ -885,7 +931,7 @@ static void initcolo3(void)
 #endif
 }
 
-static void initcolo4(void)
+static void initcolo5(void)
 {
 #ifdef A_COLOR
     if (has_colors())
@@ -908,28 +954,6 @@ static void initcolo4(void)
 #endif
 }
 
-static void initcolo5(void)
-{
-#ifdef A_COLOR
-    if (has_colors())
-        start_color();
-    init_pair(TITLECOLOR       & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
-    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
-    init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_BLACK, COLOR_WHITE);
-    init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
-    init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_WHITE, COLOR_WHITE);
-    init_pair(BODYCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
-    init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
-    init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_BLACK, COLOR_WHITE);
-    init_pair(EDITBOXCOLOR     & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
-    init_pair(CURRCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
-    init_pair(CURRREVCOLOR     & ~A_ATTR, COLOR_BLACK, COLOR_WHITE);
-    init_pair(MARKCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
-    init_pair(FSTRCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
-    init_pair(EDITBOXT_2COLOR  & ~A_ATTR, COLOR_WHITE, COLOR_WHITE);
-    init_pair(INFOCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
-#endif
-}
 
 static void setcolor(WINDOW *win, chtype color)
 {
@@ -1651,11 +1675,27 @@ void init()
 #endif
     initscr();
     incurses = TRUE;
-#ifdef DJGPP
-    initcolo5();
-#else
-    initcolor();
-#endif
+
+    switch (colorset)
+    {
+    case 0:
+        initcolo0();
+        break;
+    case 1:
+        initcolor();
+        break;
+    case 2:
+        initcolo2();
+        break;
+    case 3:
+        initcolo3();
+        break;
+    case 4:
+        initcolo4();
+        break;
+    case 5:
+        initcolo5();
+    }
 
     origy = LINES;
     origx = COLS;
@@ -8927,7 +8967,26 @@ void resize(int dx, int dy)
     delwin(wbody);
     endwin();
     initscr();
-    initcolor();
+    switch (colorset)
+    {
+    case 0:
+        initcolo0();
+        break;
+    case 1:
+        initcolor();
+        break;
+    case 2:
+        initcolo2();
+        break;
+    case 3:
+        initcolo3();
+        break;
+    case 4:
+        initcolo4();
+        break;
+    case 5:
+        initcolo5();
+    }
 #endif
     d_y = (y-LINES);
     resize_term(y, x);
@@ -10912,6 +10971,7 @@ static char *hlpstrs[] =
     "-a        Autoseek off",
     "-t        Top",
     "-b        Bottom",
+    "-c <0-5>  Select color set",
     "-n <num>  Go to num'th row (or row:col)",
     "-s <str>  Search str",
     "          or -s \"(regexp)\"",
@@ -10944,12 +11004,12 @@ void opthelp(void)
     WINDOW *wmsg;
     int i;
 #ifndef XCURSES
-    int j=21;
+    int j=22;
 #else
-    int j=20;
+    int j=21;
 #endif
     
-    wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-43)/2, j+2, 43);
+    wmsg = mvwinputbox(stdscr, (bodylen()-j)/3, (bodywidth()-43)/2, j+2, 43);
 #ifndef __MINGW_VERSION
     wborder(wmsg, '|', '|', '-', '-', '+', '+', '+', '+');
 #endif
@@ -10958,6 +11018,10 @@ void opthelp(void)
     wrefresh(wmsg);
     (void)toupper(waitforkey());
     delwin(wmsg);
+    touchwin(wtitl);
+    wrefresh(wtitl);
+    touchwin(wmain);
+    wrefresh(wmain);
     touchwin(wstatus);
     wrefresh(wstatus);
     if (slk)
@@ -11099,21 +11163,24 @@ void changecolor(void)
     colorset++;
     switch (colorset)
     {
-    case 5:
+    case 6:
         colorset = 0;
     case 0:
-        initcolor();
+        initcolo0();
         break;
     case 1:
-        initcolo2();
+        initcolor();
         break;
     case 2:
-        initcolo3();
+        initcolo2();
         break;
     case 3:
-        initcolo4();
+        initcolo3();
         break;
     case 4:
+        initcolo4();
+        break;
+    case 5:
         initcolo5();
     }
     clear();
@@ -11171,8 +11238,9 @@ typedef int (*LDF)(char *);
     i = 0;
     curr = 0;
     opterr = 0;
-    while ((c=getopt(ac,av,"HhRrVvXxYyZzQqTtAaBbEeFfN:n:D:d:S:s:L:l:W:w:Pp?"))
-           != -1)
+    while
+       ((c=getopt(ac,av,"HhRrVvXxYyZzQqTtAaBbEeFfC:c:N:n:D:d:S:s:L:l:W:w:Pp?"))
+        != -1)
     {
       switch (c)
       {
@@ -11259,6 +11327,7 @@ typedef int (*LDF)(char *);
           if ((toupper(optopt) == 'N')
           || (toupper(optopt) == 'S')
           || (toupper(optopt) == 'L')
+          || (toupper(optopt) == 'C')
           || (toupper(optopt) == 'D'))
               fprintf(stderr, "Option -%c requires an argument.\n", optopt);
           else if (isprint (optopt))
@@ -11270,6 +11339,24 @@ typedef int (*LDF)(char *);
 //          if (optopt != '?')
 //                printf("Missing argument '%c'.\n", optopt);
 */
+        case 'c':
+        case 'C':
+          if (toupper(c) == 'C')
+          {
+              if (isdigit(optarg[0]))
+              {
+                  colorset = atoi(optarg);
+                  if (colorset < 0 || colorset > 5)
+                  {
+                      colorset = 0;
+                      fprintf(stderr, "Invalid color code! (valid: 0-5)\n");
+                  }
+                  else
+                      break;
+              }
+              else
+                  fprintf(stderr, "Expected color code.\n");
+          }
         case 'n':
         case 'N':
           if (toupper(c) == 'N')
@@ -11332,7 +11419,7 @@ typedef int (*LDF)(char *);
           if (p != NULL)
              	p[0] = '\0';
           printf("Usage: %s [-r|x|y|z|q|a|t|b|f|h|v] [-n|w{row}] "
-                 "[-s|l{str}] [-d{,|;}] [file]\n"
+                 "[-c{n}] [-s|l{str}] [-d{,|;}] [file]\n"
                  "   or:\t%s -e|p {file}\n", s, s);
           if (toupper(c) == 'H')
               help();
