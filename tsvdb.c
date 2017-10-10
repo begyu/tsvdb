@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 5.2.1 2017/10/07 $
+ * $Id: tcsvdb.c,v 5.3.0 2017/10/10 $
  */
 
-#define VERSION "5.2.1"
+#define VERSION "5.3"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -862,7 +862,6 @@ static void initcolor(void)
 #endif
 }
 
-
 static void initcolo2(void)
 {
 #ifdef A_COLOR
@@ -885,6 +884,7 @@ static void initcolo2(void)
     init_pair(INFOCOLOR        & ~A_ATTR, COLOR_GREEN, COLOR_GREEN);
 #endif
 }
+
 static void initcolo3(void)
 {
 #ifdef A_COLOR
@@ -1207,6 +1207,10 @@ static void mainmenu(menu *mp)
 
         case KEY_ESC:
             mainhelp();
+            break;
+
+        case ALT_P:
+            changecolor();
             break;
 
 #ifdef PDCURSES
@@ -1586,6 +1590,14 @@ void domenu(menu *mp)
             key = ERR;
             break;
 
+        case ALT_P:
+            changecolor();
+            colorbox(wmenu, SUBMENUCOLOR, 1);
+            repaintmenu(wmenu, mp);
+            old = -1;
+            key = ERR;
+            break;
+
 #ifdef PDCURSES
         case KEY_MOUSE:
             getmouse();
@@ -1906,13 +1918,13 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
         case ERR:
             break;
 
-        case 129: //0x81='ü'
-        case 144: //0x90='É'
-        case 395: //0x8B='ő'
-        case 394: //0x8A='Ő'
+        case 129: //0x81=''
+        case 144: //0x90=''
+        case 395: //0x8B='‹'
+        case 394: //0x8A='Š'
         case 507: //0xFB='ű'
 #ifdef __MINGW_VERSION
-        case 491: //0xEB='Ű'  //collision with A-DN!
+        case 491: //0xEB='ë'  //collision with A-DN!
 #endif
             goto ins_char;
             break;
@@ -2767,8 +2779,8 @@ int casestr(char *str, bool upper, bool ascii)
 #endif
   char asc_lo[] = "aeiooouuuaaeiooouuua";
   char asc_hi[] = "AEIOOOUUUAAEIOOOUUUA";
-/*  char chr_utflo[] = "├í├ę├ş├│├Â┼Ĺ├║├╝┼▒";*/
-/*  char chr_utfhi[] = "├ü├ë├Ź├ô├ľ┼É├Ü├ť┼░";*/
+/*  char chr_utflo[] = "ĂˇĂ©Ă­ĂłĂ¶Ĺ‘ĂşĂĽĹ±";*/
+/*  char chr_utfhi[] = "ĂĂ‰ĂŤĂ“Ă–ĹĂšĂśĹ°";*/
   register int i, j;
   int w=strlen(str);
   unsigned char c;
@@ -2842,7 +2854,7 @@ int hstrcmp(const char *s1, const char *s2)
     char e1[MAXSTRLEN];
     char e2[MAXSTRLEN];
 #define MAXCH 60
-    char abc[]="AÁáBCCDDEÉéFGGHIÍíJKLLMNNOÓóÖöŐőPQRSSTTUÚúÜüŰűVWXYZZ[\\]^_`ä";
+    char abc[]="Aµ BCCDDE‚FGGHIÖˇJKLLMNNOŕ˘™”Š‹PQRSSTTUéŁšëűVWXYZZ[\\]^_`„";
     char abd[]="AAABCDEFGGGHIJKLLLMNOPQRSTTTUUUUVWXYZabcccddddefghijklmnopA";
 
     if (hunsort == FALSE)
@@ -3587,7 +3599,7 @@ int numcompr(const char *s3, char *s2)
     if (!(isdigit(s3[0]) && isdigit(s3[1]) && isdigit(s3[2])))
         	return -1;
 #ifdef DJGPP
-    if ((s3[0] == 'í') || (s3[1] == 'í') || (s3[2] == 'í'))
+    if ((s3[0] == 'ˇ') || (s3[1] == 'ˇ') || (s3[2] == 'ˇ'))
         	return -1;
 #endif
 
@@ -7876,8 +7888,8 @@ char vec[] = " 0123456789"
              "abcdefghijklmnopqrstuvwxyz"
              "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
              ".,:!/\\|+-*="
-             "áéíóöőúüűä"
-             "ÁÉÍÓÖŐÚÜŰĂ";
+             " ‚ˇ˘”‹Łű„"
+             "µÖŕ™ŠéšëĆ";
 
 enum {
     A = 1<<0,
@@ -8099,7 +8111,7 @@ void dispfield(int x)
         strcpy(buf, fieldbuf[i]);
         if (x != -1)
 #ifdef __MINGW_VERSION
-            banner(buf, '█');
+            banner(buf, 'Ű');
 #else
             banner(buf, '#');
 #endif
@@ -10607,7 +10619,7 @@ menu SubMenu2[] =
     { "Options", opthelp, "Command line options" },
     { "Whole", prghelp, "Help index" },
     { "Limits", limits, "Maximums & conditions" },
-    { "Colors", changecolor, "Change color set" },
+    { "Colors Alt-P", changecolor, "Change color set" },
     { "labels", chgslk, "Set or hide soft label keys" },
 #ifdef __MINGW_VERSION
     { "+", incw, "Enlarge window" },
