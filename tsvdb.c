@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 5.3.0 2017/10/10 $
+ * $Id: tcsvdb.c,v 5.4.0 2017/10/17 $
  */
 
-#define VERSION "5.3"
+#define VERSION "5.4"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -6215,6 +6215,7 @@ void schange()
     struct slre_cap cap = { NULL, 0 };
     int last=0;
     bool highlight = TRUE;
+    bool removable = TRUE;
 
     if (ro)
         return;
@@ -6231,9 +6232,10 @@ void schange()
     getstrings(fieldname, fieldbuf, 0, MAXFLEN+1, NULL);
 
     rlen = strlen(s1);
-    if (rlen == 0)
+    if ((rlen == 0) || (s2[0] == 0))
         return;
 
+    curr = 0;
     if (s1[0] == '(' && s1[rlen-1] == ')')
     {
         for (i=0; i<reccnt; i++)
@@ -6241,9 +6243,10 @@ void schange()
             highlight = TRUE;
             if ((k = slre_match(s1, rows[i], strlen(rows[i]), &cap, 1, 0)) > 0)
             {
+back:
                 last = (i==0) ? 1 : i;
                 displn(i, 1);
-                for (j=i; j<(reccnt-i); j++)
+                for (j=i; j<(i+bodylen()); j++)
                 {
                     if (j < reccnt)
                        displn(j, 1+j-i);
@@ -6254,28 +6257,13 @@ void schange()
                        wrefresh(wbody);
                     }
                 }
-                m = n = 0;
-                for (j=0; j<k; j++)
+                if (!removable)
                 {
-                    if (rows[i][j] == csep)
-                    {
-                       m++;
-                       n = beg[m];
-                       if ((j+1) < n)
-                          	highlight = FALSE;
-                    }
+                    msg("Next/Prev/Quit? (N/P/Q):");
+                    removable = TRUE;
                 }
-                if (highlight)
-                {
-                    setcolor(wbody, MARKCOLOR);
-                    l = rlen-2;
-                    strcpy(s, rows[i]+(k-l));
-                    s[l] = '\0';
-                    mvwaddstr(wbody, 1, k-l, s);
-                }
-                setcolor(wbody, BODYCOLOR);
-                wrefresh(wbody);
-                msg("Change/Next/Prev/Quit? (C/N/P/Q):");
+                else
+                    msg("Change/Next/Prev/Quit? (C/N/P/Q):");
                 do {
                     c = toupper(waitforkey());
                 } while ((p = strchr("CNPQ", c)) == NULL);
@@ -6283,13 +6271,20 @@ void schange()
                 if (c == 'N')
                     continue;
                 else if (c == 'Q')
-                    break;
+                         break;
                 else if (c == 'P')
                      {
                          for (i=last-1; i>0; i--)
+                         {
+                             if (strstr(rows[i], s2))
+                             {
+                                 removable = FALSE;
+                                 goto back;
+                             }
                              if ((j = slre_match(s1, rows[i], 
                                   strlen(rows[i]), &cap, 1, 0)) > 0)
                                  break;
+                         }
                          i--;
                          continue;
                      }
@@ -6302,6 +6297,7 @@ void schange()
                          rows[i] = (char *)malloc(j+1);
                          strcpy(rows[i], p);
                          changes++;
+                         last = i;
                      }
             }
         }
@@ -6319,7 +6315,7 @@ void schange()
                     break;
                 last = (i==0) ? 1 : i;
                 displn(i, 1);
-                for (j=i; j<(reccnt-i); j++)
+                for (j=i; j<(i+bodylen()); j++)
                 {
                     if (j < reccnt)
                        displn(j, 1+j-i);
@@ -6330,25 +6326,26 @@ void schange()
                        wrefresh(wbody);
                     }
                 }
-                m = n = 0;
+                m = 0;
                 for (j=0; j<k; j++)
                 {
                     if (rows[i][j] == csep)
                     {
                        m++;
                        n = beg[m];
-                       if ((j+1) < n)
+                       n--;
+                       if (j < n)
                           	highlight = FALSE;
                     }
                 }
-                m = n = 0;
-                for (j=0; j<l; j++)
+                for (; j<l; j++)
                 {
                     if (rows[i][j] == csep)
                     {
                        m++;
                        n = beg[m];
-                       if ((j+1) < n)
+                       n--;
+                       if (j < n)
                           	highlight = FALSE;
                     }
                 }
@@ -6416,6 +6413,7 @@ void schange()
                 break;
         }
     }
+    curr = last;
     if (changes)
     {
         displn(last, 1);
@@ -7743,7 +7741,10 @@ void insfield(void)
         return;
 
     if ((i = strlen(head)) > 66)
+    {
+        putmsg("Can't insert field! ","Header is too wide.","");
         return;
+    }
 
     if (getfname(FALSE, "Enter new field name:", fldname, MAXFLEN))
     {
@@ -9393,7 +9394,10 @@ void edit(void)
             break;
         case KEY_F(7):
             if (slk)
-               	schange();
+            {
+               schange();
+               ctop = curr;
+            }
             break;
         case KEY_DC:
             fchr = fstr[0];
@@ -9668,6 +9672,7 @@ void edit(void)
             break;
         case ALT_S:
             schange();
+            ctop = curr;
             break;
         case ALT_C:
             calc(FALSE);
@@ -10716,9 +10721,6 @@ void subfunc1(void)
     int j=19;
 #endif
     wmsg = mvwinputbox(wbody, (bodylen()-j)/3, (bodywidth()-72)/2, j+2, 72);
-#ifndef __MINGW_VERSION
-    wborder(wmsg, '|', '|', '-', '-', '+', '+', '+', '+');
-#endif
     for (i=0; i<j; i++)
         mvwaddstr(wmsg, i+1, 1, s[i]);
     wrefresh(wmsg);
@@ -10774,9 +10776,6 @@ void edithelp(void)
 #endif
     
     wmsg = mvwinputbox(wbody, (bodylen()-j)/4, (bodywidth()-46)/2, j+2, 46);
-#ifndef __MINGW_VERSION
-    wborder(wmsg, '|', '|', '-', '-', '+', '+', '+', '+');
-#endif
     for (i=0; i<j; i++)
         mvwaddstr(wmsg, i+1, 2, s[i]);
     wrefresh(wmsg);
@@ -10823,9 +10822,6 @@ void txthelp(void)
     int j=19;
     
     wmsg = mvwinputbox(wbody, (bodylen()-j)/4, (bodywidth()-28)/2, j+2, 28);
-#ifndef __MINGW_VERSION
-    wborder(wmsg, '|', '|', '-', '-', '+', '+', '+', '+');
-#endif
     for (i=0; i<j; i++)
         mvwaddstr(wmsg, i+1, 2, s[i]);
     wrefresh(wmsg);
@@ -10862,9 +10858,6 @@ void funchelp(void)
         return;
     }
     wmsg = mvwinputbox(wbody, (bodylen()-j)/5, (bodywidth()-18)/3, j+2, 18);
-#ifndef __MINGW_VERSION
-    wborder(wmsg, '|', '|', '-', '-', '+', '+', '+', '+');
-#endif
     for (i=0; i<j; i++)
         mvwaddstr(wmsg, i+1, 2, s[i]);
     wrefresh(wmsg);
@@ -10909,9 +10902,6 @@ void reghelp(void)
         	return;
 #endif
     wmsg = mvwinputbox(wbody, (bodylen()-j)/4, (bodywidth()-65)/2, j+2, 65);
-#ifndef __MINGW_VERSION
-    wborder(wmsg, '|', '|', '-', '-', '+', '+', '+', '+');
-#endif
     for (i=0; i<j; i++)
         mvwaddstr(wmsg, i+1, 2, s[i]);
     wrefresh(wmsg);
@@ -10958,9 +10948,6 @@ void limits(void)
     int j=11;
     
     wmsg = mvwinputbox(wbody, (bodylen()-j)/4, (bodywidth()-34)/3, j+2, 34);
-#ifndef __MINGW_VERSION
-    wborder(wmsg, '|', '|', '-', '-', '+', '+', '+', '+');
-#endif
     for (i=0; i<j; i++)
     {
         strcpy(buf, s[i]);
@@ -11037,9 +11024,6 @@ void opthelp(void)
 #endif
     
     wmsg = mvwinputbox(stdscr, (bodylen()-j)/3, (bodywidth()-43)/2, j+2, 43);
-#ifndef __MINGW_VERSION
-    wborder(wmsg, '|', '|', '-', '-', '+', '+', '+', '+');
-#endif
     for (i=0; i<j; i++)
         mvwaddstr(wmsg, i+1, 2, hlpstrs[i]);
     wrefresh(wmsg);
