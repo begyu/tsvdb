@@ -819,10 +819,10 @@ static void initcolo0(void)
     if (has_colors())
         start_color();
     init_pair(TITLECOLOR       & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
-    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
-    init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_BLACK, COLOR_WHITE);
-    init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
-    init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_WHITE, COLOR_WHITE);
+    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_WHITE, COLOR_WHITE);
+    init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
+    init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_WHITE, COLOR_WHITE);
+    init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
     init_pair(BODYCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
     init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
     init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_BLACK, COLOR_WHITE);
