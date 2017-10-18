@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 5.5.0 2017/10/18 $
+ * $Id: tcsvdb.c,v 5.6.0 2017/10/18 $
  */
 
-#define VERSION "5.5"
+#define VERSION "5.6"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -725,18 +725,18 @@ void rmerror(void);
 # define MAINMENUREVCOLOR (3 | A_BOLD | A_REVERSE)
 # define SUBMENUCOLOR     (4 | A_BOLD)
 # define SUBMENUREVCOLOR  (5 | A_BOLD | A_REVERSE)
-# define SUBMENUR_2COLOR  (5 | A_REVERSE)
-# define BODYCOLOR        6
-# define STATUSCOLOR      (7 | A_BOLD)
-# define INPUTBOXCOLOR    8
-# define EDITBOXCOLOR     (9 | A_BOLD | A_REVERSE)
-# define CURRCOLOR        (10 | A_BOLD)
-# define CURRREVCOLOR     (11 | A_BOLD)
-# define MARKCOLOR        (12 | A_BOLD)
-# define FSTRCOLOR        (13 | A_BOLD)
-# define EDITBOXTOOCOLOR  (14 | A_BOLD)
-# define EDITBOXT_2COLOR  (14)
-# define INFOCOLOR        (15 | A_BOLD)
+# define SUBMENUR_2COLOR  (6 | A_BOLD)
+# define BODYCOLOR        7
+# define STATUSCOLOR      (8 | A_BOLD)
+# define INPUTBOXCOLOR    9
+# define EDITBOXCOLOR     (10 | A_BOLD | A_REVERSE)
+# define CURRCOLOR        (11 | A_BOLD)
+# define CURRREVCOLOR     (12 | A_BOLD)
+# define MARKCOLOR        (13 | A_BOLD)
+# define FSTRCOLOR        (14 | A_BOLD)
+# define EDITBOXTOOCOLOR  (15 | A_BOLD)
+# define EDITBOXT_2COLOR  (16)
+# define INFOCOLOR        (17 | A_BOLD)
 #else
 # define TITLECOLOR       0       /* color pair indices */
 # define MAINMENUCOLOR    (A_BOLD)
@@ -819,10 +819,11 @@ static void initcolo0(void)
     if (has_colors())
         start_color();
     init_pair(TITLECOLOR       & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
-    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_WHITE, COLOR_WHITE);
+    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_BLACK, COLOR_WHITE);
     init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
-    init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_WHITE, COLOR_WHITE);
-    init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
+    init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
+    init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_WHITE, COLOR_WHITE);
+    init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_BLACK, COLOR_BLACK);
     init_pair(BODYCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
     init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
     init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_BLACK, COLOR_WHITE);
@@ -849,9 +850,10 @@ static void initcolor(void)
     init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
     init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_WHITE, COLOR_CYAN);    
     init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);   
+    init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_BLUE, COLOR_CYAN);
     init_pair(BODYCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLUE);      
     init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_WHITE, COLOR_CYAN);   
-    init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_BLACK, COLOR_CYAN);
+    init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_BLUE, COLOR_CYAN);
     init_pair(EDITBOXCOLOR     & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
     init_pair(CURRCOLOR        & ~A_ATTR, COLOR_BLACK, COLOR_MAGENTA);
     init_pair(CURRREVCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);
@@ -872,6 +874,7 @@ static void initcolo2(void)
     init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
     init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_WHITE, COLOR_CYAN);    
     init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);   
+    init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_BLACK, COLOR_CYAN);
     init_pair(BODYCOLOR        & ~A_ATTR, COLOR_RED, COLOR_YELLOW);      
     init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_WHITE, COLOR_GREEN);   
     init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_RED, COLOR_WHITE);
@@ -893,8 +896,9 @@ static void initcolo3(void)
     init_pair(TITLECOLOR       & ~A_ATTR, COLOR_MAGENTA, COLOR_YELLOW);      
     init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_GREEN, COLOR_YELLOW);    
     init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
-    init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_BLUE, COLOR_YELLOW);    
+    init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_CYAN, COLOR_YELLOW);    
     init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);   
+    init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_BLUE, COLOR_YELLOW);
     init_pair(BODYCOLOR        & ~A_ATTR, COLOR_BLACK, COLOR_WHITE);      
     init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_BLUE, COLOR_YELLOW);   
     init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_BLUE, COLOR_GREEN);
@@ -918,6 +922,7 @@ static void initcolo4(void)
     init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);
     init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_GREEN, COLOR_CYAN);    
     init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);   
+    init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_BLUE, COLOR_CYAN);
     init_pair(BODYCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);      
     init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_WHITE, COLOR_BLUE);   
     init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_BLUE, COLOR_YELLOW);
@@ -940,7 +945,8 @@ static void initcolo5(void)
     init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_GREEN, COLOR_CYAN);    
     init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_YELLOW, COLOR_BLACK);
     init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_GREEN, COLOR_BLUE);    
-    init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_BLACK);   
+    init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);   
+    init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_RED, COLOR_BLUE);   
     init_pair(BODYCOLOR        & ~A_ATTR, COLOR_BLACK, COLOR_CYAN);      
     init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_WHITE, COLOR_CYAN);   
     init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_BLUE, COLOR_GREEN);
@@ -1013,6 +1019,7 @@ static void idle(void)
             tp->tm_mday, tp->tm_mon + 1, tp->tm_year + 1900,
             tp->tm_hour, tp->tm_min, tp->tm_sec);
 
+    setcolor(wtitl, TITLECOLOR);
     mvwaddstr(wtitl, 0, bw - strlen(buf) - 2, buf);
     wrefresh(wtitl); 
 }
@@ -1066,7 +1073,7 @@ static void repaintmenu(WINDOW *wmenu, menu *mp)
                && (!strstr(p->name, "fuZ")) 
                && (!strstr(p->name, "f-k")) 
                && (!strstr(p->name, "seL")))
-                setcolor(wmenu, INPUTBOXCOLOR);
+                setcolor(wmenu, SUBMENUR_2COLOR);
             else
                 setcolor(wmenu, SUBMENUCOLOR);
             if (locked)
@@ -1081,27 +1088,27 @@ static void repaintmenu(WINDOW *wmenu, menu *mp)
         else
         {
             if ((p->name[1] == 'X') && (datfname[strlen(datfname)-3] == '$'))
-                setcolor(wmenu, INPUTBOXCOLOR);
+                setcolor(wmenu, SUBMENUR_2COLOR);
             else
                 setcolor(wmenu, SUBMENUCOLOR);
             if (safe && (strstr(p->name, "Mod") || strstr(p->name, "Tex")))
-                setcolor(wmenu, INPUTBOXCOLOR);
+                setcolor(wmenu, SUBMENUR_2COLOR);
 #if !defined(__unix) || defined(__DJGPP__)
             if (safe && strstr(p->name, "cod"))
-                	setcolor(wmenu, INPUTBOXCOLOR);
+                	setcolor(wmenu, SUBMENUR_2COLOR);
 #endif
         }
         if (!has_colors())
         {
             if (strstr(p->name, "Col"))
-                	setcolor(wmenu, INPUTBOXCOLOR);
+                	setcolor(wmenu, SUBMENUR_2COLOR);
         }
         if (p->name[0] == 'R')
         {
             if (filtered)
                 setcolor(wmenu, SUBMENUCOLOR);
             else
-                setcolor(wmenu, INPUTBOXCOLOR);
+                setcolor(wmenu, SUBMENUR_2COLOR);
         }
         mvwaddstr(wmenu, i + 1, 2, p->name);
     }
@@ -1502,7 +1509,7 @@ void domenu(menu *mp)
                        && (!strstr(mp[old].name, "fuZ"))
                        && (!strstr(mp[old].name, "f-k"))
                        && (!strstr(mp[old].name, "seL")))
-                        setcolor(wmenu, INPUTBOXCOLOR);
+                        setcolor(wmenu, SUBMENUR_2COLOR);
                     else
                         setcolor(wmenu, SUBMENUCOLOR);
                     if (locked)
@@ -1518,19 +1525,19 @@ void domenu(menu *mp)
                 {
                     if ((mp[old].name[1] == 'X') 
                     && (datfname[strlen(datfname)-3] == '$'))
-                        setcolor(wmenu, INPUTBOXCOLOR);
+                        setcolor(wmenu, SUBMENUR_2COLOR);
                     else
                         setcolor(wmenu, SUBMENUCOLOR);
                     if (safe && (strstr(mp[old].name, "Mod")
                                  || strstr(mp[old].name, "Tex")))
-                        setcolor(wmenu, INPUTBOXCOLOR);
+                        setcolor(wmenu, SUBMENUR_2COLOR);
                 }
                 if (mp[old].name[0] == 'R')
                 {
                     if (filtered)
                         setcolor(wmenu, SUBMENUCOLOR);
                     else
-                        setcolor(wmenu, INPUTBOXCOLOR);
+                        setcolor(wmenu, SUBMENUR_2COLOR);
                 }
                 mvwaddstr(wmenu, old + 1, 1, 
                           prepad(padstr(mp[old].name, barlen - 1), 1));
