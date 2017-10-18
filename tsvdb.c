@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 5.4.0 2017/10/17 $
+ * $Id: tcsvdb.c,v 5.5.0 2017/10/18 $
  */
 
-#define VERSION "5.4"
+#define VERSION "5.5"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -1400,12 +1400,20 @@ void errormsg(char *msg)
 
 void statusmsg(char *msg)
 {
-#ifdef XCURSES
-    register int i, j;
+    mvwaddstr(wstatus, 1, 2, padstr(msg, bw - 3));
+    wrefresh(wstatus);
+}
 
+void statcurrmsg(char *msg)
+{
+#ifdef XCURSES
+    int i, j;
+
+    wmove(wstatus, 1, 2);
     j = strlen(msg);
-    for (i=0; i<MIN(j,bw-3); i++)
-         mvwaddch(wstatus, 1, i+2, (unsigned char)(msg[i]));
+    for (i=0; i<MIN(j,bw-2); i++)
+         waddch(wstatus, (unsigned char)msg[i]);
+    wclrtoeol(wstatus);
 #else
     mvwaddstr(wstatus, 1, 2, padstr(msg, bw - 3));
 #endif
@@ -3507,7 +3515,7 @@ void statusln(void)
     mvwaddstr(wstatus, 0, 0, padstr(" ", 20));
     mvwaddstr(wstatus, 0, 0, buf);
     mvwaddstr(wstatus, 1, 0, ">");
-    statusmsg(rows[curr]);
+    statcurrmsg(rows[curr]);
     touchwin(wstatus);
     wrefresh(wstatus);
 }
