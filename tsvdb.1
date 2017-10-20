@@ -6,6 +6,7 @@ tsvdb \- Tab separated values database
 .SH SYNOPSIS
 .B tsvdb
 [\fI-r\fR|\fIx\fR|\fIy\fR|\fIz\fR|\fIq\fR|\fIa\fR|\fIt\fR|\fIb\fR|\fIf\fR|\fIh\fR|\fIv\fR]
+[\fI-c\fR{\fI0\fR..\fI5\fR]}]
 [\fI-n\fR{\fIrow\fR[\fI:col\fR]}]
 [\fI-\fR[[\fIs\fR|\fIS\fR]|[\fIl\fR|\fIL\fR]]{\fIfstr\fR}]
 [\fI-d\fR{[\fI,\fR|\fI;\fR]}] [\fItsvdatafile\fR]
@@ -42,6 +43,8 @@ Set auto-seek off.
 Go to first record.
 .IP \fB\-b\fR
 Go bottom.
+.IP \fB\-c\ 0..5\fR
+Select color set.
 .IP \fB\-n\ recno[:col]\fR
 Go to the n'th row (and column).
 .IP \fB\-s\ fstr\fR
