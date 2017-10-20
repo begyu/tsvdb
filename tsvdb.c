@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 5.6.0 2017/10/18 $
+ * $Id: tcsvdb.c,v 5.7.0 2017/10/20 $
  */
 
-#define VERSION "5.6"
+#define VERSION "5.7"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -6802,6 +6802,7 @@ void selected(void)
     register int i, j;
     FILE *fp;
     char *p;
+    char colpar[] = " -c? ";
     char tmpfname[MAXSTRLEN];
     BUFDEF;
 
@@ -6843,7 +6844,8 @@ void selected(void)
         p = buf;
         p += strlen(buf);
         (void)itoa(d_y, p, 10);
-        strcat(buf, " ");
+        colpar[3] = (char)(colorset+'0');
+        strcat(buf, colpar);
         strcat(buf, tmpfname);
         system(buf);
         reset_prog_mode();
@@ -10263,7 +10265,7 @@ void fuzzy(void)
 
 int inhlp(void)
 {
-#define HLPLINES 203
+#define HLPLINES 204
 char *tsvhlp[HLPLINES+1] = {
 "G\tKEY__________\tFUNC_______________________________",
 "0\t           1:\tGeneral",
@@ -10447,6 +10449,7 @@ char *tsvhlp[HLPLINES+1] = {
 "4\t^Y\tdelete line",
 "5\t-a\tset autoseek off",
 "5\t-b\tgo bottom",
+"5\t-c <0..5>\tset colors",
 "5\t-d <,|;>\tset separator to ',' or ';'",
 "5\t-e\tedit as text",
 "5\t-f\tset function keys on",
@@ -10492,6 +10495,7 @@ void prghelp(void)
 #ifndef XCURSES
     char *p = NULL;
 #endif
+    char colpar[] = "-c? ";
     char cmd[MAXSTRLEN+1];
     BUFDEF;
 
@@ -10528,6 +10532,8 @@ void prghelp(void)
     (void)itoa(d_y, p, 10);
 #endif
     strcat(cmd, " -tyzq ");
+    colpar[2] = (char)(colorset+'0');
+    strcat(cmd, colpar);
     strcat(cmd, buf);
     system(cmd);
     reset_prog_mode();
