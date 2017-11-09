@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 5.7.0 2017/10/20 $
+ * $Id: tcsvdb.c,v 5.8.0 2017/11/09 $
  */
 
-#define VERSION "5.7"
+#define VERSION "5.8"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -960,6 +960,30 @@ static void initcolo5(void)
 #endif
 }
 
+static void initcolo6(void)
+{
+#ifdef A_COLOR
+    if (has_colors())
+        start_color();
+    init_pair(TITLECOLOR       & ~A_ATTR, COLOR_BLUE, COLOR_MAGENTA);      
+    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_GREEN, COLOR_MAGENTA);    
+    init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_YELLOW, COLOR_YELLOW);
+    init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_GREEN, COLOR_YELLOW);    
+    init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);   
+    init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_BLUE, COLOR_YELLOW);   
+    init_pair(BODYCOLOR        & ~A_ATTR, COLOR_BLUE, COLOR_GREEN);      
+    init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_MAGENTA, COLOR_MAGENTA);   
+    init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_BLUE, COLOR_CYAN);
+    init_pair(EDITBOXCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_RED);
+    init_pair(CURRCOLOR        & ~A_ATTR, COLOR_GREEN, COLOR_BLUE);
+    init_pair(CURRREVCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
+    init_pair(MARKCOLOR        & ~A_ATTR, COLOR_RED, COLOR_GREEN);
+    init_pair(FSTRCOLOR        & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);
+    init_pair(EDITBOXTOOCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
+    init_pair(INFOCOLOR        & ~A_ATTR, COLOR_RED, COLOR_MAGENTA);
+#endif
+}
+
 
 static void setcolor(WINDOW *win, chtype color)
 {
@@ -1730,6 +1754,9 @@ void init()
         break;
     case 5:
         initcolo5();
+        break;
+    case 6:
+        initcolo6();
     }
 
     origy = LINES;
@@ -4517,6 +4544,12 @@ int selbox(char *msg, char **butts, int b)
         case KEY_END:
             b = bmax;
             break;
+        case ALT_P:
+            changecolor();
+            colorbox(wdmsg, INPUTBOXCOLOR, 1);
+            mvwaddstr(wdmsg, 1, 2, msg);
+            wrefresh(wdmsg);
+            break;
 
 #ifdef PDCURSES
         case KEY_MOUSE:
@@ -4547,6 +4580,10 @@ int selbox(char *msg, char **butts, int b)
                     }
                 }
             }
+            if (MOUSE_WHEEL_UP)
+                b = b > 1 ? b-1 : bmax;
+            else if (MOUSE_WHEEL_DOWN)
+                b = b < bmax ? b+1 : 1;
             break;
 #endif
 
@@ -5295,8 +5332,24 @@ int strsplit(const char *str, char *parts[], const char *delimiter)
 {
     char *pch;
     int i = 0;
-    char *tmp = strdup(str);
+    int j, k;
+    //char *tmp = strdup(str);
+    char tmp[MAXSTRLEN+1];
 
+    strcpy(tmp, str);
+    for (j=0; tmp[j]; j++)
+    {
+        if (tmp[j] == delimiter[0])
+        {
+           j++;
+           if (tmp[j] == delimiter[0])
+           {
+               for (k=strlen(tmp)+1; k>j; k--)
+                    tmp[k] = tmp[k-1];
+               tmp[j] = ' ';
+           }
+        }
+    }
     pch = strtok(tmp, delimiter);
     parts[i++] = strdup(pch);
     while (pch)
@@ -5307,7 +5360,7 @@ int strsplit(const char *str, char *parts[], const char *delimiter)
     }
     if (NULL == pch)
         parts[i++] = strdup(" ");
-    free(tmp);
+    //free(tmp);
     free(pch);
     return i;
 }
@@ -6639,10 +6692,10 @@ int selectfield(int n)
 
     while (!exit)
     {
-        setcolor(wmsg, SUBMENUCOLOR);
+        setcolor(wmsg, INPUTBOXCOLOR);
         for (j=0; j<=n; j++)
             mvwaddstr(wmsg, j+1, 1, stru[j]);
-        setcolor(wmsg, SUBMENUREVCOLOR);
+        setcolor(wmsg, SUBMENUCOLOR);
         mvwaddstr(wmsg, i+1, 1, stru[i]);
         wrefresh(wmsg);
         j = i;
@@ -6669,6 +6722,10 @@ int selectfield(int n)
         case KEY_ENTER:
         case '\n':
             exit = TRUE;
+            break;
+        case ALT_P:
+            changecolor();
+            colorbox(wmsg, SUBMENUCOLOR, 1);
             break;
 #ifdef PDCURSES
         case KEY_MOUSE:
@@ -8354,11 +8411,19 @@ void golen(bool ismax)
     register int i, j, k;
     unsigned int width;
     int x = curr;
+    char *fieldbuf[MAXCOLS+1];
+    int col = selectfield(cols);
 
     width = ismax ? 0 : MAXSTRLEN;
     for (i=0; i<reccnt; i++)
     {
-        j = strlen(rows[i]);
+        if (col == -1)
+            j = strlen(rows[i]);
+        else
+        {
+            strsplit(rows[i], fieldbuf, ssep);
+            j = strlen(fieldbuf[col]);
+        }
         k = width;
         width = ismax ? MAX(width, j) : MIN(width, j);
         if (width != k)
@@ -9031,6 +9096,9 @@ void resize(int dx, int dy)
         break;
     case 5:
         initcolo5();
+        break;
+    case 6:
+        initcolo6();
     }
 #endif
     d_y = (y-LINES);
@@ -10265,7 +10333,11 @@ void fuzzy(void)
 
 int inhlp(void)
 {
+#ifdef XCURSES
+#define HLPLINES 203
+#else
 #define HLPLINES 204
+#endif
 char *tsvhlp[HLPLINES+1] = {
 "G\tKEY__________\tFUNC_______________________________",
 "0\t           1:\tGeneral",
@@ -10449,7 +10521,7 @@ char *tsvhlp[HLPLINES+1] = {
 "4\t^Y\tdelete line",
 "5\t-a\tset autoseek off",
 "5\t-b\tgo bottom",
-"5\t-c <0..5>\tset colors",
+"5\t-c <0..6>\tset colors",
 "5\t-d <,|;>\tset separator to ',' or ';'",
 "5\t-e\tedit as text",
 "5\t-f\tset function keys on",
@@ -10466,7 +10538,9 @@ char *tsvhlp[HLPLINES+1] = {
 "5\t-S <str>\tselect",
 "5\t-t\tgo top",
 "5\t-v\tversion",
+#ifndef XCURSES
 "5\t-w\tset screen height + or -rows",
+#endif
 "5\t-x\tmixed mode",
 "5\t-X\tRO, but edit only current",
 "5\t-y\tlocked mode",
@@ -11006,7 +11080,7 @@ static char *hlpstrs[] =
     "-a        Autoseek off",
     "-t        Top",
     "-b        Bottom",
-    "-c <0-5>  Select color set",
+    "-c <0-6>  Select color set",
     "-n <num>  Go to num'th row (or row:col)",
     "-s <str>  Search str",
     "          or -s \"(regexp)\"",
@@ -11195,7 +11269,7 @@ void changecolor(void)
     colorset++;
     switch (colorset)
     {
-    case 6:
+    case 7:
         colorset = 0;
     case 0:
         initcolo0();
@@ -11214,6 +11288,9 @@ void changecolor(void)
         break;
     case 5:
         initcolo5();
+        break;
+    case 6:
+        initcolo6();
     }
     clear();
     refresh();
@@ -11378,10 +11455,10 @@ typedef int (*LDF)(char *);
               if (isdigit(optarg[0]))
               {
                   colorset = atoi(optarg);
-                  if (colorset < 0 || colorset > 5)
+                  if (colorset < 0 || colorset > 6)
                   {
                       colorset = 0;
-                      fprintf(stderr, "Invalid color code! (valid: 0-5)\n");
+                      fprintf(stderr, "Invalid color code! (valid: 0-6)\n");
                   }
                   else
                       break;
