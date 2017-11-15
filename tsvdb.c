@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 5.8.0 2017/11/09 $
+ * $Id: tcsvdb.c,v 5.9.0 2017/11/15 $
  */
 
-#define VERSION "5.8"
+#define VERSION "5.9"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -735,8 +735,7 @@ void rmerror(void);
 # define MARKCOLOR        (13 | A_BOLD)
 # define FSTRCOLOR        (14 | A_BOLD)
 # define EDITBOXTOOCOLOR  (15 | A_BOLD)
-# define EDITBOXT_2COLOR  (16)
-# define INFOCOLOR        (17 | A_BOLD)
+# define INFOCOLOR        (16 | A_BOLD)
 #else
 # define TITLECOLOR       0       /* color pair indices */
 # define MAINMENUCOLOR    (A_BOLD)
@@ -753,7 +752,6 @@ void rmerror(void);
 # define MARKCOLOR        (A_BOLD)
 # define FSTRCOLOR        (A_BOLD)
 # define EDITBOXTOOCOLOR  (A_BOLD)
-# define EDITBOXT_2COLOR  0
 # define INFOCOLOR        (A_BOLD)
 #endif
 
@@ -832,7 +830,7 @@ static void initcolo0(void)
     init_pair(CURRREVCOLOR     & ~A_ATTR, COLOR_BLACK, COLOR_WHITE);
     init_pair(MARKCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
     init_pair(FSTRCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
-    init_pair(EDITBOXT_2COLOR  & ~A_ATTR, COLOR_WHITE, COLOR_WHITE);
+    init_pair(EDITBOXTOOCOLOR  & ~A_ATTR, COLOR_WHITE, COLOR_WHITE);
     init_pair(INFOCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
 #endif
 }
@@ -845,21 +843,21 @@ static void initcolor(void)
 
     /* foreground, background */
 
-    init_pair(TITLECOLOR       & ~A_ATTR, COLOR_BLACK, COLOR_CYAN);      
-    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_WHITE, COLOR_CYAN);    
+    init_pair(TITLECOLOR       & ~A_ATTR, COLOR_BLACK, COLOR_CYAN);
+    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_WHITE, COLOR_CYAN);
     init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
-    init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_WHITE, COLOR_CYAN);    
-    init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);   
+    init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_WHITE, COLOR_CYAN);
+    init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
     init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_BLUE, COLOR_CYAN);
-    init_pair(BODYCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLUE);      
-    init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_WHITE, COLOR_CYAN);   
+    init_pair(BODYCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLUE);
+    init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_WHITE, COLOR_CYAN);
     init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_BLUE, COLOR_CYAN);
-    init_pair(EDITBOXCOLOR     & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
+    init_pair(EDITBOXCOLOR     & ~A_ATTR, COLOR_WHITE, COLOR_BLUE);
     init_pair(CURRCOLOR        & ~A_ATTR, COLOR_BLACK, COLOR_MAGENTA);
     init_pair(CURRREVCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);
     init_pair(MARKCOLOR        & ~A_ATTR, COLOR_GREEN, COLOR_BLUE);
     init_pair(FSTRCOLOR        & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
-    init_pair(EDITBOXTOOCOLOR  & ~A_ATTR, COLOR_WHITE, COLOR_CYAN);
+    init_pair(EDITBOXTOOCOLOR  & ~A_ATTR, COLOR_WHITE, COLOR_GREEN);
     init_pair(INFOCOLOR        & ~A_ATTR, COLOR_GREEN, COLOR_CYAN);
 #endif
 }
@@ -869,14 +867,14 @@ static void initcolo2(void)
 #ifdef A_COLOR
     if (has_colors())
         start_color();
-    init_pair(TITLECOLOR       & ~A_ATTR, COLOR_BLACK, COLOR_GREEN);      
-    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_WHITE, COLOR_GREEN);    
+    init_pair(TITLECOLOR       & ~A_ATTR, COLOR_BLACK, COLOR_GREEN);
+    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_WHITE, COLOR_GREEN);
     init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
-    init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_WHITE, COLOR_CYAN);    
-    init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);   
+    init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_WHITE, COLOR_CYAN);
+    init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
     init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_BLACK, COLOR_CYAN);
-    init_pair(BODYCOLOR        & ~A_ATTR, COLOR_RED, COLOR_YELLOW);      
-    init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_WHITE, COLOR_GREEN);   
+    init_pair(BODYCOLOR        & ~A_ATTR, COLOR_RED, COLOR_YELLOW);
+    init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_WHITE, COLOR_GREEN);
     init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_RED, COLOR_WHITE);
     init_pair(EDITBOXCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);
     init_pair(CURRCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLUE);
@@ -893,14 +891,14 @@ static void initcolo3(void)
 #ifdef A_COLOR
     if (has_colors())
         start_color();
-    init_pair(TITLECOLOR       & ~A_ATTR, COLOR_MAGENTA, COLOR_YELLOW);      
-    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_GREEN, COLOR_YELLOW);    
+    init_pair(TITLECOLOR       & ~A_ATTR, COLOR_MAGENTA, COLOR_YELLOW);
+    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_BLUE, COLOR_YELLOW);
     init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
-    init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_CYAN, COLOR_YELLOW);    
-    init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);   
-    init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_BLUE, COLOR_YELLOW);
-    init_pair(BODYCOLOR        & ~A_ATTR, COLOR_BLACK, COLOR_WHITE);      
-    init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_BLUE, COLOR_YELLOW);   
+    init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_BLUE, COLOR_YELLOW);
+    init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
+    init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_RED, COLOR_YELLOW);
+    init_pair(BODYCOLOR        & ~A_ATTR, COLOR_BLACK, COLOR_WHITE);
+    init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_BLUE, COLOR_YELLOW);
     init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_BLUE, COLOR_GREEN);
     init_pair(EDITBOXCOLOR     & ~A_ATTR, COLOR_RED, COLOR_WHITE);
     init_pair(CURRCOLOR        & ~A_ATTR, COLOR_CYAN, COLOR_BLUE);
@@ -917,14 +915,14 @@ static void initcolo4(void)
 #ifdef A_COLOR
     if (has_colors())
         start_color();
-    init_pair(TITLECOLOR       & ~A_ATTR, COLOR_WHITE, COLOR_BLUE);      
-    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_GREEN, COLOR_BLUE);    
+    init_pair(TITLECOLOR       & ~A_ATTR, COLOR_WHITE, COLOR_BLUE);
+    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_GREEN, COLOR_BLUE);
     init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);
-    init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_GREEN, COLOR_CYAN);    
-    init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);   
-    init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_BLUE, COLOR_CYAN);
-    init_pair(BODYCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);      
-    init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_WHITE, COLOR_BLUE);   
+    init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_GREEN, COLOR_BLUE);
+    init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);
+    init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_BLACK, COLOR_BLUE);
+    init_pair(BODYCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
+    init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_WHITE, COLOR_BLUE);
     init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_BLUE, COLOR_YELLOW);
     init_pair(EDITBOXCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);
     init_pair(CURRCOLOR        & ~A_ATTR, COLOR_GREEN, COLOR_BLUE);
@@ -941,14 +939,14 @@ static void initcolo5(void)
 #ifdef A_COLOR
     if (has_colors())
         start_color();
-    init_pair(TITLECOLOR       & ~A_ATTR, COLOR_BLUE, COLOR_CYAN);      
-    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_GREEN, COLOR_CYAN);    
+    init_pair(TITLECOLOR       & ~A_ATTR, COLOR_BLUE, COLOR_CYAN);
+    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_GREEN, COLOR_CYAN);
     init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_YELLOW, COLOR_BLACK);
-    init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_GREEN, COLOR_BLUE);    
-    init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);   
-    init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_RED, COLOR_BLUE);   
-    init_pair(BODYCOLOR        & ~A_ATTR, COLOR_BLACK, COLOR_CYAN);      
-    init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_WHITE, COLOR_CYAN);   
+    init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_GREEN, COLOR_BLUE);
+    init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);
+    init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_RED, COLOR_BLUE);
+    init_pair(BODYCOLOR        & ~A_ATTR, COLOR_BLACK, COLOR_CYAN);
+    init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_WHITE, COLOR_CYAN);
     init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_BLUE, COLOR_GREEN);
     init_pair(EDITBOXCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);
     init_pair(CURRCOLOR        & ~A_ATTR, COLOR_GREEN, COLOR_BLUE);
@@ -965,14 +963,14 @@ static void initcolo6(void)
 #ifdef A_COLOR
     if (has_colors())
         start_color();
-    init_pair(TITLECOLOR       & ~A_ATTR, COLOR_BLUE, COLOR_MAGENTA);      
-    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_GREEN, COLOR_MAGENTA);    
-    init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_YELLOW, COLOR_YELLOW);
-    init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_GREEN, COLOR_YELLOW);    
-    init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);   
-    init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_BLUE, COLOR_YELLOW);   
-    init_pair(BODYCOLOR        & ~A_ATTR, COLOR_BLUE, COLOR_GREEN);      
-    init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_MAGENTA, COLOR_MAGENTA);   
+    init_pair(TITLECOLOR       & ~A_ATTR, COLOR_BLUE, COLOR_MAGENTA);
+    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_GREEN, COLOR_MAGENTA);
+    init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);
+    init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_GREEN, COLOR_MAGENTA);
+    init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
+    init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_BLUE, COLOR_YELLOW);
+    init_pair(BODYCOLOR        & ~A_ATTR, COLOR_BLUE, COLOR_GREEN);
+    init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_BLUE, COLOR_MAGENTA);
     init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_BLUE, COLOR_CYAN);
     init_pair(EDITBOXCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_RED);
     init_pair(CURRCOLOR        & ~A_ATTR, COLOR_GREEN, COLOR_BLUE);
@@ -980,7 +978,7 @@ static void initcolo6(void)
     init_pair(MARKCOLOR        & ~A_ATTR, COLOR_RED, COLOR_GREEN);
     init_pair(FSTRCOLOR        & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);
     init_pair(EDITBOXTOOCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
-    init_pair(INFOCOLOR        & ~A_ATTR, COLOR_RED, COLOR_MAGENTA);
+    init_pair(INFOCOLOR        & ~A_ATTR, COLOR_BLUE, COLOR_MAGENTA);
 #endif
 }
 
@@ -2897,7 +2895,7 @@ int hstrcmp(const char *s1, const char *s2)
     char e2[MAXSTRLEN];
 #define MAXCH 60
     char abc[]="Aµ BCCDDE‚FGGHIÖˇJKLLMNNOŕ˘™”Š‹PQRSSTTUéŁšëűVWXYZZ[\\]^_`„";
-    char abd[]="AAABCDEFGGGHIJKLLLMNOPQRSTTTUUUUVWXYZabcccddddefghijklmnopA";
+    char abd[]="AAABCDEFGGGHIJKLLLMNOPQRSTTTUUUUVWXYZabcccddddefghijklmnopqA";
 
     if (hunsort == FALSE)
     {
@@ -2909,6 +2907,14 @@ int hstrcmp(const char *s1, const char *s2)
     }
 
     i = j = 0;
+    c = toupper(s1[0]);
+    c1 = toupper(s1[1]);
+    if (c == 'D' && c1 == 'R' && s1[2] == '.')
+    {
+        i = 3;
+        while (s1[i] == ' ')
+            i++;
+    }
     do
     {
         c1 = s1[i];
@@ -3032,6 +3038,14 @@ int hstrcmp(const char *s1, const char *s2)
     } while (c1 != 0);
 
     i = j = 0;
+    c = toupper(s2[0]);
+    c1 = toupper(s2[1]);
+    if (c == 'D' && c1 == 'R' && s2[2] == '.')
+    {
+        i = 3;
+        while (s1[i] == ' ')
+            i++;
+    }
     do
     {
         c1 = s2[i];
