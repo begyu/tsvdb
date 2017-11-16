@@ -11417,12 +11417,9 @@ typedef int (*LDF)(char *);
               {
                   strcat(fstr, ")");
               }
-              if (c == 'S')
-              {
-                  strncpy(regstr, fstr, MAXFLEN);
-                  unkeys[2] = 'l';
-                  unkeys[3] = '\0';
-              }
+              strncpy(regstr, fstr, MAXFLEN);
+              unkeys[4] = '\n';
+              unkeys[5] = '\n';
           }
           else
           {
