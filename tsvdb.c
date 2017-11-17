@@ -893,7 +893,7 @@ static void initcolo3(void)
         start_color();
     init_pair(TITLECOLOR       & ~A_ATTR, COLOR_MAGENTA, COLOR_YELLOW);
     init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_BLUE, COLOR_YELLOW);
-    init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
+    init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_YELLOW, COLOR_BLACK);
     init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_BLUE, COLOR_YELLOW);
     init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
     init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_RED, COLOR_YELLOW);
@@ -901,7 +901,7 @@ static void initcolo3(void)
     init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_BLUE, COLOR_YELLOW);
     init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_BLUE, COLOR_GREEN);
     init_pair(EDITBOXCOLOR     & ~A_ATTR, COLOR_RED, COLOR_WHITE);
-    init_pair(CURRCOLOR        & ~A_ATTR, COLOR_CYAN, COLOR_BLUE);
+    init_pair(CURRCOLOR        & ~A_ATTR, COLOR_CYAN, COLOR_BLACK);
     init_pair(CURRREVCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);
     init_pair(MARKCOLOR        & ~A_ATTR, COLOR_MAGENTA, COLOR_WHITE);
     init_pair(FSTRCOLOR        & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
@@ -925,8 +925,8 @@ static void initcolo4(void)
     init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_WHITE, COLOR_BLUE);
     init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_BLUE, COLOR_YELLOW);
     init_pair(EDITBOXCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);
-    init_pair(CURRCOLOR        & ~A_ATTR, COLOR_GREEN, COLOR_BLUE);
-    init_pair(CURRREVCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
+    init_pair(CURRCOLOR        & ~A_ATTR, COLOR_GREEN, COLOR_YELLOW);
+    init_pair(CURRREVCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
     init_pair(MARKCOLOR        & ~A_ATTR, COLOR_CYAN, COLOR_BLACK);
     init_pair(FSTRCOLOR        & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
     init_pair(EDITBOXTOOCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
@@ -965,7 +965,7 @@ static void initcolo6(void)
         start_color();
     init_pair(TITLECOLOR       & ~A_ATTR, COLOR_BLUE, COLOR_MAGENTA);
     init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_GREEN, COLOR_MAGENTA);
-    init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);
+    init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
     init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_GREEN, COLOR_MAGENTA);
     init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
     init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_BLUE, COLOR_MAGENTA);
@@ -974,7 +974,7 @@ static void initcolo6(void)
     init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_BLUE, COLOR_CYAN);
     init_pair(EDITBOXCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_RED);
     init_pair(CURRCOLOR        & ~A_ATTR, COLOR_GREEN, COLOR_BLUE);
-    init_pair(CURRREVCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
+    init_pair(CURRREVCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
     init_pair(MARKCOLOR        & ~A_ATTR, COLOR_RED, COLOR_GREEN);
     init_pair(FSTRCOLOR        & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);
     init_pair(EDITBOXTOOCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
@@ -989,7 +989,7 @@ static void initcolo7(void)
         start_color();
     init_pair(TITLECOLOR       & ~A_ATTR, COLOR_WHITE, COLOR_BLUE);
     init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_CYAN, COLOR_BLUE);
-    init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
+    init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
     init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_CYAN, COLOR_BLUE);
     init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
     init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_BLACK, COLOR_BLUE);
