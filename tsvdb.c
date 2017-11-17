@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 5.9.0 2017/11/15 $
+ * $Id: tcsvdb.c,v 6.0.0 2017/11/17 $
  */
 
-#define VERSION "5.9"
+#define VERSION "6.0"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -982,6 +982,30 @@ static void initcolo6(void)
 #endif
 }
 
+static void initcolo7(void)
+{
+#ifdef A_COLOR
+    if (has_colors())
+        start_color();
+    init_pair(TITLECOLOR       & ~A_ATTR, COLOR_WHITE, COLOR_BLUE);
+    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_CYAN, COLOR_BLUE);
+    init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
+    init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_CYAN, COLOR_BLUE);
+    init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
+    init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_BLACK, COLOR_BLUE);
+    init_pair(BODYCOLOR        & ~A_ATTR, COLOR_GREEN, COLOR_BLACK);
+    init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_GREEN, COLOR_BLUE);
+    init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_WHITE, COLOR_BLUE);
+    init_pair(EDITBOXCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
+    init_pair(CURRCOLOR        & ~A_ATTR, COLOR_CYAN, COLOR_GREEN);
+    init_pair(CURRREVCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
+    init_pair(MARKCOLOR        & ~A_ATTR, COLOR_RED, COLOR_BLACK);
+    init_pair(FSTRCOLOR        & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
+    init_pair(EDITBOXTOOCOLOR  & ~A_ATTR, COLOR_GREEN, COLOR_BLACK);
+    init_pair(INFOCOLOR        & ~A_ATTR, COLOR_RED, COLOR_BLUE);
+#endif
+}
+
 
 static void setcolor(WINDOW *win, chtype color)
 {
@@ -1755,6 +1779,9 @@ void init()
         break;
     case 6:
         initcolo6();
+        break;
+    case 7:
+        initcolo7();
     }
 
     origy = LINES;
@@ -9113,6 +9140,9 @@ void resize(int dx, int dy)
         break;
     case 6:
         initcolo6();
+        break;
+    case 7:
+        initcolo7();
     }
 #endif
     d_y = (y-LINES);
@@ -10535,7 +10565,7 @@ char *tsvhlp[HLPLINES+1] = {
 "4\t^Y\tdelete line",
 "5\t-a\tset autoseek off",
 "5\t-b\tgo bottom",
-"5\t-c <0..6>\tset colors",
+"5\t-c <0..7>\tset colors",
 "5\t-d <,|;>\tset separator to ',' or ';'",
 "5\t-e\tedit as text",
 "5\t-f\tset function keys on",
@@ -11283,7 +11313,7 @@ void changecolor(void)
     colorset++;
     switch (colorset)
     {
-    case 7:
+    case 8:
         colorset = 0;
     case 0:
         initcolo0();
@@ -11305,6 +11335,9 @@ void changecolor(void)
         break;
     case 6:
         initcolo6();
+        break;
+    case 7:
+        initcolo7();
     }
     clear();
     refresh();
@@ -11466,10 +11499,10 @@ typedef int (*LDF)(char *);
               if (isdigit(optarg[0]))
               {
                   colorset = atoi(optarg);
-                  if (colorset < 0 || colorset > 6)
+                  if (colorset < 0 || colorset > 7)
                   {
                       colorset = 0;
-                      fprintf(stderr, "Invalid color code! (valid: 0-6)\n");
+                      fprintf(stderr, "Invalid color code! (valid: 0-7)\n");
                   }
                   else
                       break;
