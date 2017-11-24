@@ -6,10 +6,10 @@ tsvdb \- Tab separated values database
 .SH SYNOPSIS
 .B tsvdb
 [\fI-r\fR|\fIx\fR|\fIy\fR|\fIz\fR|\fIq\fR|\fIa\fR|\fIt\fR|\fIb\fR|\fIf\fR|\fIh\fR|\fIv\fR]
-[\fI-c\fR{\fI0\fR..\fI5\fR]}]
+[\fI-c\fR{\fI0\fR..\fI6\fR]}]
 [\fI-n\fR{\fIrow\fR[\fI:col\fR]}]
-[\fI-\fR[[\fIs\fR|\fIS\fR]|[\fIl\fR|\fIL\fR]]{\fIfstr\fR}]
-[\fI-d\fR{[\fI,\fR|\fI;\fR]}] [\fItsvdatafile\fR]
+[\fI-\fR[[\fIs\fR|\fIS\fR|\fIi\fR]|[\fIl\fR|\fIL\fR]]{\fIfstr\fR}]
+[\fI-d\fR{[\fI,\fR|\fI;\fR]}] [\fIfile\fR]
 .br
 .br
 
@@ -43,16 +43,18 @@ Set auto-seek off.
 Go to first record.
 .IP \fB\-b\fR
 Go bottom.
-.IP \fB\-c\ 0..7\fR
+.IP \fB\-c\ 0..6\fR
 Select color set.
-.IP \fB\-n\ recno[:col]\fR
+.IP \fB\-n\ recno\fR[\fB:col\fR]
 Go to the n'th row (and column).
 .IP \fB\-s\ fstr\fR
 Go to the first occurence of fstr.
-.IP 	or	\fB\-s\ "(fstr)"\fR
+.IP 	or	\fB\-s\ (fstr)\fR
 	Search with Regular Expression.
 .IP 	or	\fB\-S\ fstr\fR
 	Select found.
+.IP \fB\-i\ fstr\fR
+Select inverted.
 .IP \fB\-l\ str\fR
 List of occurrences.
 .IP 	or	\fB\-L\ str\fR
