@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 6.0.0 2017/11/17 $
+ * $Id: tcsvdb.c,v 6.1.0 2017/11/24 $
  */
 
-#define VERSION "6.0"
+#define VERSION "6.1"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -518,6 +518,7 @@ static int sortpos = 0;
 static int stwopos = 0;
 static bool numsort = FALSE;
 static bool filtered = FALSE;
+static bool inversed = FALSE;
 static bool headspac = FALSE;
 static bool hunsort = FALSE;
 static bool insert = FALSE;
@@ -896,7 +897,7 @@ static void initcolo3(void)
     init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_YELLOW, COLOR_BLACK);
     init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_BLUE, COLOR_YELLOW);
     init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
-    init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_RED, COLOR_YELLOW);
+    init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_MAGENTA, COLOR_YELLOW);
     init_pair(BODYCOLOR        & ~A_ATTR, COLOR_BLACK, COLOR_WHITE);
     init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_BLUE, COLOR_YELLOW);
     init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_BLUE, COLOR_GREEN);
@@ -925,7 +926,7 @@ static void initcolo4(void)
     init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_WHITE, COLOR_BLUE);
     init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_BLUE, COLOR_YELLOW);
     init_pair(EDITBOXCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);
-    init_pair(CURRCOLOR        & ~A_ATTR, COLOR_GREEN, COLOR_YELLOW);
+    init_pair(CURRCOLOR        & ~A_ATTR, COLOR_BLUE, COLOR_YELLOW);
     init_pair(CURRREVCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
     init_pair(MARKCOLOR        & ~A_ATTR, COLOR_CYAN, COLOR_BLACK);
     init_pair(FSTRCOLOR        & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
@@ -939,14 +940,14 @@ static void initcolo5(void)
 #ifdef A_COLOR
     if (has_colors())
         start_color();
-    init_pair(TITLECOLOR       & ~A_ATTR, COLOR_BLUE, COLOR_CYAN);
-    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_GREEN, COLOR_CYAN);
+    init_pair(TITLECOLOR       & ~A_ATTR, COLOR_CYAN, COLOR_BLUE);
+    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_GREEN, COLOR_BLUE);
     init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_YELLOW, COLOR_BLACK);
     init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_GREEN, COLOR_BLUE);
     init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);
-    init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_RED, COLOR_BLUE);
+    init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_BLACK, COLOR_BLUE);
     init_pair(BODYCOLOR        & ~A_ATTR, COLOR_BLACK, COLOR_CYAN);
-    init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_WHITE, COLOR_CYAN);
+    init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_WHITE, COLOR_BLUE);
     init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_BLUE, COLOR_GREEN);
     init_pair(EDITBOXCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);
     init_pair(CURRCOLOR        & ~A_ATTR, COLOR_GREEN, COLOR_BLUE);
@@ -954,7 +955,7 @@ static void initcolo5(void)
     init_pair(MARKCOLOR        & ~A_ATTR, COLOR_RED, COLOR_CYAN);
     init_pair(FSTRCOLOR        & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
     init_pair(EDITBOXTOOCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
-    init_pair(INFOCOLOR        & ~A_ATTR, COLOR_BLUE, COLOR_CYAN);
+    init_pair(INFOCOLOR        & ~A_ATTR, COLOR_CYAN, COLOR_BLUE);
 #endif
 }
 
@@ -988,11 +989,11 @@ static void initcolo7(void)
     if (has_colors())
         start_color();
     init_pair(TITLECOLOR       & ~A_ATTR, COLOR_WHITE, COLOR_BLUE);
-    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_CYAN, COLOR_BLUE);
+    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_CYAN, COLOR_BLACK);
     init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
-    init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_CYAN, COLOR_BLUE);
+    init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_CYAN, COLOR_BLACK);
     init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
-    init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_BLACK, COLOR_BLUE);
+    init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_BLUE, COLOR_BLACK);
     init_pair(BODYCOLOR        & ~A_ATTR, COLOR_GREEN, COLOR_BLACK);
     init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_GREEN, COLOR_BLUE);
     init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_WHITE, COLOR_BLUE);
@@ -2922,6 +2923,7 @@ int hstrcmp(const char *s1, const char *s2)
     char e2[MAXSTRLEN];
 #define MAXCH 60
     char abc[]="Aµ BCCDDE‚FGGHIÖˇJKLLMNNOŕ˘™”Š‹PQRSSTTUéŁšëűVWXYZZ[\\]^_`„";
+    char abb[]="AÁáBCCDDEÉéFGGHIÍíJKLLMNNOÓóÖöŐőPQRSSTTUÚúÜüŰűVWXYZZ[\\]^_`Ä";
     char abd[]="AAABCDEFGGGHIJKLLLMNOPQRSTTTUUUUVWXYZabcccddddefghijklmnopqA";
 
     if (hunsort == FALSE)
@@ -2950,7 +2952,7 @@ int hstrcmp(const char *s1, const char *s2)
         c = c1;
         for (k=0; k<MAXCH; k++)
         {
-            if (c1 == abc[k])
+            if (c1 == abc[k] || c1 == abb[k])
             {
                 c = abd[k];
                 break;
@@ -3081,7 +3083,7 @@ int hstrcmp(const char *s1, const char *s2)
         c = c1;
         for (k=0; k<MAXCH; k++)
         {
-            if (c1 == abc[k])
+            if (c1 == abc[k] || c1 == abb[k])
             {
                 c = abd[k];
                 break;
@@ -3907,6 +3909,7 @@ int parsefile(char *fname)
                   lon[i][j] = 0;
         cols = 0;
         buf[0] = '\0';
+        msg(WSTR);
         while (!feof(fp))
         {
             fgets(buf, MAXSTRLEN, fp);
@@ -3968,6 +3971,7 @@ int parsefile(char *fname)
                 sep[i] += cnt[i];
             }
         }
+        msg(NULL);
         m = max4idx(sep);
         cols = col[m];
         switch (m)
@@ -4038,6 +4042,7 @@ int parsefile(char *fname)
         if ((fp = fopen(fname, "r")) != NULL)
         {
             i = 0;
+            msg(WSTR);
             while (!ateof)
             {
                 buf[0] = '\0';
@@ -4076,6 +4081,7 @@ int parsefile(char *fname)
                 else
                     ateof = TRUE;
             }
+            msg(NULL);
             reccnt = i;
             fseek(fp, 0L, SEEK_END);
             filesize = ftell(fp);
@@ -4230,6 +4236,7 @@ int loadfile(char *fname)
         }
         //fsetpos(fp, 0);
         i = 0;
+        msg(WSTR);
         while (!ateof)
         {
             buf[0] = '\0';
@@ -4256,6 +4263,7 @@ int loadfile(char *fname)
             else
                 ateof = TRUE;
         }
+        msg(NULL);
         reccnt = i;
         fseek(fp, 0L, SEEK_END);
         filesize = ftell(fp);
@@ -4305,6 +4313,7 @@ int getfile(char *fname)
         if ((p = strstr(fname, ".csv")) == NULL)
             	csv_f = TRUE;
         i = reccnt;
+        msg(WSTR);
         while (!ateof)
         {
             buf[0] = '\0';
@@ -4338,6 +4347,7 @@ int getfile(char *fname)
             else
                 ateof = TRUE;
         }
+        msg(NULL);
         reccnt = i;
         fclose(fp);
         rows[reccnt] = (char *)malloc(2);
@@ -4385,6 +4395,7 @@ int mergefile(char *fname)
             fclose(fp);
             return -1;
         }
+        msg(WSTR);
         while (!ateof)
         {
             buf[0] = '\0';
@@ -4425,6 +4436,7 @@ int mergefile(char *fname)
             else
                 ateof = TRUE;
         }
+        msg(NULL);
         fclose(fp);
         rows[reccnt] = (char *)malloc(2);
         strcpy(rows[reccnt], "\0");
@@ -4463,12 +4475,12 @@ void msg(char *msg)
         mvwaddstr(wmsgmsg, 1, 2, msg);
         wrefresh(wmsgmsg);
     }
-    else
-    {
-        delwin(wmsgmsg);
-        touchwin(wbody);
-        wrefresh(wbody);
-    }
+    else if (wmsgmsg != NULL)
+         {
+             delwin(wmsgmsg);
+             touchwin(wbody);
+             wrefresh(wbody);
+         }
 }
 
 int yesno(char *msg)
@@ -4784,6 +4796,7 @@ int copyfile(char *fname, char *str, bool head)
     {
         buf[0] = '\0';
         fgets(buf, MAXSTRLEN, fp);
+        msg(WSTR);
         while (!feof(fp))
         {
             if (head)
@@ -4797,6 +4810,7 @@ int copyfile(char *fname, char *str, bool head)
             if ((i = slre_match(str, buf, j, NULL, 1, 0)) > 0)
                  printf("%s", buf);
         }
+        msg(NULL);
         fclose(fp);
     }
     return 0;
@@ -10127,7 +10141,7 @@ void segregate(bool rev, bool column)
     if (filtered)
     {
         tmpdat.total = reccnt;
-        for (i=0, j=0; i<=reccnt; i++)
+        for (i=0, j=0; i<reccnt; i++)
         {
             if (rev)
             {
@@ -10151,11 +10165,12 @@ void segregate(bool rev, bool column)
         reccnt = j;
         curr = 0;
         field = 0;
-        edit();
+        if (inversed == FALSE)
+            edit();
         reccnt = tmpdat.total;
         for (i=0; i<j; i++)
             	tmpdat.ptr[tmpdat.idx[i]] = rows[i];
-        for (i=0; i<=reccnt; i++)
+        for (i=0; i<reccnt; i++)
         {
             rows[i] = tmpdat.ptr[i];
             flags[i] = tmpdat.flag[i];
@@ -10256,6 +10271,13 @@ void tsv_select(void)
     if (cry)
         	return;
 
+    if (inversed == TRUE)
+    {
+        segregate(FALSE, FALSE);
+        inversed = FALSE;
+        segregate(TRUE, FALSE);
+        return;
+    }
     i = selbox("Select", b, 1);
     switch (i)
     {
@@ -10378,9 +10400,9 @@ void fuzzy(void)
 int inhlp(void)
 {
 #ifdef XCURSES
-#define HLPLINES 203
-#else
 #define HLPLINES 204
+#else
+#define HLPLINES 205
 #endif
 char *tsvhlp[HLPLINES+1] = {
 "G\tKEY__________\tFUNC_______________________________",
@@ -10567,14 +10589,15 @@ char *tsvhlp[HLPLINES+1] = {
 "5\t-b\tgo bottom",
 "5\t-c <0..7>\tset colors",
 "5\t-d <,|;>\tset separator to ',' or ';'",
-"5\t-e\tedit as text",
+"5\t-e <file>\tedit as text",
 "5\t-f\tset function keys on",
 "5\t-F\tf-keys on, hide bar",
 "5\t-h\thelp",
+"5\t-i <str>\tselect inverted",
 "5\t-l <str>\tlist str found",
 "5\t-L <str>\tlist with header",
 "5\t-n <n>[:c]\tgo to n'th row (c column)",
-"5\t-p\tparse file",
+"5\t-p <file>\tparse file",
 "5\t-q\tquit on",
 "5\t-r\tread-only mode",
 "5\t-s <str>\tsearch str",
@@ -11124,13 +11147,12 @@ static char *hlpstrs[] =
     "-a        Autoseek off",
     "-t        Top",
     "-b        Bottom",
-    "-c <0-6>  Select color set",
+    "-c <0-7>  Select color set",
     "-n <num>  Go to num'th row (or row:col)",
-    "-s <str>  Search str",
-    "          or -s \"(regexp)\"",
-    "          or -S to select",
-    "-l <str>  List str found",
-    "          or '-L' with header",
+    "-s <str>  Search str (or -s \"(regexp)\")",
+    "-S <str>  Select all equal",
+    "-i <str>  Select not equal",
+    "-l <str>  List str found ('-L' with header)",
     "-d <,|;>  Set separator to ',' or ';'",
 #ifndef XCURSES
     "-w <num>  Set scr height + or -num rows",
@@ -11157,12 +11179,12 @@ void opthelp(void)
     WINDOW *wmsg;
     int i;
 #ifndef XCURSES
-    int j=22;
-#else
     int j=21;
+#else
+    int j=20;
 #endif
     
-    wmsg = mvwinputbox(stdscr, (bodylen()-j)/3, (bodywidth()-43)/2, j+2, 43);
+    wmsg = mvwinputbox(stdscr, (bodylen()-j)/3, (bodywidth()-46)/2, j+2, 46);
     for (i=0; i<j; i++)
         mvwaddstr(wmsg, i+1, 2, hlpstrs[i]);
     wrefresh(wmsg);
@@ -11372,7 +11394,7 @@ void changecolor(void)
 
 int main(int ac, char **av)
 {
-    int i;
+    int i, j;
     int c;
     char *p = NULL;
     char s[MAXSTRLEN] = "";
@@ -11394,9 +11416,9 @@ typedef int (*LDF)(char *);
     i = 0;
     curr = 0;
     opterr = 0;
-    while
-       ((c=getopt(ac,av,"HhRrVvXxYyZzQqTtAaBbEeFfC:c:N:n:D:d:S:s:L:l:W:w:Pp?"))
-        != -1)
+    while ((c = getopt(ac,av,
+                "HhRrVvXxYyZzQqTtAaBbEeFfC:c:N:n:D:d:S:s:I:i:L:l:W:w:Pp?"))
+           != -1)
     {
       switch (c)
       {
@@ -11438,6 +11460,8 @@ typedef int (*LDF)(char *);
         case 'B':
           bottom = TRUE;
           break;
+        case 'i':
+        case 'I':
         case 's':
         case 'S':
           strcpy(fstr, optarg);
@@ -11456,16 +11480,17 @@ typedef int (*LDF)(char *);
           }
           else
           {
-              if (c == 'S')
+              if ((c == 'S') || (c == 'i') || (c == 'I'))
               {
                   strncpy(regstr, fstr, MAXFLEN);
                   unkeys[2] = 'l';
-                  unkeys[3] = '\n';
+                  unkeys[3] = '\0';
+                  if (c != 'S')
+                      inversed = TRUE;
               }
               else
                   casestr(fstr, TRUE, TRUE);
-              unkeys[4] = '\n';
-              unkeys[5] = '\0';
+              unkeys[4] = '\0';
           }
           pfind = TRUE;
           break;
@@ -11477,11 +11502,8 @@ typedef int (*LDF)(char *);
               i = -3;
           break;
         case '?':
-          if ((toupper(optopt) == 'N')
-          || (toupper(optopt) == 'S')
-          || (toupper(optopt) == 'L')
-          || (toupper(optopt) == 'C')
-          || (toupper(optopt) == 'D'))
+          j = toupper(optopt);
+          if (j=='C' || j=='D' || j=='I' || j=='L' || j=='N' || j=='S')
               fprintf(stderr, "Option -%c requires an argument.\n", optopt);
           else if (isprint (optopt))
               fprintf(stderr, "Unknown option '-%c'.\n", optopt);
