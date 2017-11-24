@@ -518,7 +518,7 @@ static int sortpos = 0;
 static int stwopos = 0;
 static bool numsort = FALSE;
 static bool filtered = FALSE;
-static bool inversed = FALSE;
+static bool inverted = FALSE;
 static bool headspac = FALSE;
 static bool hunsort = FALSE;
 static bool insert = FALSE;
@@ -10165,7 +10165,7 @@ void segregate(bool rev, bool column)
         reccnt = j;
         curr = 0;
         field = 0;
-        if (inversed == FALSE)
+        if (!inverted)
             edit();
         reccnt = tmpdat.total;
         for (i=0; i<j; i++)
@@ -10271,10 +10271,11 @@ void tsv_select(void)
     if (cry)
         	return;
 
-    if (inversed == TRUE)
+    if (inverted == TRUE)
     {
         segregate(FALSE, FALSE);
-        inversed = FALSE;
+        inverted = FALSE;
+        filtered = TRUE;
         segregate(TRUE, FALSE);
         return;
     }
@@ -11462,6 +11463,7 @@ typedef int (*LDF)(char *);
           break;
         case 'i':
         case 'I':
+          inverted = TRUE;
         case 's':
         case 'S':
           strcpy(fstr, optarg);
@@ -11485,8 +11487,6 @@ typedef int (*LDF)(char *);
                   strncpy(regstr, fstr, MAXFLEN);
                   unkeys[2] = 'l';
                   unkeys[3] = '\0';
-                  if (c != 'S')
-                      inversed = TRUE;
               }
               else
                   casestr(fstr, TRUE, TRUE);
