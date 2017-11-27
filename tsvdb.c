@@ -7067,17 +7067,21 @@ int putmsg(char *beg, char *str, char *end)
 
 void reorder(int y, bool left)
 {
-    int i, j;
+    int i;
     char *p;
     BUFDEF;
     char *fieldbuf[MAXCOLS+1] =
       {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 
-    j = left ? field-1 : field+1;
-    strsplit(rows[y], fieldbuf, ssep);
-    p = fieldbuf[j];
-    fieldbuf[j] = fieldbuf[field];
+    strcpy(buf, rows[y]);
+    i = strlen(buf)-1;
+    if (buf[i] == '\n')
+        buf[i] = '\0';
+    i = left ? field-1 : field+1;
+    strsplit(buf, fieldbuf, ssep);
+    p = fieldbuf[i];
+    fieldbuf[i] = fieldbuf[field];
     fieldbuf[field] = p;
     strcpy(buf, fieldbuf[0]);
     for (i=1; i<=cols; i++)
@@ -7089,8 +7093,6 @@ void reorder(int y, bool left)
     }
     strcat(buf, "\n");
     i = strlen(buf);
-    if (buf[i] == csep)
-        buf[i] = '\0';
     if (rows[y] != NULL)
        free(rows[y]);
     rows[y] = (char *)malloc(i+1);
