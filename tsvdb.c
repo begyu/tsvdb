@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 6.1.0 2017/11/24 $
+ * $Id: tcsvdb.c,v 6.2.0 2017/11/27 $
  */
 
-#define VERSION "6.1"
+#define VERSION "6.2"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -2922,9 +2922,9 @@ int hstrcmp(const char *s1, const char *s2)
     char e1[MAXSTRLEN];
     char e2[MAXSTRLEN];
 #define MAXCH 60
-    char abc[]="Aµ BCCDDE‚FGGHIÖˇJKLLMNNOŕ˘™”Š‹PQRSSTTUéŁšëűVWXYZZ[\\]^_`„";
-    char abb[]="AÁáBCCDDEÉéFGGHIÍíJKLLMNNOÓóÖöŐőPQRSSTTUÚúÜüŰűVWXYZZ[\\]^_`Ä";
-    char abd[]="AAABCDEFGGGHIJKLLLMNOPQRSTTTUUUUVWXYZabcccddddefghijklmnopqA";
+    char abc[]="Aµ „BCCDDE‚FGGHIÖˇJKLLMNNOŕ˘™”Š‹PQRSSTTUéŁšëűVWXYZZ[\\]^_`";
+    char abb[]="AÁáÄBCCDDEÉéFGGHIÍíJKLLMNNOÓóÖöŐőPQRSSTTUÚúÜüŰűVWXYZZ[\\]^_`";
+    char abd[]="AAAABCDEFGGGHIJKLLLMNOPQRSTTTUUUUVWXYZabcccddddefghijklmnopq";
 
     if (hunsort == FALSE)
     {
@@ -7023,14 +7023,39 @@ int putmsg(char *beg, char *str, char *end)
     WINDOW *wmsg;
     int i;
     char s[MAXSTRLEN];
+#ifdef XCURSES
+    unsigned char c;
+ #ifndef PDCURSES
+    int maxy;
+ #endif
+    int maxx;
+#endif
 
     strcpy(s, beg);
     strcat(s, str);
     strcat(s, end);
-        
+
     i = strlen(s);
     wmsg = mvwinputbox(wbody, (bodylen()-5)/2, (bodywidth()-i)/2, 3, i+2);
+#ifndef XCURSES
     mvwaddstr(wmsg, 1,1, s);
+#else
+ #ifdef PDCURSES
+    maxx = getmaxx(wmsg);
+ #else
+    getmaxyx(wmsg, maxy, maxx);
+ #endif
+    maxx -= 2;
+    wmove(wmsg, 1, 1);
+    padstr(s, maxx);
+    for (i=0; i<maxx; i++)
+    {
+        c = s[i];
+        if (c < 0x20)
+            break;
+        waddch(wmsg, c);
+    }
+#endif
     wrefresh(wmsg);
     i = toupper(waitforkey());
     delwin(wmsg);
@@ -7042,60 +7067,25 @@ int putmsg(char *beg, char *str, char *end)
 
 void reorder(int y, bool left)
 {
-    register int i, j, k;
-    BUFDEF;
-    char tmpstr[MAXCOLS+1][MAXSTRLEN+1];
+    int i, j;
     char *p;
-    j = left ? field-1 : field+1;
+    BUFDEF;
+    char *fieldbuf[MAXCOLS+1] =
+      {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+       NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 
-    for (i=0; i<=cols; i++)
-        tmpstr[i][0] = '\0';
-    strcpy(buf, rows[y]);
-    k = strlen(buf);
-    for (i=0; i<k; i++)
+    j = left ? field-1 : field+1;
+    strsplit(rows[y], fieldbuf, ssep);
+    p = fieldbuf[j];
+    fieldbuf[j] = fieldbuf[field];
+    fieldbuf[field] = p;
+    strcpy(buf, fieldbuf[0]);
+    for (i=1; i<=cols; i++)
     {
-        if (buf[i] == '\n' || buf[i] == '\r')
-        {
-            buf[i] = ' ';
-        }
-        if ((buf[i] == csep) && (buf[i+1] == csep))
-        {
-            k++;
-            for (j=k; j>i; j--)
-                buf[j] = buf[j-1];
-            i++;
-            buf[i] = ' ';
-        }
-    }
-    i = 0;
-    p = strtok(buf, ssep);
-    while(p != NULL)
-    {
-        strcpy(tmpstr[i], p);
-        i++;
-        if (i > cols)
-           break;
-        p = strtok(NULL, ssep);
-    }
-    for (i=0; i<=cols; i++)
-    {
-        k = strlen(tmpstr[i]);
-        if (k == 0)
-            strcpy(tmpstr[i], " ");
-    }
-    buf[0] = '\0';
-    for (i=0; i<=cols; i++)
-    {
-        k = strlen(tmpstr[i]);
-        if (i == j)
-           strcat(buf, tmpstr[field]);
-        else if (i == field)
-           strcat(buf, tmpstr[j]);
-        else
-           strcat(buf, tmpstr[i]);
+        if (fieldbuf[i] == NULL)
+            break;
         strcat(buf, ssep);
-        if (tmpstr[i+1][0] == '\0')
-           break;
+        strcat(buf, fieldbuf[i]);
     }
     strcat(buf, "\n");
     i = strlen(buf);
@@ -7391,14 +7381,16 @@ void dosortby(void)
             }
         }
         if (stwopos == -1)
-            putmsg("Sorted by ", stru[sortpos], " field.");
-        hunsort = FALSE;
-        if (numsort == FALSE)
         {
-            if (hunset)
-                hunsort = TRUE;
-            else if (selbox("Hungarian abc?", ync, 2) == 1)
-                     hunsort = TRUE;
+            putmsg("Sorted by ", stru[sortpos], " field.");
+            hunsort = FALSE;
+            if (numsort == FALSE)
+            {
+                if (hunset)
+                    hunsort = TRUE;
+                else if (selbox("Hungarian abc?", ync, 2) == 1)
+                    hunsort = TRUE;
+            }
         }
         if (selbox("Reverse order?", ync, 2) != 1)
             sort(reccnt);
