@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 6.2.0 2017/11/27 $
+ * $Id: tcsvdb.c,v 6.3.0 2017/11/30 $
  */
 
-#define VERSION "6.2"
+#define VERSION "6.3"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -832,7 +832,7 @@ static void initcolo0(void)
     init_pair(MARKCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
     init_pair(FSTRCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
     init_pair(EDITBOXTOOCOLOR  & ~A_ATTR, COLOR_WHITE, COLOR_WHITE);
-    init_pair(INFOCOLOR        & ~A_ATTR, COLOR_WHITE, COLOR_BLACK);
+    init_pair(INFOCOLOR        & ~A_ATTR, COLOR_BLACK, COLOR_WHITE);
 #endif
 }
 
@@ -905,7 +905,7 @@ static void initcolo3(void)
     init_pair(CURRCOLOR        & ~A_ATTR, COLOR_CYAN, COLOR_BLACK);
     init_pair(CURRREVCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);
     init_pair(MARKCOLOR        & ~A_ATTR, COLOR_MAGENTA, COLOR_WHITE);
-    init_pair(FSTRCOLOR        & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
+    init_pair(FSTRCOLOR        & ~A_ATTR, COLOR_GREEN, COLOR_YELLOW);
     init_pair(EDITBOXTOOCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
     init_pair(INFOCOLOR        & ~A_ATTR, COLOR_MAGENTA, COLOR_YELLOW);
 #endif
@@ -929,9 +929,9 @@ static void initcolo4(void)
     init_pair(CURRCOLOR        & ~A_ATTR, COLOR_BLUE, COLOR_YELLOW);
     init_pair(CURRREVCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
     init_pair(MARKCOLOR        & ~A_ATTR, COLOR_CYAN, COLOR_BLACK);
-    init_pair(FSTRCOLOR        & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
+    init_pair(FSTRCOLOR        & ~A_ATTR, COLOR_RED, COLOR_BLUE);
     init_pair(EDITBOXTOOCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
-    init_pair(INFOCOLOR        & ~A_ATTR, COLOR_BLUE, COLOR_CYAN);
+    init_pair(INFOCOLOR        & ~A_ATTR, COLOR_CYAN, COLOR_BLUE);
 #endif
 }
 
@@ -953,7 +953,7 @@ static void initcolo5(void)
     init_pair(CURRCOLOR        & ~A_ATTR, COLOR_GREEN, COLOR_BLUE);
     init_pair(CURRREVCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_BLACK);
     init_pair(MARKCOLOR        & ~A_ATTR, COLOR_RED, COLOR_CYAN);
-    init_pair(FSTRCOLOR        & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
+    init_pair(FSTRCOLOR        & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
     init_pair(EDITBOXTOOCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
     init_pair(INFOCOLOR        & ~A_ATTR, COLOR_CYAN, COLOR_BLUE);
 #endif
@@ -964,14 +964,14 @@ static void initcolo6(void)
 #ifdef A_COLOR
     if (has_colors())
         start_color();
-    init_pair(TITLECOLOR       & ~A_ATTR, COLOR_BLUE, COLOR_MAGENTA);
+    init_pair(TITLECOLOR       & ~A_ATTR, COLOR_BLACK, COLOR_MAGENTA);
     init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_GREEN, COLOR_MAGENTA);
     init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
     init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_GREEN, COLOR_MAGENTA);
     init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
     init_pair(SUBMENUR_2COLOR  & ~A_ATTR, COLOR_BLUE, COLOR_MAGENTA);
     init_pair(BODYCOLOR        & ~A_ATTR, COLOR_BLUE, COLOR_GREEN);
-    init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_BLUE, COLOR_MAGENTA);
+    init_pair(STATUSCOLOR      & ~A_ATTR, COLOR_WHITE, COLOR_MAGENTA);
     init_pair(INPUTBOXCOLOR    & ~A_ATTR, COLOR_BLUE, COLOR_CYAN);
     init_pair(EDITBOXCOLOR     & ~A_ATTR, COLOR_YELLOW, COLOR_RED);
     init_pair(CURRCOLOR        & ~A_ATTR, COLOR_GREEN, COLOR_BLUE);
@@ -979,7 +979,7 @@ static void initcolo6(void)
     init_pair(MARKCOLOR        & ~A_ATTR, COLOR_RED, COLOR_GREEN);
     init_pair(FSTRCOLOR        & ~A_ATTR, COLOR_YELLOW, COLOR_MAGENTA);
     init_pair(EDITBOXTOOCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_BLUE);
-    init_pair(INFOCOLOR        & ~A_ATTR, COLOR_BLUE, COLOR_MAGENTA);
+    init_pair(INFOCOLOR        & ~A_ATTR, COLOR_CYAN, COLOR_MAGENTA);
 #endif
 }
 
@@ -989,7 +989,7 @@ static void initcolo7(void)
     if (has_colors())
         start_color();
     init_pair(TITLECOLOR       & ~A_ATTR, COLOR_WHITE, COLOR_BLUE);
-    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_CYAN, COLOR_BLACK);
+    init_pair(MAINMENUCOLOR    & ~A_ATTR, COLOR_CYAN, COLOR_BLUE);
     init_pair(MAINMENUREVCOLOR & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
     init_pair(SUBMENUCOLOR     & ~A_ATTR, COLOR_CYAN, COLOR_BLACK);
     init_pair(SUBMENUREVCOLOR  & ~A_ATTR, COLOR_YELLOW, COLOR_CYAN);
@@ -3209,7 +3209,6 @@ int qsort_stringlist(const void *e1, const void *e2)
     char s1[MAXNLEN+1] = "";
     char s2[MAXNLEN+1] = "";
     double n1, n2;
-
 
     k =0;
     for (i=0; k<sortpos; i++)
@@ -7002,6 +7001,26 @@ void tsv_filter(void)
 }
 
 
+int qs_str(const void *e1, const void *e2)
+{
+    return strcmp(*(char **)(e1), *(char **)(e2));
+}
+
+int qs_back(const void *e1, const void *e2)
+{
+    return strcmp(*(char **)(e2), *(char **)(e1));
+}
+
+void totalsort(bool rev)
+{
+    msg(WSTR);
+    if (rev)
+        qsort(rows, reccnt, sizeof(char *), qs_back);
+    else
+        qsort(rows, reccnt, sizeof(char *), qs_str);
+    msg(NULL);
+}
+
 void dosort(void)
 {
     if (ro && !locked)
@@ -7009,9 +7028,9 @@ void dosort(void)
     if (selbox("Sort database?", ync, 2) != 1)
         return;
     if (selbox("Reverse order?", ync, 2) != 1)
-        sort(reccnt);
+        totalsort(FALSE);
     else
-        sort_back(reccnt);
+        totalsort(TRUE);
     if (!locked)
         modified = TRUE;
     flagmsg();
@@ -7065,6 +7084,8 @@ int putmsg(char *beg, char *str, char *end)
 }
 
 
+static bool reord_all = FALSE;
+
 void reorder(int y, bool left)
 {
     int i;
@@ -7098,7 +7119,8 @@ void reorder(int y, bool left)
     rows[y] = (char *)malloc(i+1);
     strcpy(rows[y], buf);
     modified = TRUE;
-    flagmsg();
+    if (reord_all == FALSE)
+        flagmsg();
 }
 
 void reordall(bool left)
@@ -7121,6 +7143,7 @@ void reordall(bool left)
         m = 1;
 
     msg(WSTR);
+    reord_all = TRUE;
     if (m == 1)
     {
         for (i=0; i<reccnt; i++)
@@ -7183,6 +7206,8 @@ void reordall(bool left)
             reorder(i, left);
         }
     }
+    reord_all = FALSE;
+    flagmsg();
     msg(NULL);
 }
 
@@ -10757,7 +10782,7 @@ menu SubMenu1[] =
     { "Trailing", trail, "Add/remove trailing spaces & separators" },
     { "adJust", doindent, "Align left/right/center" },
     { "Sort", dosort, "Sort the whole file" },
-    { "Field", dosortby, "Sort by other field" },
+    { "Field", dosortby, "Sort by other field (case insensitive)" },
     { "nUm", dosortnum, "Sort natural order" },
     { "Modify", modstru, "Restructuring" },
     { "crYpt", docrypt, "Code/decode" },
