@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 6.3.0 2017/11/30 $
+ * $Id: tcsvdb.c,v 6.4.0 2017/12/14 $
  */
 
-#define VERSION "6.3"
+#define VERSION "6.4"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -8011,10 +8011,6 @@ void delfield(void)
                     break;
             }
             strcpy(buf+j+1, buf+k);
-            if (field == cols)
-            {
-                strcat(buf, "\n");
-            }
             if (rows[i] != NULL)
                 free(rows[i]);
             l = strlen(buf);
