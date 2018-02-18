@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 6.4.0 2017/12/14 $
+ * $Id: tcsvdb.c,v 6.5.0 2018/02/17 $
  */
 
-#define VERSION "6.4"
+#define VERSION "6.5"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -733,10 +733,10 @@ void rmerror(void);
 # define EDITBOXCOLOR     (10 | A_BOLD | A_REVERSE)
 # define CURRCOLOR        (11 | A_BOLD)
 # define CURRREVCOLOR     (12 | A_BOLD)
-# define MARKCOLOR        (13 | A_BOLD)
-# define FSTRCOLOR        (14 | A_BOLD)
+# define MARKCOLOR        (13 | A_BOLD | A_UNDERLINE)
+# define FSTRCOLOR        (14 | A_BOLD | A_RIGHT)
 # define EDITBOXTOOCOLOR  (15 | A_BOLD)
-# define INFOCOLOR        (16 | A_BOLD)
+# define INFOCOLOR        (16 | A_BOLD | A_ITALIC)
 #else
 # define TITLECOLOR       0       /* color pair indices */
 # define MAINMENUCOLOR    (A_BOLD)
