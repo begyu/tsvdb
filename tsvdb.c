@@ -1,8 +1,8 @@
 /*
- * $Id: tcsvdb.c,v 6.5.0 2018/02/17 $
+ * $Id: tcsvdb.c,v 6.5.1 2019/01/01 $
  */
 
-#define VERSION "6.5"
+#define VERSION "6.5.1"
 #define URL "http://tsvdb.sf.net"
 #define PRGHLP "tsvdb.hlp"
 
@@ -1988,9 +1988,9 @@ int weditstr(WINDOW *win, char *buf, int field, int lim)
 
         case 129: //0x81=''
         case 144: //0x90=''
-        case 395: //0x8B='‹'
-        case 394: //0x8A='Š'
-        case 507: //0xFB='ű'
+        case 395: //0x8B=''
+        case 394: //0x8A=''
+        case 507: //0xFB='û'
 #ifdef __MINGW_VERSION
         case 491: //0xEB='ë'  //collision with A-DN!
 #endif
@@ -2847,8 +2847,8 @@ int casestr(char *str, bool upper, bool ascii)
 #endif
   char asc_lo[] = "aeiooouuuaaeiooouuua";
   char asc_hi[] = "AEIOOOUUUAAEIOOOUUUA";
-/*  char chr_utflo[] = "ĂˇĂ©Ă­ĂłĂ¶Ĺ‘ĂşĂĽĹ±";*/
-/*  char chr_utfhi[] = "ĂĂ‰ĂŤĂ“Ă–ĹĂšĂśĹ°";*/
+/*  char chr_utflo[] = "ÃḂÃ©Ã­ÃġÃ¶ÅÃẃÃỳÅḟ";*/
+/*  char chr_utfhi[] = "ÃÃÃÃÃÅÃÃÅḞ";*/
   register int i, j;
   int w=strlen(str);
   unsigned char c;
@@ -2922,8 +2922,8 @@ int hstrcmp(const char *s1, const char *s2)
     char e1[MAXSTRLEN];
     char e2[MAXSTRLEN];
 #define MAXCH 60
-    char abc[]="Aµ „BCCDDE‚FGGHIÖˇJKLLMNNOŕ˘™”Š‹PQRSSTTUéŁšëűVWXYZZ[\\]^_`";
-    char abb[]="AÁáÄBCCDDEÉéFGGHIÍíJKLLMNNOÓóÖöŐőPQRSSTTUÚúÜüŰűVWXYZZ[\\]^_`";
+    char abc[]="Aṁ BCCDDEFGGHIÖḂJKLLMNNOàḃPQRSSTTUé£ëûVWXYZZ[\\]^_`";
+    char abb[]="AÁáÄBCCDDEÉéFGGHIÍíJKLLMNNOÓóÖöÕõPQRSSTTUÚúÜüÛûVWXYZZ[\\]^_`";
     char abd[]="AAAABCDEFGGGHIJKLLLMNOPQRSTTTUUUUVWXYZabcccddddefghijklmnopq";
 
     if (hunsort == FALSE)
@@ -3683,7 +3683,7 @@ int numcompr(const char *s3, char *s2)
     if (!(isdigit(s3[0]) && isdigit(s3[1]) && isdigit(s3[2])))
         	return -1;
 #ifdef DJGPP
-    if ((s3[0] == 'ˇ') || (s3[1] == 'ˇ') || (s3[2] == 'ˇ'))
+    if ((s3[0] == 'Ḃ') || (s3[1] == 'Ḃ') || (s3[2] == 'Ḃ'))
         	return -1;
 #endif
 
@@ -3809,7 +3809,7 @@ void compress(bool rev)
 }
 
 
-void crypt(int n)
+void tsv_crypt(int n)
 {
 #define KEYLEN 17
     char key[KEYLEN]="_*tSvDb_EnCrYpT*_";
@@ -4279,7 +4279,7 @@ int loadfile(char *fname)
     }
     if (locked && cry)
     {
-        crypt(reccnt);
+        tsv_crypt(reccnt);
     }
     field=0;
     curcol=0;
@@ -4734,7 +4734,7 @@ int savefile(char *fname, int force)
         msg(WSTR);
         if (locked && !cry)
         {
-            crypt(reccnt);
+            tsv_crypt(reccnt);
         }
         if (headspac)
         {
@@ -7614,7 +7614,7 @@ void docrypt(void)
         return;
     if (selbox("Encrypt database?", ync, 2) != 1)
         return;
-    crypt(reccnt);
+    tsv_crypt(reccnt);
     modified = TRUE;
     flagmsg();
 }
@@ -8033,8 +8033,8 @@ char vec[] = " 0123456789"
              "abcdefghijklmnopqrstuvwxyz"
              "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
              ".,:!/\\|+-*="
-             " ‚ˇ˘”‹Łű„"
-             "µÖŕ™ŠéšëĆ";
+             " Ḃḃ£û"
+             "ṁÖàéëÆ";
 
 enum {
     A = 1<<0,
@@ -8256,7 +8256,7 @@ void dispfield(int x)
         strcpy(buf, fieldbuf[i]);
         if (x != -1)
 #ifdef __MINGW_VERSION
-            banner(buf, 'Ű');
+            banner(buf, 'Û');
 #else
             banner(buf, '#');
 #endif
